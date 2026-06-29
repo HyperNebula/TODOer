@@ -63,6 +63,14 @@ fn write_temp_html(contents: String) -> Result<String, String> {
     Ok(temp_file.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn write_temp_pdf(contents: Vec<u8>) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join(format!("todolist-print-{}.pdf", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+    fs::write(&temp_file, contents).map_err(|e| e.to_string())?;
+    Ok(temp_file.to_string_lossy().to_string())
+}
+
 fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let new_list = MenuItem::with_id(app, "new_list", "New List", true, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Open…", true, Some("CmdOrCtrl+O"))?;
@@ -137,7 +145,8 @@ pub fn run() {
             get_tasklists_dir,
             get_last_file_path,
             set_last_file_path,
-            write_temp_html
+            write_temp_html,
+            write_temp_pdf
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

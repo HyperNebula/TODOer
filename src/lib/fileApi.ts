@@ -101,6 +101,10 @@ export async function openHtmlForPrint(html: string): Promise<void> {
   await openFileLink(path);
 }
 
+export async function saveTempPdf(pdfData: Uint8Array): Promise<string> {
+  return await invoke<string>("write_temp_pdf", { contents: Array.from(pdfData) });
+}
+
 export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }

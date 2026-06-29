@@ -15,8 +15,10 @@ import {
   saveTaskListDialog,
   getLastFilePath,
   readFileFallback,
+  saveTempPdf,
+  openFileLink,
 } from "./lib/fileApi";
-import { buildPrintHtml } from "./lib/printHtml";
+import { generatePdfBlob } from "./lib/printPdf";
 import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
 import "./App.css";
@@ -81,19 +83,15 @@ function App() {
     await exportCsvDialog(csv);
   }, [rows, store.file.tasks]);
 
-  const handlePrint = useCallback(() => {
-    const html = buildPrintHtml(
+  const handlePrint = useCallback(async () => {
+    const pdfBlob = generatePdfBlob(
       store.file.name,
       rows,
       visibleColumns,
     );
     
-    const printArea = document.getElementById("print-area");
-    if (printArea) {
-      printArea.innerHTML = html;
-      window.print();
-      printArea.innerHTML = "";
-    }
+    const path = await saveTempPdf(pdfBlob);
+    await openFileLink(path);
   }, [store.file.name, rows, visibleColumns]);
 
   const handleNewSubTask = useCallback(() => {
@@ -304,7 +302,6 @@ function App() {
           onClose={() => setNotesTask(null)}
         />
       </div>
-      <div id="print-area" />
     </>
   );
 }
