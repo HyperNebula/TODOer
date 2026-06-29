@@ -1,4 +1,4 @@
-# ToDoList Manager
+# TODOer
 
 A desktop task manager inspired by [AbstractSpoon ToDoList](https://abstractspoon.com), built with **Tauri 2**, **React**, and **TypeScript**. Task lists are stored as human-readable JSON files.
 
