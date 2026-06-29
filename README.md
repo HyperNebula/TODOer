@@ -1,113 +1,99 @@
-# TODOer
+<div align="center">
+  <img src="src-tauri/icons/128x128.png" width="128" alt="TODOer Icon" />
+  <h1>TODOer</h1>
+  <p><strong>A modern, high-performance desktop task manager built with Tauri 2 and React.</strong></p>
+</div>
 
-A desktop task manager inspired by [AbstractSpoon ToDoList](https://abstractspoon.com), built with **Tauri 2**, **React**, and **TypeScript**. Task lists are stored as human-readable JSON files.
+---
 
-## Features
+## 📖 Overview
 
-- Multi-column tree grid: Title, Created, Due, Priority (1–10), % Done, Time Estimate, File Link, Category, Notes
-- Checkbox to mark tasks done (strikethrough until archived)
-- Sub-tasks with indent and fold/unfold
-- Sort by any column (within siblings)
-- Filter by priority, category, done state, title, due dates; tree-aware filtering
-- Save/Open JSON task lists (atomic writes)
-- Export to CSV
-- Print current view
-- Archive completed tasks
+**TODOer** is a robust, desktop-native task manager designed for power users who need advanced organization features without compromising on performance or privacy. Inspired by the flexibility of AbstractSpoon ToDoList, TODOer stores your task lists locally as human-readable JSON files, ensuring you own your data and can sync it across devices your way.
 
-## Download & Install
+Built from the ground up using **Tauri 2**, **React**, and **TypeScript**, the app combines the blazingly fast performance of Rust with a fluid, responsive UI. It demonstrates modern desktop application architecture, state management, and strict TypeScript integration.
 
-On every push to the `main` branch, our automated workflow publishes the latest version to the [GitHub Releases](../../releases) page.
+## ✨ Features
+
+- **Advanced Multi-Column Tree Grid**: Organize complex projects with nested sub-tasks, complete with indent/outdent capabilities and fold/unfold interactions.
+- **Comprehensive Metadata**: Track every detail with columns for Title, Created Date, Due Date, Priority (1–10), % Done, Time Estimates, File Links, Categories, and Notes.
+- **Smart Filtering & Sorting**: Filter tasks by priority, category, completion status, and due dates using tree-aware filtering algorithms. Sort by any column to quickly find what you need.
+- **Privacy-First Local Storage**: Saves and opens JSON task lists using atomic file writes to prevent data corruption. No cloud lock-in.
+- **Export & Print**: Easily export your current view to CSV for external reporting or print directly from the app.
+- **Archiving System**: Keep your active workspace clean by archiving completed tasks.
+
+## 🛠️ Technology Stack
+
+- **Framework:** [Tauri 2](https://v2.tauri.app/) (Rust-based, incredibly lightweight alternative to Electron)
+- **Frontend:** [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite](https://vitejs.dev/) for lightning-fast HMR and optimized builds
+- **State Management:** [Zustand](https://zustand-demo.pmnd.rs/) for scalable, unopinionated state
+- **Testing:** [Vitest](https://vitest.dev/) for comprehensive unit and integration coverage
+
+## 🚀 Download & Install
+
+On every push to the `main` branch, our automated workflow publishes the latest release to the [GitHub Releases](../../releases) page.
 
 ### macOS
-
 1. Download the `.dmg` from the latest GitHub Release.
 2. Open the `.dmg` and drag `ToDoList Manager.app` into your Applications folder.
-3. **Important:** Because the app is not code-signed with a paid Apple Developer account, macOS Gatekeeper will flag it as "damaged". Open your Terminal and run the following command to remove the quarantine flag:
+3. *Note on Gatekeeper:* Because this app is built by an independent developer and currently unsigned, macOS will flag it. To run it, open your Terminal and execute:
    ```bash
    xattr -cr "/Applications/ToDoList Manager.app"
    ```
-4. You can now open the app normally.
 
 ### Windows
-
 1. Download the `.exe` (recommended) or `.msi` installer from the latest GitHub Release.
 2. Double-click the installer.
-3. **Important:** Because the app is not code-signed with a Windows certificate, Windows SmartScreen will flag it. If the "Windows protected your PC" blue dialog appears, click **"More info"**, then click **"Run anyway"**.
-4. Follow the standard installation prompts to install the app.
+3. *Note on SmartScreen:* If Windows flags the installer, click **"More info"**, then **"Run anyway"**.
 
-## Keyboard shortcuts
+## ⌨️ Keyboard Shortcuts
+
+Designed for speed and power users.
 
 | Action | macOS | Windows/Linux |
 |--------|-------|---------------|
-| Save | ⌘S | Ctrl+S |
-| New task | ⌘N | Ctrl+N |
-| New sub-task | ⌘⇧N | Ctrl+Shift+N |
-| Open | ⌘O | Ctrl+O |
-| Delete selected | Delete | Delete |
+| Save File | `⌘S` | `Ctrl+S` |
+| New Task | `⌘N` | `Ctrl+N` |
+| New Sub-Task | `⌘⇧N` | `Ctrl+Shift+N` |
+| Open File | `⌘O` | `Ctrl+O` |
+| Delete Task | `Delete` | `Delete` |
 
-## File format
+## 💻 Development & Building Locally
 
-Task lists use `.todolist.json` (or `.json`) with this structure:
-
-```json
-{
-  "version": 1,
-  "name": "My Tasks",
-  "modifiedAt": "2026-06-28T12:00:00Z",
-  "tasks": [ { "id": "...", "title": "...", "parentId": null, ... } ]
-}
-```
-
-See [`tasklists/example.todolist.json`](tasklists/example.todolist.json) for a sample file.
-
-## Development
+Want to contribute or explore the code? Setting up the development environment is simple.
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) 20+
-- [Rust](https://www.rust-lang.org/tools/install) (for Tauri desktop builds)
-- Platform tools: [Tauri prerequisites](https://tauri.app/start/prerequisites/)
+- [Node.js](https://nodejs.org/) (v20+)
+- [Rust](https://www.rust-lang.org/tools/install)
+- [Tauri OS Dependencies](https://v2.tauri.app/start/prerequisites/)
+
+### Setup & Run
 
 ```bash
+# Install dependencies
 npm install
+
+# Start the development server with Hot Module Replacement
 npm run tauri:dev
 ```
 
-Run unit tests:
+### Testing & Building
 ```bash
+# Run the Vitest test suite
 npm test
-```
 
-Build frontend only:
-```bash
-npm run build
-```
-
-## Local Building & Packaging
-
-Installers must be built on their respective operating systems.
-
-**macOS:**
-```bash
+# Build production installers (output will be in src-tauri/target/release/bundle/)
 npm run tauri:build
 ```
-Output: `src-tauri/target/release/bundle/macos/ToDoList Manager.app`
 
-**Windows:**
-```powershell
-npm run tauri:build
-```
-Outputs: `src-tauri/target/release/bundle/nsis/` (for `.exe`), `src-tauri/target/release/bundle/msi/` (for `.msi`)
-
-*Note: For distributing outside your own machine without the installation warnings mentioned above, you must configure Code Signing. See Tauri's guides for [macOS](https://tauri.app/distribute/sign/macos/) and [Windows](https://tauri.app/distribute/sign/windows/).*
-
-## Project structure
+## 📁 Project Structure
 
 ```
-src/                 React UI and business logic
-src-tauri/           Rust backend (file I/O, open URL)
-tasklists/           Example task list files
+├── src/               # React frontend, UI components, and Zustand stores
+├── src-tauri/         # Rust backend (File I/O, OS interactions)
+└── tasklists/         # Example JSON task list templates
 ```
 
-## License
+## 📄 License
 
-Private / personal use.
+For private and personal use.
