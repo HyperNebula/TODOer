@@ -203,3 +203,18 @@ body {
   white-space: nowrap;
   max-width: 40%;
 }
+
+/* Print area — hidden on screen, visible only when printing */
+#print-area {
+  display: none;
+}
+
+@media print {
+  .app {
+    display: none !important;
+  }
+
+  #print-area {
+    display: block !important;
+  }
+}

@@ -88,31 +88,11 @@ function App() {
       visibleColumns,
     );
     
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write(html);
-      doc.close();
-      
-      // Short timeout to ensure WebView2 parses the HTML before printing
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        
-        // Cleanup after a delay to ensure print dialog opened
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 5000);
-      }, 200);
+    const printArea = document.getElementById("print-area");
+    if (printArea) {
+      printArea.innerHTML = html;
+      window.print();
+      printArea.innerHTML = "";
     }
   }, [store.file.name, rows, visibleColumns]);
 
@@ -256,73 +236,76 @@ function App() {
   const doneCount = store.file.tasks.filter((t) => t.done && !t.archived).length;
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>ToDoList Manager</h1>
-        <input
-          className="list-name-input"
-          value={store.file.name}
-          onChange={(e) => store.setListName(e.target.value)}
-          aria-label="List name"
+    <>
+      <div className="app">
+        <header className="app-header">
+          <h1>ToDoList Manager</h1>
+          <input
+            className="list-name-input"
+            value={store.file.name}
+            onChange={(e) => store.setListName(e.target.value)}
+            aria-label="List name"
+          />
+        </header>
+
+        <Toolbar
+          onNewTask={() => store.addTask()}
+          onNewSubTask={handleNewSubTask}
+          onDelete={handleDelete}
+          onSave={handleSave}
+          onSaveAs={handleSaveAs}
+          onOpen={handleOpen}
+          onNewList={handleNewList}
+          onExportCsv={handleExportCsv}
+          onPrint={handlePrint}
+          onArchive={() => store.archiveCompleted()}
+          hasSelection={!!store.selectedTaskId}
+          dirty={store.dirty}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
-      </header>
 
-      <Toolbar
-        onNewTask={() => store.addTask()}
-        onNewSubTask={handleNewSubTask}
-        onDelete={handleDelete}
-        onSave={handleSave}
-        onSaveAs={handleSaveAs}
-        onOpen={handleOpen}
-        onNewList={handleNewList}
-        onExportCsv={handleExportCsv}
-        onPrint={handlePrint}
-        onArchive={() => store.archiveCompleted()}
-        hasSelection={!!store.selectedTaskId}
-        dirty={store.dirty}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-      />
+        <FilterBar
+          filter={store.filter}
+          onChange={store.setFilter}
+          onClear={store.clearFilter}
+        />
 
-      <FilterBar
-        filter={store.filter}
-        onChange={store.setFilter}
-        onClear={store.clearFilter}
-      />
+        <ColumnPicker
+          visible={visibleColumns}
+          onChange={store.setVisibleColumns}
+        />
 
-      <ColumnPicker
-        visible={visibleColumns}
-        onChange={store.setVisibleColumns}
-      />
+        <TreeGrid
+          rows={rows}
+          visibleColumns={visibleColumns}
+          selectedTaskId={store.selectedTaskId}
+          sortColumn={store.sort?.column ?? null}
+          sortDirection={store.sort?.direction ?? null}
+          onSelect={store.setSelectedTaskId}
+          onToggleDone={store.toggleDone}
+          onToggleCollapsed={store.toggleCollapsed}
+          onUpdate={store.updateTask}
+          onToggleSort={store.toggleSort}
+          onEditNotes={setNotesTask}
+        />
 
-      <TreeGrid
-        rows={rows}
-        visibleColumns={visibleColumns}
-        selectedTaskId={store.selectedTaskId}
-        sortColumn={store.sort?.column ?? null}
-        sortDirection={store.sort?.direction ?? null}
-        onSelect={store.setSelectedTaskId}
-        onToggleDone={store.toggleDone}
-        onToggleCollapsed={store.toggleCollapsed}
-        onUpdate={store.updateTask}
-        onToggleSort={store.toggleSort}
-        onEditNotes={setNotesTask}
-      />
+        <StatusBar
+          totalTasks={store.file.tasks.filter((t) => !t.archived).length}
+          doneCount={doneCount}
+          dirty={store.dirty}
+          filePath={store.filePath}
+          listName={store.file.name}
+        />
 
-      <StatusBar
-        totalTasks={store.file.tasks.filter((t) => !t.archived).length}
-        doneCount={doneCount}
-        dirty={store.dirty}
-        filePath={store.filePath}
-        listName={store.file.name}
-      />
-
-      <NotesEditor
-        task={notesTask}
-        onSave={(id, notes) => store.updateTask(id, { notes })}
-        onClose={() => setNotesTask(null)}
-      />
-    </div>
+        <NotesEditor
+          task={notesTask}
+          onSave={(id, notes) => store.updateTask(id, { notes })}
+          onClose={() => setNotesTask(null)}
+        />
+      </div>
+      <div id="print-area" />
+    </>
   );
 }
 
