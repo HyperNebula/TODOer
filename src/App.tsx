@@ -128,14 +128,19 @@ function App() {
       try {
         const win = getCurrentWindow();
         unlisten = await win.onCloseRequested(async (event) => {
+          // Always take manual control — registering this listener means
+          // Tauri will no longer close the window automatically.
+          event.preventDefault();
           if (dirtyRef.current) {
-            event.preventDefault();
             if (confirm("Save changes before closing?")) {
               await handleSaveRef.current();
               await win.destroy();
             } else if (confirm("Close without saving?")) {
               await win.destroy();
             }
+            // If the user cancels both prompts, stay open (intended).
+          } else {
+            await win.destroy();
           }
         });
       } catch {
