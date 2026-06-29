@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ColumnPicker } from "./components/ColumnPicker";
@@ -115,15 +115,23 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [handleSave, handleOpen, handleDelete, handleNewSubTask, store]);
 
+  // Keep refs so the close handler always reads the latest values
+  // without needing to re-register the listener on every change.
+  const dirtyRef = useRef(store.dirty);
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => { dirtyRef.current = store.dirty; }, [store.dirty]);
+  useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
+
   useEffect(() => {
+    let unlisten: (() => void) | undefined;
     const setupClose = async () => {
       try {
         const win = getCurrentWindow();
-        await win.onCloseRequested(async (event) => {
-          if (store.dirty) {
+        unlisten = await win.onCloseRequested(async (event) => {
+          if (dirtyRef.current) {
             event.preventDefault();
             if (confirm("Save changes before closing?")) {
-              await handleSave();
+              await handleSaveRef.current();
               await win.destroy();
             } else if (confirm("Close without saving?")) {
               await win.destroy();
@@ -135,7 +143,8 @@ function App() {
       }
     };
     setupClose();
-  }, [store.dirty, handleSave]);
+    return () => { unlisten?.(); };
+  }, []); // runs once — refs keep the handler up to date
 
   useEffect(() => {
     const unlisten = listen<string>("menu-action", (event) => {
