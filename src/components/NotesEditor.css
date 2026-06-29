@@ -18,7 +18,7 @@
 
 .notes-dialog h3 {
   margin: 0 0 12px;
-  font-size: 14px;
+  font-size: calc(14px + var(--font-offset, 0px));
 }
 
 .notes-dialog textarea {

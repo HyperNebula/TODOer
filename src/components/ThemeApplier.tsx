@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme } from "../store/settingsStore";
 
 export function ThemeApplier() {
-  const { activeThemeId, customThemes, fontSize, fontFamily, loadSettings } = useSettingsStore();
+  const { activeThemeId, customThemes, fontSizeOffset, fontFamily, loadSettings } = useSettingsStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -40,10 +40,10 @@ export function ThemeApplier() {
     root.style.setProperty("--danger", colors.danger);
 
     // Apply typography
-    root.style.setProperty("font-size", `${fontSize}px`);
+    root.style.setProperty("--font-offset", `${fontSizeOffset}px`);
     root.style.setProperty("font-family", fontFamily);
 
-  }, [activeThemeId, customThemes, fontSize, fontFamily]);
+  }, [activeThemeId, customThemes, fontSizeOffset, fontFamily]);
 
   return null;
 }

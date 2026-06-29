@@ -9,7 +9,7 @@
 .tree-grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: calc(13px + var(--font-offset, 0px));
 }
 
 .tree-grid thead {
@@ -76,7 +76,9 @@
   border: none;
   cursor: pointer;
   padding: 0 2px;
-  font-size: 10px;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + var(--font-offset, 0px));
   color: var(--text-muted);
   width: 16px;
   flex-shrink: 0;
@@ -92,6 +94,14 @@
   font: inherit;
   padding: 2px 4px;
   border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--surface);
+}
+
+.sort-indicator {
+  margin-left: 4px;
+  font-size: calc(11px + var(--font-offset, 0px));
+  color: var(--accent);
   border-radius: 2px;
   background: var(--surface);
 }

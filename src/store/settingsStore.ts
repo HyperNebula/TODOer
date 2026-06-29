@@ -75,7 +75,7 @@ export const defaultDarkTheme: Theme = {
 export interface SettingsState {
   activeThemeId: string;
   customThemes: Theme[];
-  fontSize: number;
+  fontSizeOffset: number;
   fontFamily: string;
   autoSaveEnabled: boolean;
   autoSaveIntervalMinutes: number;
@@ -83,7 +83,7 @@ export interface SettingsState {
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
   deleteCustomTheme: (id: string) => void;
-  setFontSize: (size: number) => void;
+  setFontSizeOffset: (offset: number) => void;
   setFontFamily: (font: string) => void;
   setAutoSaveEnabled: (enabled: boolean) => void;
   setAutoSaveIntervalMinutes: (minutes: number) => void;
@@ -93,7 +93,7 @@ export interface SettingsState {
 export const useSettingsStore = create<SettingsState>((set) => ({
   activeThemeId: "default-light",
   customThemes: [],
-  fontSize: 14,
+  fontSizeOffset: 0,
   fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
   autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
@@ -112,7 +112,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     customThemes: state.customThemes.filter(t => t.id !== id),
     activeThemeId: state.activeThemeId === id ? "default-light" : state.activeThemeId
   })),
-  setFontSize: (size) => set({ fontSize: size }),
+  setFontSizeOffset: (offset) => set({ fontSizeOffset: offset }),
   setFontFamily: (font) => set({ fontFamily: font }),
   setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
   setAutoSaveIntervalMinutes: (minutes) => set({ autoSaveIntervalMinutes: minutes }),
@@ -123,7 +123,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       const saved = await s.get<{
         activeThemeId?: string;
         customThemes?: Theme[];
-        fontSize?: number;
+        fontSizeOffset?: number;
         fontFamily?: string;
         autoSaveEnabled?: boolean;
         autoSaveIntervalMinutes?: number;
@@ -133,7 +133,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         set({
           ...(saved.activeThemeId && { activeThemeId: saved.activeThemeId }),
           ...(saved.customThemes && { customThemes: saved.customThemes }),
-          ...(saved.fontSize && { fontSize: saved.fontSize }),
+          ...(saved.fontSizeOffset !== undefined && { fontSizeOffset: saved.fontSizeOffset }),
           ...(saved.fontFamily && { fontFamily: saved.fontFamily }),
           ...(saved.autoSaveEnabled !== undefined && { autoSaveEnabled: saved.autoSaveEnabled }),
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
@@ -150,7 +150,7 @@ useSettingsStore.subscribe((state) => {
   const dataToSave = {
     activeThemeId: state.activeThemeId,
     customThemes: state.customThemes,
-    fontSize: state.fontSize,
+    fontSizeOffset: state.fontSizeOffset,
     fontFamily: state.fontFamily,
     autoSaveEnabled: state.autoSaveEnabled,
     autoSaveIntervalMinutes: state.autoSaveIntervalMinutes,

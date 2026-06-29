@@ -12,14 +12,14 @@ export function SettingsDialog({ onClose }: Props) {
   const {
     activeThemeId,
     customThemes,
-    fontSize,
+    fontSizeOffset,
     fontFamily,
     autoSaveEnabled,
     autoSaveIntervalMinutes,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
-    setFontSize,
+    setFontSizeOffset,
     setFontFamily,
     setAutoSaveEnabled,
     setAutoSaveIntervalMinutes
@@ -77,8 +77,8 @@ export function SettingsDialog({ onClose }: Props) {
           {activeTab === "appearance" && (
             <>
               <div className="settings-group">
-                <label>Text Size (px)</label>
-                <input type="number" min="10" max="32" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} />
+                <label>Font Size Offset</label>
+                <input type="number" min="-5" max="10" value={fontSizeOffset} onChange={(e) => setFontSizeOffset(Number(e.target.value))} />
               </div>
               <div className="settings-group">
                 <label>Font Family</label>

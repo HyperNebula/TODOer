@@ -31,13 +31,13 @@
 
 .settings-header h2 { 
   margin: 0; 
-  font-size: 18px; 
+  font-size: calc(18px + var(--font-offset, 0px)); 
 }
 
 .settings-close-btn { 
   background: transparent; 
   border: none; 
-  font-size: 18px; 
+  font-size: calc(18px + var(--font-offset, 0px)); 
   cursor: pointer; 
   color: var(--text-muted); 
 }
@@ -86,7 +86,7 @@
   display: block;
   margin-bottom: 4px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(13px + var(--font-offset, 0px));
 }
 
 .settings-group input[type="text"],
@@ -111,7 +111,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: calc(12px + var(--font-offset, 0px));
   background: var(--bg);
   padding: 4px 8px;
   border-radius: 4px;
