@@ -96,6 +96,11 @@ export async function openFileLink(pathOrUrl: string): Promise<void> {
   await invoke("open_path", { path: pathOrUrl });
 }
 
+export async function openHtmlForPrint(html: string): Promise<void> {
+  const path = await invoke<string>("write_temp_html", { contents: html });
+  await openFileLink(path);
+}
+
 export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }

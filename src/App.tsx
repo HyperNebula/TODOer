@@ -15,6 +15,7 @@ import {
   saveTaskListDialog,
   getLastFilePath,
   readFileFallback,
+  openHtmlForPrint,
 } from "./lib/fileApi";
 import { buildPrintHtml } from "./lib/printHtml";
 import { useTaskStore } from "./store/taskStore";
@@ -81,19 +82,13 @@ function App() {
     await exportCsvDialog(csv);
   }, [rows, store.file.tasks]);
 
-  const handlePrint = useCallback(() => {
+  const handlePrint = useCallback(async () => {
     const html = buildPrintHtml(
       store.file.name,
       rows,
       visibleColumns,
     );
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      win.print();
-    }
+    await openHtmlForPrint(html);
   }, [store.file.name, rows, visibleColumns]);
 
   const handleNewSubTask = useCallback(() => {
