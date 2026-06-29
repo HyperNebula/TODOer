@@ -13,6 +13,9 @@ interface ToolbarProps {
   dirty: boolean;
   theme: "light" | "dark";
   onToggleTheme: () => void;
+  isFocused: boolean;
+  onFocusTask: () => void;
+  onExitFocus: () => void;
 }
 
 export function Toolbar({
@@ -30,6 +33,9 @@ export function Toolbar({
   dirty,
   theme,
   onToggleTheme,
+  isFocused,
+  onFocusTask,
+  onExitFocus,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
@@ -52,6 +58,27 @@ export function Toolbar({
       >
         Delete
       </button>
+      <span className="toolbar-sep" />
+      {!isFocused ? (
+        <button
+          type="button"
+          className="btn"
+          onClick={onFocusTask}
+          disabled={!hasSelection}
+          title="Focus on selected task and sub-tasks"
+        >
+          Focus
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={onExitFocus}
+          title="Exit focus mode and show all tasks"
+        >
+          Exit Focus
+        </button>
+      )}
       <span className="toolbar-sep" />
       <button type="button" className="btn" onClick={onNewList}>
         New List

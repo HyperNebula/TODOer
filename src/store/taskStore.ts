@@ -36,6 +36,7 @@ interface TaskStore {
   selectedTaskId: string | null;
   sort: SortState | null;
   filter: FilterState;
+  focusTaskId: string | null;
 
   getDisplayTasks: () => Task[];
   getFlatRows: () => FlatRow[];
@@ -60,6 +61,7 @@ interface TaskStore {
   toggleSort: (column: ColumnId) => void;
   setFilter: (filter: Partial<FilterState>) => void;
   clearFilter: () => void;
+  setFocusTask: (id: string | null) => void;
 
   setListName: (name: string) => void;
   setVisibleColumns: (columns: ColumnId[]) => void;
@@ -76,10 +78,29 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   selectedTaskId: null,
   sort: null,
   filter: DEFAULT_FILTER,
+  focusTaskId: null,
 
   getDisplayTasks: () => {
-    const { file, sort, filter } = get();
-    let tasks = filterTasksTreeAware(file.tasks, filter);
+    const { file, sort, filter, focusTaskId } = get();
+    let tasks = file.tasks;
+    
+    if (focusTaskId) {
+      const keep = new Set<string>();
+      keep.add(focusTaskId);
+      let added: boolean;
+      do {
+        added = false;
+        for (const t of tasks) {
+          if (t.parentId && keep.has(t.parentId) && !keep.has(t.id)) {
+            keep.add(t.id);
+            added = true;
+          }
+        }
+      } while (added);
+      tasks = tasks.filter(t => keep.has(t.id));
+    }
+
+    tasks = filterTasksTreeAware(tasks, filter);
     tasks = sortTasksWithinTree(tasks, sort);
     return tasks;
   },
@@ -100,6 +121,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       selectedTaskId: null,
       sort: null,
       filter: DEFAULT_FILTER,
+      focusTaskId: null,
     }),
 
   loadList: (path, json) => {
@@ -109,6 +131,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       filePath: path,
       dirty: false,
       selectedTaskId: null,
+      focusTaskId: null,
     });
   },
 
@@ -210,6 +233,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((s) => ({ filter: { ...s.filter, ...partial } })),
 
   clearFilter: () => set({ filter: DEFAULT_FILTER }),
+
+  setFocusTask: (id) => set({ focusTaskId: id }),
 
   setListName: (name) =>
     set((s) => ({

@@ -232,6 +232,9 @@ function App() {
   ]);
 
   const doneCount = store.file.tasks.filter((t) => t.done && !t.archived).length;
+  const focusedTask = store.focusTaskId 
+    ? store.file.tasks.find(t => t.id === store.focusTaskId)
+    : null;
 
   return (
     <>
@@ -261,6 +264,9 @@ function App() {
           dirty={store.dirty}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          isFocused={!!store.focusTaskId}
+          onFocusTask={() => store.setFocusTask(store.selectedTaskId)}
+          onExitFocus={() => store.setFocusTask(null)}
         />
 
         <FilterBar
@@ -294,6 +300,7 @@ function App() {
           dirty={store.dirty}
           filePath={store.filePath}
           listName={store.file.name}
+          focusedTaskTitle={focusedTask?.title}
         />
 
         <NotesEditor

@@ -4,6 +4,7 @@ interface StatusBarProps {
   dirty: boolean;
   filePath: string | null;
   listName: string;
+  focusedTaskTitle?: string;
 }
 
 export function StatusBar({
@@ -12,6 +13,7 @@ export function StatusBar({
   dirty,
   filePath,
   listName,
+  focusedTaskTitle,
 }: StatusBarProps) {
   return (
     <div className="status-bar">
@@ -20,6 +22,11 @@ export function StatusBar({
         {totalTasks} task{totalTasks !== 1 ? "s" : ""}, {doneCount} done
         {dirty ? " — unsaved changes" : ""}
       </span>
+      {focusedTaskTitle && (
+        <span style={{ fontWeight: "bold", color: "var(--accent)" }}>
+          Focusing: {focusedTaskTitle}
+        </span>
+      )}
       {filePath && <span className="status-path">{filePath}</span>}
     </div>
   );
