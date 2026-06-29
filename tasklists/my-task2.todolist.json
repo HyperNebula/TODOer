@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "name": "Untitled",
+  "modifiedAt": "2026-06-29T16:52:51.955Z",
+  "settings": {
+    "visibleColumns": [
+      "done",
+      "title",
+      "createdAt",
+      "dueDate",
+      "priority",
+      "percentDone",
+      "timeEstimateMinutes",
+      "fileLink",
+      "category",
+      "notes"
+    ],
+    "columnWidths": {
+      "done": 40,
+      "title": 220,
+      "createdAt": 110,
+      "dueDate": 110,
+      "priority": 70,
+      "percentDone": 70,
+      "timeEstimateMinutes": 90,
+      "fileLink": 140,
+      "category": 100,
+      "notes": 160
+    }
+  },
+  "tasks": [
+    {
+      "id": "01142329-3b63-4e6a-aca8-cdd1a22a5f1b",
+      "parentId": null,
+      "order": 0,
+      "title": "New Task",
+      "createdAt": "2026-06-29T16:52:51.954Z",
+      "dueDate": null,
+      "priority": 5,
+      "percentDone": 0,
+      "timeEstimateMinutes": null,
+      "fileLink": null,
+      "category": "",
+      "notes": "",
+      "done": false,
+      "completedAt": null,
+      "archived": false,
+      "collapsed": false
+    }
+  ]
+}

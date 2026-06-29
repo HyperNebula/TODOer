@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Untitled",
-  "modifiedAt": "2026-06-29T03:29:43.502Z",
+  "modifiedAt": "2026-06-29T16:52:16.769Z",
   "settings": {
     "visibleColumns": [
       "done",
@@ -62,6 +62,24 @@
       "notes": "",
       "done": true,
       "completedAt": "2026-06-29T03:29:43.502Z",
+      "archived": false,
+      "collapsed": false
+    },
+    {
+      "id": "db8eae69-6425-42e4-839c-24f01a007813",
+      "parentId": null,
+      "order": 1,
+      "title": "New Task",
+      "createdAt": "2026-06-29T16:52:16.769Z",
+      "dueDate": null,
+      "priority": 5,
+      "percentDone": 0,
+      "timeEstimateMinutes": null,
+      "fileLink": null,
+      "category": "",
+      "notes": "",
+      "done": false,
+      "completedAt": null,
       "archived": false,
       "collapsed": false
     }

@@ -11,8 +11,7 @@ interface ToolbarProps {
   onArchive: () => void;
   hasSelection: boolean;
   dirty: boolean;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
+  onOpenSettings: () => void;
   isFocused: boolean;
   onFocusTask: () => void;
   onExitFocus: () => void;
@@ -31,8 +30,7 @@ export function Toolbar({
   onArchive,
   hasSelection,
   dirty,
-  theme,
-  onToggleTheme,
+  onOpenSettings,
   isFocused,
   onFocusTask,
   onExitFocus,
@@ -103,14 +101,17 @@ export function Toolbar({
         Archive Completed
       </button>
       <span style={{ marginLeft: "auto" }} />
-      <button
-        type="button"
-        className="btn"
-        onClick={onToggleTheme}
-        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      >
-        {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", borderLeft: "1px solid var(--border)", paddingLeft: "12px", marginLeft: "4px" }}>
+        <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase" }}>Settings</span>
+        <button
+          type="button"
+          className="btn"
+          onClick={onOpenSettings}
+          title="Open Settings"
+        >
+          ⚙️ Open
+        </button>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ColumnPicker } from "./components/ColumnPicker";
 import { FilterBar } from "./components/FilterBar";
 import { NotesEditor } from "./components/NotesEditor";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { StatusBar } from "./components/StatusBar";
+import { ThemeApplier } from "./components/ThemeApplier";
 import { Toolbar } from "./components/Toolbar";
 import { TreeGrid } from "./components/TreeGrid/TreeGrid";
 import { tasksToCsv } from "./lib/csvExport";
@@ -19,6 +21,7 @@ import {
   openFileLink,
 } from "./lib/fileApi";
 import { generatePdfBlob } from "./lib/printPdf";
+import { useSettingsStore } from "./store/settingsStore";
 import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
 import "./App.css";
@@ -28,19 +31,8 @@ function App() {
   const rows = store.getFlatRows();
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
-  const [theme, setTheme] = useState<"light" | "dark">(
-    () => (localStorage.getItem("theme") as "light" | "dark") ?? "light",
-  );
-
-  // Apply theme to document root whenever it changes
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme === "dark" ? "dark" : "";
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const handleToggleTheme = useCallback(() => {
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
-  }, []);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { autoSaveEnabled, autoSaveIntervalMinutes } = useSettingsStore();
 
   const handleSave = useCallback(async () => {
     const path = await saveTaskListDialog(
@@ -153,6 +145,18 @@ function App() {
   useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
 
   useEffect(() => {
+    if (!autoSaveEnabled || !store.filePath) return;
+    
+    const intervalId = setInterval(() => {
+      if (dirtyRef.current) {
+        handleSaveRef.current();
+      }
+    }, autoSaveIntervalMinutes * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [autoSaveEnabled, autoSaveIntervalMinutes, store.filePath]);
+
+  useEffect(() => {
     let unlisten: (() => void) | undefined;
     const setupClose = async () => {
       try {
@@ -214,6 +218,9 @@ function App() {
         case "archive_completed":
           store.archiveCompleted();
           break;
+        case "open_settings":
+          setIsSettingsOpen(true);
+          break;
       }
     });
     return () => {
@@ -238,6 +245,7 @@ function App() {
 
   return (
     <>
+      <ThemeApplier />
       <div className="app">
         <header className="app-header">
           <h1>ToDoList Manager</h1>
@@ -262,8 +270,7 @@ function App() {
           onArchive={() => store.archiveCompleted()}
           hasSelection={!!store.selectedTaskId}
           dirty={store.dirty}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           isFocused={!!store.focusTaskId}
           onFocusTask={() => store.setFocusTask(store.selectedTaskId)}
           onExitFocus={() => store.setFocusTask(null)}
@@ -308,6 +315,7 @@ function App() {
           onSave={(id, notes) => store.updateTask(id, { notes })}
           onClose={() => setNotesTask(null)}
         />
+        {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
       </div>
     </>
   );

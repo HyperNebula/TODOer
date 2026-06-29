@@ -121,12 +121,21 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         &[&new_task, &new_subtask, &delete_task, &archive],
     )?;
 
-    Menu::with_items(app, &[&file_menu, &task_menu])
+    let open_settings = MenuItem::with_id(app, "open_settings", "Open Settings", true, Some("CmdOrCtrl+,"))?;
+    let settings_menu = Submenu::with_items(
+        app,
+        "Settings",
+        true,
+        &[&open_settings],
+    )?;
+
+    Menu::with_items(app, &[&file_menu, &task_menu, &settings_menu])
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {

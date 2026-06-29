@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "My Tasks",
-  "modifiedAt": "2026-06-28T12:00:00Z",
+  "modifiedAt": "2026-06-29T17:04:56.473Z",
   "settings": {
     "visibleColumns": [
       "done",
@@ -80,6 +80,42 @@
       "notes": "",
       "done": true,
       "completedAt": "2026-06-10T15:00:00Z",
+      "archived": false,
+      "collapsed": false
+    },
+    {
+      "id": "1ff6645c-8cdf-4bd2-8ed2-0869ae194bc3",
+      "parentId": null,
+      "order": 1,
+      "title": "Test 2",
+      "createdAt": "2026-06-29T16:42:16.886Z",
+      "dueDate": null,
+      "priority": 7,
+      "percentDone": 0,
+      "timeEstimateMinutes": null,
+      "fileLink": null,
+      "category": "",
+      "notes": "",
+      "done": false,
+      "completedAt": null,
+      "archived": false,
+      "collapsed": false
+    },
+    {
+      "id": "eaa9442b-7fba-4738-a73c-0c76e05433e4",
+      "parentId": null,
+      "order": 2,
+      "title": "😊 test",
+      "createdAt": "2026-06-29T17:04:40.946Z",
+      "dueDate": null,
+      "priority": 5,
+      "percentDone": 0,
+      "timeEstimateMinutes": null,
+      "fileLink": null,
+      "category": "",
+      "notes": "",
+      "done": false,
+      "completedAt": null,
       "archived": false,
       "collapsed": false
     }
