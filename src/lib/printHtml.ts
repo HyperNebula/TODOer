@@ -71,7 +71,7 @@ export function buildPrintHtml(
   <meta charset="utf-8">
   <title>${escapeHtml(listName)}</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 24px; }
+    body { font-family: system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"; margin: 24px; }
     h1 { font-size: 18px; margin-bottom: 4px; }
     .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
     table { border-collapse: collapse; width: 100%; font-size: 12px; }

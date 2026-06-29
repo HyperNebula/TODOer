@@ -11,7 +11,7 @@
   --row-hover: #f5f7fa;
   --row-selected: #dbeafe;
   --danger: #dc2626;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   font-size: 14px;
   color: var(--text);
   background: var(--bg);
