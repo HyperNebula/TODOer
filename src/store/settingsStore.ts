@@ -1,13 +1,13 @@
 import { create } from "zustand";
-import { Store } from "@tauri-apps/plugin-store";
+import { LazyStore } from "@tauri-apps/plugin-store";
 
 // Use a lazy instance so it doesn't crash in non-Tauri environments during dev/test
-let _store: Store | null = null;
-const getTauriStore = () => {
+let _store: LazyStore | null = null;
+const getTauriStore = (): LazyStore => {
   if (!_store) {
-    _store = new Store("settings.json");
+    _store = new LazyStore("settings.json");
   }
-  return _store;
+  return _store!;
 };
 
 export type ThemeColors = {

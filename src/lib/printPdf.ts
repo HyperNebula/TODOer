@@ -6,12 +6,14 @@ import { formatDate, formatMinutes } from "./format";
 const COLUMN_LABELS: Record<ColumnId, string> = {
   done: "Done",
   title: "Title",
-  priority: "Priority",
-  category: "Category",
-  dueDate: "Due Date",
   createdAt: "Created",
+  dueDate: "Due Date",
+  priority: "Priority",
+  percentDone: "% Done",
+  timeEstimateMinutes: "Estimate",
+  fileLink: "File Link",
+  category: "Category",
   notes: "Notes",
-  timeSpent: "Time Spent",
 };
 
 function cellValue(row: FlatRow, col: ColumnId): string {
@@ -20,13 +22,14 @@ function cellValue(row: FlatRow, col: ColumnId): string {
     const indent = "  ".repeat(row.depth);
     return indent + row.task.title;
   }
-  if (col === "priority") return row.task.priority?.toString() || "";
-  if (col === "category") return row.task.category || "";
-  if (col === "dueDate") return row.task.dueDate ? formatDate(row.task.dueDate) : "";
   if (col === "createdAt") return formatDate(row.task.createdAt);
+  if (col === "dueDate") return row.task.dueDate ? formatDate(row.task.dueDate) : "";
+  if (col === "priority") return row.task.priority?.toString() || "";
+  if (col === "percentDone") return row.task.percentDone.toString() + "%";
+  if (col === "timeEstimateMinutes") return row.task.timeEstimateMinutes ? formatMinutes(row.task.timeEstimateMinutes) : "";
+  if (col === "fileLink") return row.task.fileLink || "";
+  if (col === "category") return row.task.category || "";
   if (col === "notes") return row.task.notes || "";
-  if (col === "timeSpent")
-    return row.task.timeSpent ? formatMinutes(row.task.timeSpent) : "";
   return "";
 }
 
