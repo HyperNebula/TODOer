@@ -11,6 +11,8 @@ interface ToolbarProps {
   onArchive: () => void;
   hasSelection: boolean;
   dirty: boolean;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
 export function Toolbar({
@@ -26,6 +28,8 @@ export function Toolbar({
   onArchive,
   hasSelection,
   dirty,
+  theme,
+  onToggleTheme,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
@@ -70,6 +74,15 @@ export function Toolbar({
       </button>
       <button type="button" className="btn" onClick={onArchive}>
         Archive Completed
+      </button>
+      <span style={{ marginLeft: "auto" }} />
+      <button
+        type="button"
+        className="btn"
+        onClick={onToggleTheme}
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
       </button>
     </div>
   );

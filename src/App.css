@@ -17,6 +17,22 @@
   background: var(--bg);
 }
 
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --border: #2e3244;
+  --border-light: #252838;
+  --header-bg: #1e2130;
+  --text: #e8eaf0;
+  --text-muted: #8b91a8;
+  --accent: #4a8cff;
+  --accent-hover: #6ba3ff;
+  --row-hover: #232635;
+  --row-selected: #1e3a6e;
+  --danger: #f87171;
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }

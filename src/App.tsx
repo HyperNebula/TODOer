@@ -24,6 +24,19 @@ function App() {
   const rows = store.getFlatRows();
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">(
+    () => (localStorage.getItem("theme") as "light" | "dark") ?? "light",
+  );
+
+  // Apply theme to document root whenever it changes
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme === "dark" ? "dark" : "";
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
+  }, []);
 
   const handleSave = useCallback(async () => {
     const path = await saveTaskListDialog(
@@ -228,6 +241,8 @@ function App() {
         onArchive={() => store.archiveCompleted()}
         hasSelection={!!store.selectedTaskId}
         dirty={store.dirty}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       <FilterBar
