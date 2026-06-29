@@ -15,9 +15,10 @@ import {
   saveTaskListDialog,
   getLastFilePath,
   readFileFallback,
-  openHtmlForPrint,
+  savePdfDialog,
+  openFileLink,
 } from "./lib/fileApi";
-import { buildPrintHtml } from "./lib/printHtml";
+import { generatePdfBlob } from "./lib/printPdf";
 import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
 import "./App.css";
@@ -83,12 +84,15 @@ function App() {
   }, [rows, store.file.tasks]);
 
   const handlePrint = useCallback(async () => {
-    const html = buildPrintHtml(
+    const pdfBlob = generatePdfBlob(
       store.file.name,
       rows,
       visibleColumns,
     );
-    await openHtmlForPrint(html);
+    const path = await savePdfDialog(pdfBlob, store.file.name);
+    if (path) {
+      await openFileLink(path);
+    }
   }, [store.file.name, rows, visibleColumns]);
 
   const handleNewSubTask = useCallback(() => {
