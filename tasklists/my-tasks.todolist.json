@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "name": "Untitled",
+  "modifiedAt": "2026-06-29T03:29:43.502Z",
+  "settings": {
+    "visibleColumns": [
+      "done",
+      "title",
+      "createdAt",
+      "dueDate",
+      "priority",
+      "percentDone",
+      "timeEstimateMinutes",
+      "fileLink",
+      "category",
+      "notes"
+    ],
+    "columnWidths": {
+      "done": 40,
+      "title": 220,
+      "createdAt": 110,
+      "dueDate": 110,
+      "priority": 70,
+      "percentDone": 70,
+      "timeEstimateMinutes": 90,
+      "fileLink": 140,
+      "category": 100,
+      "notes": 160
+    }
+  },
+  "tasks": [
+    {
+      "id": "b3c529fb-dced-4cac-9a6d-edbef969dcc6",
+      "parentId": null,
+      "order": 0,
+      "title": "Cool Task",
+      "createdAt": "2026-06-29T03:19:54.711Z",
+      "dueDate": "2026-07-01",
+      "priority": 1,
+      "percentDone": 0,
+      "timeEstimateMinutes": null,
+      "fileLink": null,
+      "category": "",
+      "notes": "",
+      "done": false,
+      "completedAt": null,
+      "archived": false,
+      "collapsed": false
+    },
+    {
+      "id": "b1cd3b60-2ebc-40f2-9420-7d66c15a5e03",
+      "parentId": "b3c529fb-dced-4cac-9a6d-edbef969dcc6",
+      "order": 0,
+      "title": "Subtask",
+      "createdAt": "2026-06-29T03:20:27.031Z",
+      "dueDate": null,
+      "priority": 5,
+      "percentDone": 100,
+      "timeEstimateMinutes": null,
+      "fileLink": null,
+      "category": "",
+      "notes": "",
+      "done": true,
+      "completedAt": "2026-06-29T03:29:43.502Z",
+      "archived": false,
+      "collapsed": false
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+import { create } from "zustand";
+import { parseTaskListFile, serializeTaskListFile } from "../lib/schema";
+import {
+  filterTasksTreeAware,
+  sortTasksWithinTree,
+} from "../lib/sortFilter";
+import {
+  addSubTask,
+  addTask,
+  archiveCompleted,
+  buildTree,
+  deleteTask,
+  flattenVisible,
+  toggleCollapsed,
+  toggleDone,
+  updateTask,
+} from "../lib/treeUtils";
+import type {
+  ColumnId,
+  FilterState,
+  FlatRow,
+  SortState,
+  Task,
+  TaskListFile,
+} from "../types/task";
+import {
+  DEFAULT_FILTER,
+  DEFAULT_VISIBLE_COLUMNS,
+  createEmptyTaskList,
+} from "../types/task";
+
+interface TaskStore {
+  file: TaskListFile;
+  filePath: string | null;
+  dirty: boolean;
+  selectedTaskId: string | null;
+  sort: SortState | null;
+  filter: FilterState;
+
+  getDisplayTasks: () => Task[];
+  getFlatRows: () => FlatRow[];
+  getVisibleColumns: () => ColumnId[];
+
+  newList: () => void;
+  loadList: (path: string, json: string) => void;
+  markSaved: (path: string) => void;
+  getSerialized: () => string;
+
+  setSelectedTaskId: (id: string | null) => void;
+  addTask: (afterTaskId?: string | null) => string;
+  addSubTask: (parentId: string) => string;
+  deleteSelectedTask: () => void;
+  toggleSelectedDone: () => void;
+  toggleDone: (taskId: string) => void;
+  toggleCollapsed: (taskId: string) => void;
+  updateTask: (taskId: string, updates: Partial<Task>) => void;
+  archiveCompleted: () => void;
+
+  setSort: (sort: SortState | null) => void;
+  toggleSort: (column: ColumnId) => void;
+  setFilter: (filter: Partial<FilterState>) => void;
+  clearFilter: () => void;
+
+  setListName: (name: string) => void;
+  setVisibleColumns: (columns: ColumnId[]) => void;
+}
+
+function touch(file: TaskListFile): TaskListFile {
+  return { ...file, modifiedAt: new Date().toISOString() };
+}
+
+export const useTaskStore = create<TaskStore>((set, get) => ({
+  file: createEmptyTaskList(),
+  filePath: null,
+  dirty: false,
+  selectedTaskId: null,
+  sort: null,
+  filter: DEFAULT_FILTER,
+
+  getDisplayTasks: () => {
+    const { file, sort, filter } = get();
+    let tasks = filterTasksTreeAware(file.tasks, filter);
+    tasks = sortTasksWithinTree(tasks, sort);
+    return tasks;
+  },
+
+  getFlatRows: () => {
+    const tasks = get().getDisplayTasks();
+    return flattenVisible(buildTree(tasks));
+  },
+
+  getVisibleColumns: () =>
+    get().file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS,
+
+  newList: () =>
+    set({
+      file: createEmptyTaskList(),
+      filePath: null,
+      dirty: false,
+      selectedTaskId: null,
+      sort: null,
+      filter: DEFAULT_FILTER,
+    }),
+
+  loadList: (path, json) => {
+    const file = parseTaskListFile(json);
+    set({
+      file,
+      filePath: path,
+      dirty: false,
+      selectedTaskId: null,
+    });
+  },
+
+  markSaved: (path) =>
+    set((s) => ({
+      filePath: path,
+      dirty: false,
+      file: { ...s.file, modifiedAt: new Date().toISOString() },
+    })),
+
+  getSerialized: () => serializeTaskListFile(get().file),
+
+  setSelectedTaskId: (id) => set({ selectedTaskId: id }),
+
+  addTask: (afterTaskId) => {
+    const selected = afterTaskId ?? get().selectedTaskId;
+    const { tasks, newTaskId } = addTask(get().file.tasks, selected);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+      selectedTaskId: newTaskId,
+    }));
+    return newTaskId;
+  },
+
+  addSubTask: (parentId) => {
+    const { tasks, newTaskId } = addSubTask(get().file.tasks, parentId);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+      selectedTaskId: newTaskId,
+    }));
+    return newTaskId;
+  },
+
+  deleteSelectedTask: () => {
+    const id = get().selectedTaskId;
+    if (!id) return;
+    const tasks = deleteTask(get().file.tasks, id, true);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+      selectedTaskId: null,
+    }));
+  },
+
+  toggleSelectedDone: () => {
+    const id = get().selectedTaskId;
+    if (!id) return;
+    get().toggleDone(id);
+  },
+
+  toggleDone: (taskId) => {
+    const tasks = toggleDone(get().file.tasks, taskId);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+    }));
+  },
+
+  toggleCollapsed: (taskId) => {
+    const tasks = toggleCollapsed(get().file.tasks, taskId);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+    }));
+  },
+
+  updateTask: (taskId, updates) => {
+    const tasks = updateTask(get().file.tasks, taskId, updates);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+    }));
+  },
+
+  archiveCompleted: () => {
+    const tasks = archiveCompleted(get().file.tasks);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+    }));
+  },
+
+  setSort: (sort) => set({ sort }),
+
+  toggleSort: (column) => {
+    const current = get().sort;
+    if (!current || current.column !== column) {
+      set({ sort: { column, direction: "asc" } });
+    } else if (current.direction === "asc") {
+      set({ sort: { column, direction: "desc" } });
+    } else {
+      set({ sort: null });
+    }
+  },
+
+  setFilter: (partial) =>
+    set((s) => ({ filter: { ...s.filter, ...partial } })),
+
+  clearFilter: () => set({ filter: DEFAULT_FILTER }),
+
+  setListName: (name) =>
+    set((s) => ({
+      file: touch({ ...s.file, name }),
+      dirty: true,
+    })),
+
+  setVisibleColumns: (columns) =>
+    set((s) => ({
+      file: touch({
+        ...s.file,
+        settings: {
+          visibleColumns: columns,
+          columnWidths: s.file.settings?.columnWidths ?? {},
+        },
+      }),
+      dirty: true,
+    })),
+}));

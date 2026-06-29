@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "name": "My Tasks",
+  "modifiedAt": "2026-06-28T12:00:00Z",
+  "settings": {
+    "visibleColumns": [
+      "done",
+      "title",
+      "createdAt",
+      "dueDate",
+      "priority",
+      "percentDone",
+      "timeEstimateMinutes",
+      "fileLink",
+      "category",
+      "notes"
+    ],
+    "columnWidths": {
+      "done": 40,
+      "title": 220,
+      "createdAt": 110,
+      "dueDate": 110,
+      "priority": 70,
+      "percentDone": 70,
+      "timeEstimateMinutes": 90,
+      "fileLink": 140,
+      "category": 100,
+      "notes": 160
+    }
+  },
+  "tasks": [
+    {
+      "id": "a1",
+      "parentId": null,
+      "order": 0,
+      "title": "Plan vacation",
+      "createdAt": "2026-06-01T09:00:00Z",
+      "dueDate": "2026-07-15",
+      "priority": 5,
+      "percentDone": 20,
+      "timeEstimateMinutes": 120,
+      "fileLink": null,
+      "category": "Personal",
+      "notes": "Research destinations and book flights.",
+      "done": false,
+      "completedAt": null,
+      "archived": false,
+      "collapsed": false
+    },
+    {
+      "id": "a2",
+      "parentId": "a1",
+      "order": 0,
+      "title": "Book hotel",
+      "createdAt": "2026-06-02T10:00:00Z",
+      "dueDate": "2026-06-20",
+      "priority": 6,
+      "percentDone": 0,
+      "timeEstimateMinutes": 30,
+      "fileLink": null,
+      "category": "Personal",
+      "notes": "",
+      "done": false,
+      "completedAt": null,
+      "archived": false,
+      "collapsed": false
+    },
+    {
+      "id": "a3",
+      "parentId": "a1",
+      "order": 1,
+      "title": "Pack bags",
+      "createdAt": "2026-06-03T11:00:00Z",
+      "dueDate": "2026-07-14",
+      "priority": 3,
+      "percentDone": 100,
+      "timeEstimateMinutes": 60,
+      "fileLink": null,
+      "category": "Personal",
+      "notes": "",
+      "done": true,
+      "completedAt": "2026-06-10T15:00:00Z",
+      "archived": false,
+      "collapsed": false
+    }
+  ]
+}

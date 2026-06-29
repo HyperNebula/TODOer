@@ -1,0 +1,109 @@
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::Emitter;
+use std::fs;
+use std::path::Path;
+
+fn atomic_write(path: &Path, contents: &str) -> Result<(), String> {
+    let parent = path.parent().ok_or("Invalid path")?;
+    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    let temp_path = path.with_extension("tmp");
+    fs::write(&temp_path, contents).map_err(|e| e.to_string())?;
+    fs::rename(&temp_path, path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn read_tasklist_file(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn write_tasklist_file(path: String, contents: String) -> Result<(), String> {
+    atomic_write(Path::new(&path), &contents)
+}
+
+#[tauri::command]
+fn write_csv_file(path: String, contents: String) -> Result<(), String> {
+    atomic_write(Path::new(&path), &contents)
+}
+
+#[tauri::command]
+fn open_path(path: String) -> Result<(), String> {
+    tauri_plugin_opener::open_path(&path, None::<&str>).map_err(|e| e.to_string())
+}
+
+fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
+    let new_list = MenuItem::with_id(app, "new_list", "New List", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open…", true, Some("CmdOrCtrl+O"))?;
+    let save = MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?;
+    let save_as = MenuItem::with_id(app, "save_as", "Save As…", true, None::<&str>)?;
+    let export_csv = MenuItem::with_id(app, "export_csv", "Export CSV…", true, None::<&str>)?;
+    let print = MenuItem::with_id(app, "print", "Print…", true, None::<&str>)?;
+
+    let file_menu = Submenu::with_items(
+        app,
+        "File",
+        true,
+        &[
+            &new_list,
+            &open,
+            &PredefinedMenuItem::separator(app)?,
+            &save,
+            &save_as,
+            &PredefinedMenuItem::separator(app)?,
+            &export_csv,
+            &print,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::quit(app, None)?,
+        ],
+    )?;
+
+    let new_task = MenuItem::with_id(app, "new_task", "New Task", true, Some("CmdOrCtrl+N"))?;
+    let new_subtask = MenuItem::with_id(
+        app,
+        "new_subtask",
+        "New Sub-task",
+        true,
+        Some("CmdOrCtrl+Shift+N"),
+    )?;
+    let delete_task = MenuItem::with_id(app, "delete_task", "Delete Task", true, None::<&str>)?;
+    let archive = MenuItem::with_id(
+        app,
+        "archive_completed",
+        "Archive Completed",
+        true,
+        None::<&str>,
+    )?;
+
+    let task_menu = Submenu::with_items(
+        app,
+        "Task",
+        true,
+        &[&new_task, &new_subtask, &delete_task, &archive],
+    )?;
+
+    Menu::with_items(app, &[&file_menu, &task_menu])
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            let menu = build_menu(app)?;
+            app.set_menu(menu)?;
+            Ok(())
+        })
+        .on_menu_event(|app, event| {
+            let _ = app.emit("menu-action", event.id().as_ref());
+        })
+        .invoke_handler(tauri::generate_handler![
+            read_tasklist_file,
+            write_tasklist_file,
+            write_csv_file,
+            open_path
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

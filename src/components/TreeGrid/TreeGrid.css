@@ -1,0 +1,141 @@
+.tree-grid-wrap {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.tree-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tree-grid thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.tree-grid th {
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tree-grid th.col-done {
+  cursor: default;
+  width: 36px;
+  text-align: center;
+}
+
+.tree-grid td {
+  border-bottom: 1px solid var(--border-light);
+  padding: 4px 8px;
+  vertical-align: middle;
+}
+
+.tree-grid tr:hover td {
+  background: var(--row-hover);
+}
+
+.tree-grid tr.row-selected td {
+  background: var(--row-selected);
+}
+
+.tree-grid tr.row-archived td {
+  opacity: 0.55;
+}
+
+.tree-grid td.col-done {
+  text-align: center;
+  width: 36px;
+}
+
+.cell-done .title-text,
+.cell-done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.title-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.fold-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.fold-spacer {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.inline-edit {
+  width: 100%;
+  font: inherit;
+  padding: 2px 4px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--surface);
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px !important;
+}
+
+.file-link-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.file-link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.link-open-btn,
+.notes-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.link-open-btn:hover,
+.notes-btn:hover {
+  background: var(--row-hover);
+}
+
+.notes-btn {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--text);
+}
