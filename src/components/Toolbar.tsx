@@ -102,14 +102,13 @@ export function Toolbar({
       </button>
       <span style={{ marginLeft: "auto" }} />
       <div style={{ display: "flex", alignItems: "center", gap: "8px", borderLeft: "1px solid var(--border)", paddingLeft: "12px", marginLeft: "4px" }}>
-        <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase" }}>Settings</span>
         <button
           type="button"
           className="btn"
           onClick={onOpenSettings}
           title="Open Settings"
         >
-          ⚙️ Open
+          Settings
         </button>
       </div>
     </div>

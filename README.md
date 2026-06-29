@@ -69,11 +69,54 @@ Output: `src-tauri/target/release/bundle/macos/ToDoList Manager.app`
 
 ### GitHub Actions
 
-Push to GitHub and run the workflow in [`.github/workflows/macos-build.yml`](.github/workflows/macos-build.yml), or trigger it manually. Artifacts include the `.app` bundle.
+Push to GitHub and run the workflow in [`.github/workflows/macos-build.yml`](.github/workflows/macos-build.yml), or trigger it manually. The workflow outputs a `.dmg` disk image.
+
+**Installing the GitHub Actions Build on macOS:**
+Because the app is not code-signed with a paid Apple Developer account, macOS Gatekeeper will flag it as "damaged" when you try to open it. To bypass this:
+
+1. Download and open the `.dmg` from the GitHub Actions run.
+2. Drag `ToDoList Manager.app` into your Applications folder.
+3. Open Terminal and run the following command to remove the macOS quarantine flag:
+   ```bash
+   xattr -cr "/Applications/ToDoList Manager.app"
+   ```
+4. You can now open the app normally.
 
 ### Code signing (optional)
 
-For distribution outside your Mac, sign and notarize with an Apple Developer ID. See [Tauri macOS distribution](https://tauri.app/distribute/sign/macos/).
+For distribution outside your Mac without requiring the terminal workaround above, sign and notarize with an Apple Developer ID. See [Tauri macOS distribution](https://tauri.app/distribute/sign/macos/).
+
+## Building for Windows
+
+Windows installers must be built on Windows (local machine or CI).
+
+### Local (Windows)
+
+```powershell
+npm install
+npm run tauri:build
+```
+
+Output installers can be found in:
+- `src-tauri/target/release/bundle/nsis/` (for `.exe`)
+- `src-tauri/target/release/bundle/msi/` (for `.msi`)
+
+### GitHub Actions
+
+Push to GitHub and run the workflow in [`.github/workflows/windows-build.yml`](.github/workflows/windows-build.yml), or trigger it manually. The workflow outputs both `.exe` and `.msi` installers.
+
+**Installing the GitHub Actions Build on Windows:**
+Because the app is not code-signed with a valid Windows certificate, Windows SmartScreen will flag it as an unrecognized app. To bypass this:
+
+1. Download and extract the Windows bundle from the GitHub Actions run.
+2. Double-click the `.exe` (recommended) or `.msi` installer.
+3. If the "Windows protected your PC" blue dialog appears, click **"More info"**.
+4. Click the **"Run anyway"** button that appears.
+5. Follow the standard installation prompts to install the app.
+
+### Code signing (optional)
+
+To prevent the SmartScreen warning for other users, sign the Windows application. See [Tauri Windows distribution](https://tauri.app/distribute/sign/windows/).
 
 ## Keyboard shortcuts
 

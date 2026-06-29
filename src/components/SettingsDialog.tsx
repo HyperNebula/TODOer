@@ -82,7 +82,14 @@ export function SettingsDialog({ onClose }: Props) {
               </div>
               <div className="settings-group">
                 <label>Font Family</label>
-                <input type="text" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} />
+                <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+                  <option value='system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"'>System Default</option>
+                  <option value='Arial, sans-serif'>Arial</option>
+                  <option value='"Times New Roman", serif'>Times New Roman</option>
+                  <option value='"Courier New", monospace'>Courier New</option>
+                  <option value='Verdana, sans-serif'>Verdana</option>
+                  <option value='Georgia, serif'>Georgia</option>
+                </select>
               </div>
             </>
           )}

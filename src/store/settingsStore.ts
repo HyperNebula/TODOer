@@ -95,7 +95,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   customThemes: [],
   fontSize: 14,
   fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
-  autoSaveEnabled: false,
+  autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
 
   setActiveThemeId: (id) => set({ activeThemeId: id }),

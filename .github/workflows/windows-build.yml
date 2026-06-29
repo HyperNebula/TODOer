@@ -1,4 +1,4 @@
-name: macOS Build
+name: Windows Build
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
+  build-windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -29,8 +29,10 @@ jobs:
       - name: Build Tauri app
         run: npm run tauri:build
 
-      - name: Upload macOS bundle
+      - name: Upload Windows bundle
         uses: actions/upload-artifact@v4
         with:
-          name: ToDoList-Manager-macos
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          name: ToDoList-Manager-windows
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
