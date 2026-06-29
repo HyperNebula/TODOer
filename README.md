@@ -67,15 +67,15 @@ npm run tauri:build
 
 Output: `src-tauri/target/release/bundle/macos/ToDoList Manager.app`
 
-### GitHub Actions
+### GitHub Releases
 
-Push to GitHub and run the workflow in [`.github/workflows/macos-build.yml`](.github/workflows/macos-build.yml), or trigger it manually. The workflow outputs a `.dmg` disk image.
+On every push to the `main` branch, the [Release Workflow](.github/workflows/release.yml) automatically builds the app and publishes a new version to the GitHub Releases page.
 
-**Installing the GitHub Actions Build on macOS:**
+**Installing the App on macOS:**
 Because the app is not code-signed with a paid Apple Developer account, macOS Gatekeeper will flag it as "damaged" when you try to open it. To bypass this:
 
-1. Download and open the `.dmg` from the GitHub Actions run.
-2. Drag `ToDoList Manager.app` into your Applications folder.
+1. Download the `.dmg` from the GitHub Releases page.
+2. Open the `.dmg` and drag `ToDoList Manager.app` into your Applications folder.
 3. Open Terminal and run the following command to remove the macOS quarantine flag:
    ```bash
    xattr -cr "/Applications/ToDoList Manager.app"
@@ -101,15 +101,15 @@ Output installers can be found in:
 - `src-tauri/target/release/bundle/nsis/` (for `.exe`)
 - `src-tauri/target/release/bundle/msi/` (for `.msi`)
 
-### GitHub Actions
+### GitHub Releases
 
-Push to GitHub and run the workflow in [`.github/workflows/windows-build.yml`](.github/workflows/windows-build.yml), or trigger it manually. The workflow outputs both `.exe` and `.msi` installers.
+On every push to the `main` branch, the [Release Workflow](.github/workflows/release.yml) automatically builds the app and publishes a new version to the GitHub Releases page.
 
-**Installing the GitHub Actions Build on Windows:**
+**Installing the App on Windows:**
 Because the app is not code-signed with a valid Windows certificate, Windows SmartScreen will flag it as an unrecognized app. To bypass this:
 
-1. Download and extract the Windows bundle from the GitHub Actions run.
-2. Double-click the `.exe` (recommended) or `.msi` installer.
+1. Download the `.exe` (recommended) or `.msi` installer from the GitHub Releases page.
+2. Double-click the installer.
 3. If the "Windows protected your PC" blue dialog appears, click **"More info"**.
 4. Click the **"Run anyway"** button that appears.
 5. Follow the standard installation prompts to install the app.
