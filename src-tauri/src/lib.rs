@@ -1,5 +1,5 @@
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use std::fs;
 use std::path::Path;
 
@@ -30,6 +30,29 @@ fn write_csv_file(path: String, contents: String) -> Result<(), String> {
 #[tauri::command]
 fn open_path(path: String) -> Result<(), String> {
     tauri_plugin_opener::open_path(&path, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_tasklists_dir(app: tauri::AppHandle) -> Result<String, String> {
+    let docs = app.path().document_dir().map_err(|e| e.to_string())?;
+    let tasklists = docs.join("TaskLists");
+    let _ = fs::create_dir_all(&tasklists);
+    Ok(tasklists.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn get_last_file_path(app: tauri::AppHandle) -> Result<String, String> {
+    let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let last_file = data_dir.join("last_file.txt");
+    fs::read_to_string(last_file).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_last_file_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    let last_file = data_dir.join("last_file.txt");
+    fs::write(last_file, path).map_err(|e| e.to_string())
 }
 
 fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
@@ -102,7 +125,10 @@ pub fn run() {
             read_tasklist_file,
             write_tasklist_file,
             write_csv_file,
-            open_path
+            open_path,
+            get_tasklists_dir,
+            get_last_file_path,
+            set_last_file_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

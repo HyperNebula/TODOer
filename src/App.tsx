@@ -13,6 +13,8 @@ import {
   openTaskListDialog,
   saveTaskListAsDialog,
   saveTaskListDialog,
+  getLastFilePath,
+  readFileFallback,
 } from "./lib/fileApi";
 import { buildPrintHtml } from "./lib/printHtml";
 import { useTaskStore } from "./store/taskStore";
@@ -99,6 +101,23 @@ function App() {
       store.addSubTask(store.selectedTaskId);
     }
   }, [store]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadLast = async () => {
+      const lastPath = await getLastFilePath();
+      if (lastPath) {
+        try {
+          const contents = await readFileFallback(lastPath);
+          if (mounted) store.loadList(lastPath, contents);
+        } catch (err) {
+          console.error("Failed to load last file:", err);
+        }
+      }
+    };
+    loadLast();
+    return () => { mounted = false; };
+  }, []); // Run once on mount
 
   useEffect(() => {
     const mod = navigator.platform.toLowerCase().includes("mac")

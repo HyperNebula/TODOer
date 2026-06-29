@@ -11,6 +11,30 @@ const CSV_FILTER = {
   extensions: ["csv"],
 };
 
+export async function getTasklistsDir(): Promise<string> {
+  try {
+    return await invoke<string>("get_tasklists_dir");
+  } catch {
+    return "tasklists"; // fallback
+  }
+}
+
+export async function getLastFilePath(): Promise<string | null> {
+  try {
+    return await invoke<string>("get_last_file_path");
+  } catch {
+    return null;
+  }
+}
+
+export async function setLastFilePath(path: string): Promise<void> {
+  try {
+    await invoke("set_last_file_path", { path });
+  } catch {
+    // ignore
+  }
+}
+
 export async function openTaskListDialog(): Promise<{
   path: string;
   contents: string;
@@ -21,6 +45,7 @@ export async function openTaskListDialog(): Promise<{
   });
   if (!path || typeof path !== "string") return null;
   const contents = await invoke<string>("read_tasklist_file", { path });
+  await setLastFilePath(path);
   return { path, contents };
 }
 
@@ -30,26 +55,30 @@ export async function saveTaskListDialog(
 ): Promise<string | null> {
   let path = currentPath;
   if (!path) {
+    const dir = await getTasklistsDir();
     const chosen = await save({
       filters: [TASKLIST_FILTER],
-      defaultPath: "tasklists/my-tasks.todolist.json",
+      defaultPath: `${dir}/my-tasks.todolist.json`,
     });
     if (!chosen) return null;
     path = chosen;
   }
   await invoke("write_tasklist_file", { path, contents });
+  await setLastFilePath(path);
   return path;
 }
 
 export async function saveTaskListAsDialog(
   contents: string,
 ): Promise<string | null> {
+  const dir = await getTasklistsDir();
   const path = await save({
     filters: [TASKLIST_FILTER],
-    defaultPath: "tasklists/my-tasks.todolist.json",
+    defaultPath: `${dir}/my-tasks.todolist.json`,
   });
   if (!path) return null;
   await invoke("write_tasklist_file", { path, contents });
+  await setLastFilePath(path);
   return path;
 }
 
