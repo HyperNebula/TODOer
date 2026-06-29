@@ -15,10 +15,8 @@ import {
   saveTaskListDialog,
   getLastFilePath,
   readFileFallback,
-  savePdfDialog,
-  openFileLink,
 } from "./lib/fileApi";
-import { generatePdfBlob } from "./lib/printPdf";
+import { buildPrintHtml } from "./lib/printHtml";
 import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
 import "./App.css";
@@ -83,15 +81,38 @@ function App() {
     await exportCsvDialog(csv);
   }, [rows, store.file.tasks]);
 
-  const handlePrint = useCallback(async () => {
-    const pdfBlob = generatePdfBlob(
+  const handlePrint = useCallback(() => {
+    const html = buildPrintHtml(
       store.file.name,
       rows,
       visibleColumns,
     );
-    const path = await savePdfDialog(pdfBlob, store.file.name);
-    if (path) {
-      await openFileLink(path);
+    
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+      
+      // Short timeout to ensure WebView2 parses the HTML before printing
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // Cleanup after a delay to ensure print dialog opened
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 5000);
+      }, 200);
     }
   }, [store.file.name, rows, visibleColumns]);
 

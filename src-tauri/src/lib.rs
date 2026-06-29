@@ -23,16 +23,6 @@ fn write_tasklist_file(path: String, contents: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn write_binary_file(path: String, contents: Vec<u8>) -> Result<(), String> {
-    let parent = Path::new(&path).parent().ok_or("Invalid path")?;
-    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    let temp_path = Path::new(&path).with_extension("tmp");
-    fs::write(&temp_path, &contents).map_err(|e| e.to_string())?;
-    fs::rename(&temp_path, path).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
 fn write_csv_file(path: String, contents: String) -> Result<(), String> {
     atomic_write(Path::new(&path), &contents)
 }
@@ -147,8 +137,7 @@ pub fn run() {
             get_tasklists_dir,
             get_last_file_path,
             set_last_file_path,
-            write_temp_html,
-            write_binary_file
+            write_temp_html
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

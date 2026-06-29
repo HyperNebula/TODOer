@@ -11,11 +11,6 @@ const CSV_FILTER = {
   extensions: ["csv"],
 };
 
-const PDF_FILTER = {
-  name: "PDF",
-  extensions: ["pdf"],
-};
-
 export async function getTasklistsDir(): Promise<string> {
   try {
     return await invoke<string>("get_tasklists_dir");
@@ -104,20 +99,6 @@ export async function openFileLink(pathOrUrl: string): Promise<void> {
 export async function openHtmlForPrint(html: string): Promise<void> {
   const path = await invoke<string>("write_temp_html", { contents: html });
   await openFileLink(path);
-}
-
-export async function savePdfDialog(
-  pdfData: Uint8Array,
-  defaultName: string,
-): Promise<string | null> {
-  const dir = await getTasklistsDir();
-  const path = await save({
-    filters: [PDF_FILTER],
-    defaultPath: `${dir}/${defaultName}.pdf`,
-  });
-  if (!path) return null;
-  await invoke("write_binary_file", { path, contents: Array.from(pdfData) });
-  return path;
 }
 
 export function isTauri(): boolean {
