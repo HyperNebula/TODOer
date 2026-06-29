@@ -116,6 +116,12 @@ function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   if (filter.dueAfter && task.dueDate && task.dueDate < filter.dueAfter) {
     return false;
   }
+  if (filter.createdBefore && task.createdAt > filter.createdBefore) {
+    return false;
+  }
+  if (filter.createdAfter && task.createdAt < filter.createdAfter) {
+    return false;
+  }
   if (!filter.showArchived && task.archived) return false;
 
   return true;
@@ -133,6 +139,8 @@ export function filterTasksTreeAware(
     filter.titleContains !== "" ||
     filter.dueBefore !== null ||
     filter.dueAfter !== null ||
+    filter.createdBefore !== null ||
+    filter.createdAfter !== null ||
     filter.showArchived;
 
   if (!hasActiveFilter) {
@@ -170,6 +178,8 @@ export function isFilterActive(filter: FilterState): boolean {
     filter.done !== "all" ||
     filter.titleContains !== "" ||
     filter.dueBefore !== null ||
-    filter.dueAfter !== null
+    filter.dueAfter !== null ||
+    filter.createdBefore !== null ||
+    filter.createdAfter !== null
   );
 }

@@ -73,6 +73,8 @@ export interface FilterState {
   titleContains: string;
   dueBefore: string | null;
   dueAfter: string | null;
+  createdBefore: string | null;
+  createdAfter: string | null;
   showArchived: boolean;
 }
 
@@ -99,6 +101,8 @@ export const DEFAULT_FILTER: FilterState = {
   titleContains: "",
   dueBefore: null,
   dueAfter: null,
+  createdBefore: null,
+  createdAfter: null,
   showArchived: false,
 };
 

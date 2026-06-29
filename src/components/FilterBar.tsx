@@ -103,6 +103,28 @@ export function FilterBar({ filter, onChange, onClear }: FilterBarProps) {
         />
       </label>
 
+      <label>
+        Created after
+        <input
+          type="date"
+          value={filter.createdAfter ?? ""}
+          onChange={(e) =>
+            onChange({ createdAfter: e.target.value || null })
+          }
+        />
+      </label>
+
+      <label>
+        Created before
+        <input
+          type="date"
+          value={filter.createdBefore ?? ""}
+          onChange={(e) =>
+            onChange({ createdBefore: e.target.value || null })
+          }
+        />
+      </label>
+
       <label className="checkbox-label">
         <input
           type="checkbox"
