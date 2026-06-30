@@ -12,6 +12,7 @@ import { TreeGrid } from "./components/TreeGrid/TreeGrid";
 import { tasksToCsv } from "./lib/csvExport";
 import {
   exportCsvDialog,
+  importCsvDialog,
   openTaskListDialog,
   saveTaskListAsDialog,
   saveTaskListDialog,
@@ -74,6 +75,20 @@ function App() {
     const csv = tasksToCsv(rows, store.file.tasks);
     await exportCsvDialog(csv);
   }, [rows, store.file.tasks]);
+
+  const handleImportCsv = useCallback(async () => {
+    const csv = await importCsvDialog();
+    if (!csv) return;
+    const result = store.importCsv(csv);
+    if (result.warnings.length > 0) {
+      alert(
+        `Import complete with ${result.tasks.length} task(s) added.\n\nWarnings:\n` +
+          result.warnings.join("\n"),
+      );
+    } else {
+      alert(`Import complete — ${result.tasks.length} task(s) added.`);
+    }
+  }, [store]);
 
   const handlePrint = useCallback(async () => {
     const pdfBlob = generatePdfBlob(
@@ -203,6 +218,9 @@ function App() {
         case "export_csv":
           handleExportCsv();
           break;
+        case "import_csv":
+          handleImportCsv();
+          break;
         case "print":
           handlePrint();
           break;
@@ -232,6 +250,7 @@ function App() {
     handleSave,
     handleSaveAs,
     handleExportCsv,
+    handleImportCsv,
     handlePrint,
     handleNewSubTask,
     handleDelete,
@@ -266,6 +285,7 @@ function App() {
           onOpen={handleOpen}
           onNewList={handleNewList}
           onExportCsv={handleExportCsv}
+          onImportCsv={handleImportCsv}
           onPrint={handlePrint}
           onArchive={() => store.archiveCompleted()}
           hasSelection={!!store.selectedTaskId}

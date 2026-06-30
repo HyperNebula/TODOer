@@ -92,6 +92,17 @@ export async function exportCsvDialog(csv: string): Promise<boolean> {
   return true;
 }
 
+export async function importCsvDialog(): Promise<string | null> {
+  const path = await open({
+    multiple: false,
+    filters: [CSV_FILTER],
+  });
+  if (!path || typeof path !== "string") return null;
+  // Reuse the existing read command — it reads any text file
+  const contents = await invoke<string>("read_tasklist_file", { path });
+  return contents;
+}
+
 export async function openFileLink(pathOrUrl: string): Promise<void> {
   await invoke("open_path", { path: pathOrUrl });
 }

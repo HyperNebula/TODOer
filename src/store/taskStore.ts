@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { parseTaskListFile, serializeTaskListFile } from "../lib/schema";
+import { parseCsvToTasks } from "../lib/csvImport";
+import type { CsvImportResult } from "../lib/csvImport";
 import {
   filterTasksTreeAware,
   sortTasksWithinTree,
@@ -42,6 +44,7 @@ interface TaskStore {
   getFlatRows: () => FlatRow[];
   getVisibleColumns: () => ColumnId[];
 
+  importCsv: (csv: string) => CsvImportResult;
   newList: () => void;
   loadList: (path: string, json: string) => void;
   markSaved: (path: string) => void;
@@ -143,6 +146,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     })),
 
   getSerialized: () => serializeTaskListFile(get().file),
+
+  importCsv: (csv) => {
+    const result = parseCsvToTasks(csv);
+    if (result.tasks.length > 0) {
+      set((s) => ({
+        file: { ...s.file, tasks: [...s.file.tasks, ...result.tasks], modifiedAt: new Date().toISOString() },
+        dirty: true,
+      }));
+    }
+    return result;
+  },
 
   setSelectedTaskId: (id) => set({ selectedTaskId: id }),
 
