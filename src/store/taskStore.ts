@@ -4,6 +4,7 @@ import { parseCsvToTasks } from "../lib/csvImport";
 import type { CsvImportResult } from "../lib/csvImport";
 import {
   filterTasksTreeAware,
+  sortTasksFlat,
   sortTasksWithinTree,
 } from "../lib/sortFilter";
 import {
@@ -105,7 +106,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
 
     tasks = filterTasksTreeAware(tasks, filter);
-    tasks = sortTasksWithinTree(tasks, sort);
+    tasks = filter.flatView
+      ? sortTasksFlat(tasks, sort)
+      : sortTasksWithinTree(tasks, sort);
     return tasks;
   },
 

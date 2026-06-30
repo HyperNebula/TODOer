@@ -84,6 +84,25 @@ export function sortTasksWithinTree(
   }));
 }
 
+/**
+ * Sort tasks as flat peers (ignoring tree hierarchy).
+ * Used when flat view is active so that sorting operates
+ * on all tasks equally rather than within sibling groups.
+ */
+export function sortTasksFlat(
+  tasks: Task[],
+  sort: SortState | null,
+): Task[] {
+  if (!sort) return tasks;
+  return [...tasks].sort((a, b) =>
+    compareValues(
+      getSortValue(a, sort.column),
+      getSortValue(b, sort.column),
+      sort.direction,
+    ),
+  );
+}
+
 function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   if (!filter.showArchived && task.archived) return false;
   if (filter.showArchived && !task.archived) {
