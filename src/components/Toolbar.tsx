@@ -16,6 +16,8 @@ interface ToolbarProps {
   isFocused: boolean;
   onFocusTask: () => void;
   onExitFocus: () => void;
+  isFlatView: boolean;
+  onToggleFlatView: () => void;
 }
 
 export function Toolbar({
@@ -36,6 +38,8 @@ export function Toolbar({
   isFocused,
   onFocusTask,
   onExitFocus,
+  isFlatView,
+  onToggleFlatView,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
@@ -79,6 +83,15 @@ export function Toolbar({
           Exit Focus
         </button>
       )}
+      <span className="toolbar-sep" />
+      <button
+        type="button"
+        className={`btn${isFlatView ? " btn-primary" : ""}`}
+        onClick={onToggleFlatView}
+        title={isFlatView ? "Exit flat view — restore tree hierarchy" : "Flat view — show all tasks at the same level"}
+      >
+        {isFlatView ? "Exit Flat View" : "Flat View"}
+      </button>
       <span className="toolbar-sep" />
       <button type="button" className="btn" onClick={onNewList}>
         New List

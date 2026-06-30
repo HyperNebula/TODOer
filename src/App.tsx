@@ -294,6 +294,8 @@ function App() {
           isFocused={!!store.focusTaskId}
           onFocusTask={() => store.setFocusTask(store.selectedTaskId)}
           onExitFocus={() => store.setFocusTask(null)}
+          isFlatView={store.filter.flatView}
+          onToggleFlatView={store.toggleFlatView}
         />
 
         <FilterBar

@@ -68,6 +68,7 @@ interface TaskStore {
 
   setListName: (name: string) => void;
   setVisibleColumns: (columns: ColumnId[]) => void;
+  toggleFlatView: () => void;
 }
 
 function touch(file: TaskListFile): TaskListFile {
@@ -110,6 +111,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   getFlatRows: () => {
     const tasks = get().getDisplayTasks();
+    const { filter } = get();
+    if (filter.flatView) {
+      // Return every task as a root-level, non-collapsible row
+      return tasks.map((task) => ({ task, depth: 0, hasChildren: false }));
+    }
     return flattenVisible(buildTree(tasks));
   },
 
@@ -267,4 +273,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       }),
       dirty: true,
     })),
+
+  toggleFlatView: () =>
+    set((s) => ({ filter: { ...s.filter, flatView: !s.filter.flatView } })),
 }));

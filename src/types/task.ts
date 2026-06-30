@@ -76,6 +76,7 @@ export interface FilterState {
   createdBefore: string | null;
   createdAfter: string | null;
   showArchived: boolean;
+  flatView: boolean;
 }
 
 export const DEFAULT_VISIBLE_COLUMNS: ColumnId[] = [...COLUMN_IDS];
@@ -104,6 +105,7 @@ export const DEFAULT_FILTER: FilterState = {
   createdBefore: null,
   createdAfter: null,
   showArchived: false,
+  flatView: false,
 };
 
 export function createEmptyTaskList(name = "Untitled"): TaskListFile {
