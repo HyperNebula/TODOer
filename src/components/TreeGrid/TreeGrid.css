@@ -48,10 +48,14 @@
 }
 
 .tree-grid tr.priority-1 td { background-color: rgba(239, 68, 68, 0.15); }
-.tree-grid tr.priority-2 td, .tree-grid tr.priority-3 td { background-color: rgba(249, 115, 22, 0.15); }
-.tree-grid tr.priority-4 td, .tree-grid tr.priority-5 td { background-color: rgba(234, 179, 8, 0.15); }
-.tree-grid tr.priority-6 td, .tree-grid tr.priority-7 td { background-color: rgba(34, 197, 94, 0.15); }
-.tree-grid tr.priority-8 td, .tree-grid tr.priority-9 td { background-color: rgba(59, 130, 246, 0.15); }
+.tree-grid tr.priority-2 td { background-color: rgba(249, 115, 22, 0.15); }
+.tree-grid tr.priority-3 td { background-color: rgba(245, 158, 11, 0.15); }
+.tree-grid tr.priority-4 td { background-color: rgba(234, 179, 8, 0.15); }
+.tree-grid tr.priority-5 td { background-color: rgba(132, 204, 22, 0.15); }
+.tree-grid tr.priority-6 td { background-color: rgba(34, 197, 94, 0.15); }
+.tree-grid tr.priority-7 td { background-color: rgba(16, 185, 129, 0.15); }
+.tree-grid tr.priority-8 td { background-color: rgba(6, 182, 212, 0.15); }
+.tree-grid tr.priority-9 td { background-color: rgba(59, 130, 246, 0.15); }
 .tree-grid tr.priority-10 td { background-color: rgba(168, 85, 247, 0.15); }
 
 .tree-grid tr:hover td {
