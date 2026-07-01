@@ -77,6 +77,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let save = MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?;
     let save_as = MenuItem::with_id(app, "save_as", "Save As…", true, None::<&str>)?;
     let export_csv = MenuItem::with_id(app, "export_csv", "Export CSV…", true, None::<&str>)?;
+    let export_taskpaper = MenuItem::with_id(app, "export_taskpaper", "Export Taskpaper…", true, None::<&str>)?;
     let import_csv = MenuItem::with_id(app, "import_csv", "Import CSV…", true, None::<&str>)?;
     let print = MenuItem::with_id(app, "print", "Print…", true, None::<&str>)?;
 
@@ -92,6 +93,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
             &save_as,
             &PredefinedMenuItem::separator(app)?,
             &export_csv,
+            &export_taskpaper,
             &import_csv,
             &print,
             &PredefinedMenuItem::separator(app)?,

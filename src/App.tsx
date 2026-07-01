@@ -9,8 +9,10 @@ import { ThemeApplier } from "./components/ThemeApplier";
 import { Toolbar } from "./components/Toolbar";
 import { TreeGrid } from "./components/TreeGrid/TreeGrid";
 import { tasksToCsv } from "./lib/csvExport";
+import { tasksToTaskpaper } from "./lib/taskpaperExport";
 import {
   exportCsvDialog,
+  exportTaskpaperDialog,
   importCsvDialog,
   openTaskListDialog,
   saveTaskListAsDialog,
@@ -74,6 +76,11 @@ function App() {
     const csv = tasksToCsv(rows, store.file.tasks);
     await exportCsvDialog(csv);
   }, [rows, store.file.tasks]);
+
+  const handleExportTaskpaper = useCallback(async () => {
+    const taskpaper = tasksToTaskpaper(rows);
+    await exportTaskpaperDialog(taskpaper);
+  }, [rows]);
 
   const handleImportCsv = useCallback(async () => {
     const csv = await importCsvDialog();
@@ -218,6 +225,9 @@ function App() {
         case "export_csv":
           handleExportCsv();
           break;
+        case "export_taskpaper":
+          handleExportTaskpaper();
+          break;
         case "import_csv":
           handleImportCsv();
           break;
@@ -250,6 +260,7 @@ function App() {
     handleSave,
     handleSaveAs,
     handleExportCsv,
+    handleExportTaskpaper,
     handleImportCsv,
     handlePrint,
     handleNewSubTask,
@@ -285,6 +296,7 @@ function App() {
           onOpen={handleOpen}
           onNewList={handleNewList}
           onExportCsv={handleExportCsv}
+          onExportTaskpaper={handleExportTaskpaper}
           onImportCsv={handleImportCsv}
           onPrint={handlePrint}
           onArchive={() => store.archiveCompleted()}

@@ -11,6 +11,11 @@ const CSV_FILTER = {
   extensions: ["csv"],
 };
 
+const TASKPAPER_FILTER = {
+  name: "Taskpaper",
+  extensions: ["taskpaper"],
+};
+
 export async function getTasklistsDir(): Promise<string> {
   try {
     return await invoke<string>("get_tasklists_dir");
@@ -89,6 +94,16 @@ export async function exportCsvDialog(csv: string): Promise<boolean> {
   });
   if (!path) return false;
   await invoke("write_csv_file", { path, contents: csv });
+  return true;
+}
+
+export async function exportTaskpaperDialog(contents: string): Promise<boolean> {
+  const path = await save({
+    filters: [TASKPAPER_FILTER],
+    defaultPath: "tasks-export.taskpaper",
+  });
+  if (!path) return false;
+  await invoke("write_tasklist_file", { path, contents });
   return true;
 }
 

@@ -7,6 +7,7 @@ interface ToolbarProps {
   onOpen: () => void;
   onNewList: () => void;
   onExportCsv: () => void;
+  onExportTaskpaper: () => void;
   onImportCsv: () => void;
   onPrint: () => void;
   onArchive: () => void;
@@ -29,6 +30,7 @@ export function Toolbar({
   onOpen,
   onNewList,
   onExportCsv,
+  onExportTaskpaper,
   onImportCsv,
   onPrint,
   onArchive,
@@ -108,6 +110,9 @@ export function Toolbar({
       <span className="toolbar-sep" />
       <button type="button" className="btn" onClick={onExportCsv}>
         Export CSV
+      </button>
+      <button type="button" className="btn" onClick={onExportTaskpaper}>
+        Export Taskpaper
       </button>
       <button type="button" className="btn" onClick={onImportCsv}>
         Import CSV
