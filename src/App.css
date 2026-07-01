@@ -193,19 +193,24 @@ body {
   align-items: center;
 }
 
-.checkbox-label.draggable {
+.column-item {
+  display: flex;
+  align-items: center;
+}
+
+.column-item.draggable {
   padding: 2px 4px;
   border: 1px solid transparent;
   border-radius: 4px;
   transition: all 0.1s;
 }
 
-.checkbox-label.draggable:hover {
+.column-item.draggable:hover {
   background: var(--row-hover);
   border-color: var(--border);
 }
 
-.checkbox-label.dragging {
+.column-item.dragging {
   opacity: 0.5;
 }
 

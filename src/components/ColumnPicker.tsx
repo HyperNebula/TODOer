@@ -35,6 +35,7 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
   const handleDragStart = (e: React.DragEvent, col: ColumnId) => {
     setDraggedCol(col);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", col);
   };
 
   const handleDragOver = (e: React.DragEvent, col: ColumnId) => {
@@ -70,9 +71,9 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
       <span className="column-picker-label">Columns:</span>
       <div className="column-picker-group">
         {activeCols.map((col) => (
-          <label 
+          <div 
             key={col} 
-            className={`checkbox-label draggable ${draggedCol === col ? 'dragging' : ''}`}
+            className={`column-item draggable ${draggedCol === col ? 'dragging' : ''}`}
             draggable
             onDragStart={(e) => handleDragStart(e, col)}
             onDragOver={(e) => handleDragOver(e, col)}
@@ -81,26 +82,30 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
             title="Drag to reorder"
           >
             <span className="drag-handle">⋮⋮</span>
-            <input
-              type="checkbox"
-              checked={true}
-              onChange={() => toggle(col)}
-            />
-            {LABELS[col]}
-          </label>
+            <label className="checkbox-label" style={{ margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={true}
+                onChange={() => toggle(col)}
+              />
+              {LABELS[col]}
+            </label>
+          </div>
         ))}
       </div>
       {inactiveCols.length > 0 && <span className="column-picker-divider">|</span>}
       <div className="column-picker-group inactive-group">
         {inactiveCols.map((col) => (
-          <label key={col} className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={false}
-              onChange={() => toggle(col)}
-            />
-            {LABELS[col]}
-          </label>
+          <div key={col} className="column-item">
+            <label className="checkbox-label" style={{ margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={false}
+                onChange={() => toggle(col)}
+              />
+              {LABELS[col]}
+            </label>
+          </div>
         ))}
       </div>
     </div>
