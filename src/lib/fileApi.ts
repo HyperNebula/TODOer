@@ -122,6 +122,26 @@ export async function openFileLink(pathOrUrl: string): Promise<void> {
   await invoke("open_path", { path: pathOrUrl });
 }
 
+export async function appendToArchive(tasks: unknown[]): Promise<void> {
+  try {
+    const tasksJson = JSON.stringify(tasks);
+    await invoke("append_to_archive", { tasksJson });
+  } catch (err) {
+    console.error("Failed to write to global archive:", err);
+  }
+}
+
+export async function loadArchive(): Promise<unknown[]> {
+  try {
+    const raw = await invoke<string>("read_archive");
+    return JSON.parse(raw) as unknown[];
+  } catch (err) {
+    console.error("Failed to read global archive:", err);
+    return [];
+  }
+}
+
+
 export async function openHtmlForPrint(html: string): Promise<void> {
   const path = await invoke<string>("write_temp_html", { contents: html });
   await openFileLink(path);

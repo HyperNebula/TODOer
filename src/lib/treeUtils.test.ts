@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addSubTask,
   addTask,
+  archiveCompleted,
   buildTree,
   deleteTask,
   flattenVisible,
@@ -86,4 +87,53 @@ describe("treeUtils", () => {
     const updated = toggleCollapsed(tasks, "r");
     expect(updated.find((t) => t.id === "r")?.collapsed).toBe(true);
   });
+
+  describe("archiveCompleted", () => {
+    it("removes done tasks from the list", () => {
+      const tasks = [
+        createTask({ id: "a", title: "Done task", done: true, order: 0 }),
+        createTask({ id: "b", title: "Active task", done: false, order: 1 }),
+      ];
+      const { remaining, archived } = archiveCompleted(tasks);
+      expect(remaining.map((t) => t.id)).toEqual(["b"]);
+      expect(archived.map((t) => t.id)).toEqual(["a"]);
+    });
+
+    it("marks removed tasks as archived=true", () => {
+      const tasks = [
+        createTask({ id: "a", title: "Done task", done: true, order: 0 }),
+      ];
+      const { archived } = archiveCompleted(tasks);
+      expect(archived[0].archived).toBe(true);
+    });
+
+    it("also removes descendants of done tasks", () => {
+      const parent = createTask({ id: "p", title: "Parent", done: true, order: 0 });
+      const child = createTask({ id: "ch", title: "Child", parentId: "p", done: false, order: 0 });
+      const { remaining, archived } = archiveCompleted([parent, child]);
+      expect(remaining).toHaveLength(0);
+      expect(archived.map((t) => t.id)).toContain("ch");
+    });
+
+    it("does not remove already-archived tasks", () => {
+      const tasks = [
+        createTask({ id: "a", title: "Already archived", done: true, archived: true, order: 0 }),
+        createTask({ id: "b", title: "Active", done: false, order: 1 }),
+      ];
+      const { remaining, archived } = archiveCompleted(tasks);
+      // already-archived tasks are left in 'remaining' (they were already removed in a prior run)
+      expect(remaining.map((t) => t.id)).toContain("a");
+      expect(archived).toHaveLength(0);
+    });
+
+    it("returns empty archived when nothing is done", () => {
+      const tasks = [
+        createTask({ id: "x", title: "Not done", done: false, order: 0 }),
+      ];
+      const { remaining, archived } = archiveCompleted(tasks);
+      expect(remaining).toHaveLength(1);
+      expect(archived).toHaveLength(0);
+    });
+  });
 });
+

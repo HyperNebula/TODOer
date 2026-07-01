@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
+import { ArchiveViewer } from "./ArchiveViewer";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -9,7 +10,8 @@ interface Props {
 }
 
 export function SettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "data">("appearance");
+  const [showArchive, setShowArchive] = useState(false);
   const store = useTaskStore();
   const visibleColumns = store.getVisibleColumns();
   
@@ -82,6 +84,7 @@ export function SettingsDialog({ onClose }: Props) {
           <button className={`settings-tab ${activeTab === "columns" ? "active" : ""}`} onClick={() => setActiveTab("columns")}>Columns</button>
           <button className={`settings-tab ${activeTab === "themes" ? "active" : ""}`} onClick={() => setActiveTab("themes")}>Themes</button>
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
+          <button className={`settings-tab ${activeTab === "data" ? "active" : ""}`} onClick={() => setActiveTab("data")}>Data</button>
         </div>
         <div className="settings-content">
           {activeTab === "appearance" && (
@@ -193,7 +196,26 @@ export function SettingsDialog({ onClose }: Props) {
               </div>
             </>
           )}
+          {activeTab === "data" && (
+            <>
+              <div className="settings-group">
+                <label>Task Archive</label>
+                <p style={{ margin: "0 0 10px", fontWeight: "normal", color: "var(--text-muted)", fontSize: "calc(12px + var(--font-offset, 0px))" }}>
+                  All tasks removed via <strong>Archive Completed</strong> are stored in a
+                  global backup file on your computer. You can browse them here at any time.
+                </p>
+                <button
+                  id="open-archive-viewer-btn"
+                  className="btn"
+                  onClick={() => setShowArchive(true)}
+                >
+                  View Archived Tasks
+                </button>
+              </div>
+            </>
+          )}
         </div>
+        {showArchive && <ArchiveViewer onClose={() => setShowArchive(false)} />}
         <div className="settings-footer">
           <button 
             className="btn btn-danger" 

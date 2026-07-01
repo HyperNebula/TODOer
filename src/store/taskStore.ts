@@ -18,6 +18,7 @@ import {
   toggleDone,
   updateTask,
 } from "../lib/treeUtils";
+import { appendToArchive } from "../lib/fileApi";
 import type {
   ColumnId,
   FilterState,
@@ -234,11 +235,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   archiveCompleted: () => {
-    const tasks = archiveCompleted(get().file.tasks);
+    const { remaining, archived } = archiveCompleted(get().file.tasks);
+    if (archived.length === 0) return;
     set((s) => ({
-      file: touch({ ...s.file, tasks }),
+      file: touch({ ...s.file, tasks: remaining }),
       dirty: true,
     }));
+    // Fire-and-forget: persist archived tasks to global_archive.json
+    void appendToArchive(archived);
   },
 
   setSort: (sort) => set({ sort }),

@@ -71,6 +71,43 @@ fn write_temp_pdf(contents: Vec<u8>) -> Result<String, String> {
     Ok(temp_file.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn append_to_archive(app: tauri::AppHandle, tasks_json: String) -> Result<(), String> {
+    let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    let archive_path = data_dir.join("global_archive.json");
+
+    // Parse the incoming tasks array
+    let new_tasks: serde_json::Value =
+        serde_json::from_str(&tasks_json).map_err(|e| e.to_string())?;
+    let new_arr = new_tasks
+        .as_array()
+        .ok_or("tasks_json must be a JSON array")?;
+
+    // Read existing archive (or start with empty array)
+    let mut existing: Vec<serde_json::Value> = if archive_path.exists() {
+        let raw = fs::read_to_string(&archive_path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&raw).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    existing.extend_from_slice(new_arr);
+
+    let merged = serde_json::to_string_pretty(&existing).map_err(|e| e.to_string())?;
+    atomic_write(&archive_path, &merged)
+}
+
+#[tauri::command]
+fn read_archive(app: tauri::AppHandle) -> Result<String, String> {
+    let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let archive_path = data_dir.join("global_archive.json");
+    if !archive_path.exists() {
+        return Ok("[]".to_string());
+    }
+    fs::read_to_string(archive_path).map_err(|e| e.to_string())
+}
+
 fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let new_list = MenuItem::with_id(app, "new_list", "New List", true, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Open…", true, Some("CmdOrCtrl+O"))?;
@@ -159,7 +196,9 @@ pub fn run() {
             get_last_file_path,
             set_last_file_path,
             write_temp_html,
-            write_temp_pdf
+            write_temp_pdf,
+            append_to_archive,
+            read_archive
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

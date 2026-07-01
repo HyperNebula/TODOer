@@ -167,10 +167,32 @@ export function toggleDone(tasks: Task[], taskId: string): Task[] {
   });
 }
 
-export function archiveCompleted(tasks: Task[]): Task[] {
-  return tasks.map((t) =>
-    t.done && !t.archived ? { ...t, archived: true } : t,
-  );
+export function archiveCompleted(tasks: Task[]): {
+  remaining: Task[];
+  archived: Task[];
+} {
+  // Collect IDs of all directly-done tasks and their descendants
+  const toArchive = new Set<string>();
+  for (const t of tasks) {
+    if (t.done && !t.archived) toArchive.add(t.id);
+  }
+  // Also pull in all descendants of done tasks
+  let added: boolean;
+  do {
+    added = false;
+    for (const t of tasks) {
+      if (t.parentId && toArchive.has(t.parentId) && !toArchive.has(t.id)) {
+        toArchive.add(t.id);
+        added = true;
+      }
+    }
+  } while (added);
+
+  const archived = tasks
+    .filter((t) => toArchive.has(t.id))
+    .map((t) => ({ ...t, archived: true }));
+  const remaining = tasks.filter((t) => !toArchive.has(t.id));
+  return { remaining, archived };
 }
 
 export function getParentTitle(tasks: Task[], task: Task): string {
