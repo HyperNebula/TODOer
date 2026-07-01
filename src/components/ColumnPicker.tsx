@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { ColumnId } from "../types/task";
 import { COLUMN_IDS } from "../types/task";
 import "./ColumnPicker.css";
@@ -22,8 +21,6 @@ interface ColumnPickerProps {
 }
 
 export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
-  const [draggedCol, setDraggedCol] = useState<ColumnId | null>(null);
-
   const toggle = (col: ColumnId) => {
     if (col === "title" || col === "done") return;
     if (visible.includes(col)) {
@@ -33,60 +30,60 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, col: ColumnId) => {
-    setDraggedCol(col);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", col);
-  };
-
-  const handleDragOver = (e: React.DragEvent, col: ColumnId) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e: React.DragEvent, targetCol: ColumnId) => {
-    e.preventDefault();
-    if (!draggedCol || draggedCol === targetCol) return;
-    
-    // Only reorder within visible columns
-    if (!visible.includes(draggedCol) || !visible.includes(targetCol)) return;
-
-    const newVisible = [...visible];
-    const fromIndex = newVisible.indexOf(draggedCol);
-    newVisible.splice(fromIndex, 1);
-    
-    const toIndex = newVisible.indexOf(targetCol);
-    newVisible.splice(toIndex, 0, draggedCol);
-    
-    onChange(newVisible);
-    setDraggedCol(null);
-  };
-
   const activeCols = visible.filter((c) => c !== "done" && c !== "title");
+
+  const moveUp = (index: number) => {
+    if (index <= 0) return;
+    const colToMove = activeCols[index];
+    const colToSwap = activeCols[index - 1];
+    
+    const newVisible = [...visible];
+    const idx1 = newVisible.indexOf(colToMove);
+    const idx2 = newVisible.indexOf(colToSwap);
+    
+    [newVisible[idx1], newVisible[idx2]] = [newVisible[idx2], newVisible[idx1]];
+    onChange(newVisible);
+  };
+
+  const moveDown = (index: number) => {
+    if (index >= activeCols.length - 1) return;
+    const colToMove = activeCols[index];
+    const colToSwap = activeCols[index + 1];
+    
+    const newVisible = [...visible];
+    const idx1 = newVisible.indexOf(colToMove);
+    const idx2 = newVisible.indexOf(colToSwap);
+    
+    [newVisible[idx1], newVisible[idx2]] = [newVisible[idx2], newVisible[idx1]];
+    onChange(newVisible);
+  };
   const inactiveCols = COLUMN_IDS.filter((c) => !visible.includes(c) && c !== "done" && c !== "title");
 
   return (
     <div className="column-picker-container">
       <div className="column-section">
-        <h4 className="column-section-title">Active Columns (Drag to reorder)</h4>
+        <h4 className="column-section-title">Active Columns</h4>
         <div className="column-list active-list">
-          {activeCols.map((col) => (
-            <div 
-              key={col} 
-              className={`column-list-item ${draggedCol === col ? 'dragging' : ''}`}
-              onDragOver={(e) => handleDragOver(e, col)}
-              onDragEnter={(e) => e.preventDefault()}
-              onDrop={(e) => handleDrop(e, col)}
-            >
-              <span 
-                className="drag-handle"
-                draggable
-                onDragStart={(e) => handleDragStart(e, col)}
-                onDragEnd={() => setDraggedCol(null)}
-                title="Drag to reorder"
-              >
-                ⋮⋮
-              </span>
+          {activeCols.map((col, index) => (
+            <div key={col} className="column-list-item">
+              <div className="column-order-buttons">
+                <button 
+                  className="order-btn" 
+                  onClick={() => moveUp(index)} 
+                  disabled={index === 0}
+                  title="Move Up"
+                >
+                  ▲
+                </button>
+                <button 
+                  className="order-btn" 
+                  onClick={() => moveDown(index)} 
+                  disabled={index === activeCols.length - 1}
+                  title="Move Down"
+                >
+                  ▼
+                </button>
+              </div>
               <label className="column-checkbox-label">
                 <input
                   type="checkbox"

@@ -48,32 +48,35 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.column-list-item.dragging {
-    opacity: 0.5;
-    border-style: dashed;
+.column-order-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin-right: 16px;
 }
 
-.drag-handle {
+.order-btn {
+    background: transparent;
+    border: none;
     color: var(--text-muted);
-    cursor: grab;
-    user-select: none;
-    font-size: 16px;
-    margin-right: 12px;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px 12px;
     line-height: 1;
-    padding: 4px;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.drag-handle:hover {
+.order-btn:hover:not(:disabled) {
     background: var(--border-light);
     color: var(--text);
 }
 
-.drag-handle:active {
-    cursor: grabbing;
+.order-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
 }
 
 .drag-handle-placeholder {
