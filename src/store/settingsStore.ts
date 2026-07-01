@@ -141,6 +141,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         autoSaveEnabled?: boolean;
         autoSaveIntervalMinutes?: number;
         printOrientation?: "portrait" | "landscape";
+        usePriorityColors?: boolean;
       }>("settings_v1");
       
       if (saved) {
@@ -152,6 +153,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.autoSaveEnabled !== undefined && { autoSaveEnabled: saved.autoSaveEnabled }),
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
+          ...(saved.usePriorityColors !== undefined && { usePriorityColors: saved.usePriorityColors }),
         });
       }
     } catch (e) {
@@ -171,6 +173,7 @@ useSettingsStore.subscribe((state) => {
     autoSaveEnabled: state.autoSaveEnabled,
     autoSaveIntervalMinutes: state.autoSaveIntervalMinutes,
     printOrientation: state.printOrientation,
+    usePriorityColors: state.usePriorityColors,
   };
   try {
     const s = getTauriStore();
