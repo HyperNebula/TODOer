@@ -1,0 +1,99 @@
+.column-picker-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.column-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.column-section-title {
+    margin: 0;
+    font-size: calc(12px + var(--font-offset, 0px));
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.column-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.column-list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: calc(14px + var(--font-offset, 0px));
+    transition: all 0.2s ease;
+}
+
+.column-list.active-list .column-list-item {
+    background: var(--bg);
+}
+
+.column-list-item:hover {
+    border-color: var(--accent);
+}
+
+.column-list.active-list .column-list-item:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.column-list-item.dragging {
+    opacity: 0.5;
+    border-style: dashed;
+}
+
+.drag-handle {
+    color: var(--text-muted);
+    cursor: grab;
+    user-select: none;
+    font-size: 16px;
+    margin-right: 12px;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle:hover {
+    background: var(--border-light);
+    color: var(--text);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-handle-placeholder {
+    width: 24px;
+    margin-right: 12px;
+}
+
+.column-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    flex: 1;
+    margin: 0;
+}
+
+.column-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
+import { useTaskStore } from "../store/taskStore";
+import { ColumnPicker } from "./ColumnPicker";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -7,7 +9,9 @@ interface Props {
 }
 
 export function SettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "themes" | "behavior">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior">("appearance");
+  const store = useTaskStore();
+  const visibleColumns = store.getVisibleColumns();
   
   const {
     activeThemeId,
@@ -72,6 +76,7 @@ export function SettingsDialog({ onClose }: Props) {
         </div>
         <div className="settings-tabs">
           <button className={`settings-tab ${activeTab === "appearance" ? "active" : ""}`} onClick={() => setActiveTab("appearance")}>Appearance</button>
+          <button className={`settings-tab ${activeTab === "columns" ? "active" : ""}`} onClick={() => setActiveTab("columns")}>Columns</button>
           <button className={`settings-tab ${activeTab === "themes" ? "active" : ""}`} onClick={() => setActiveTab("themes")}>Themes</button>
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
         </div>
@@ -94,6 +99,12 @@ export function SettingsDialog({ onClose }: Props) {
                 </select>
               </div>
             </>
+          )}
+          {activeTab === "columns" && (
+            <ColumnPicker
+              visible={visibleColumns}
+              onChange={store.setVisibleColumns}
+            />
           )}
           {activeTab === "themes" && (
             <>

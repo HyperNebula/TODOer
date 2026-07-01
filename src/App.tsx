@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { ColumnPicker } from "./components/ColumnPicker";
 import { FilterBar } from "./components/FilterBar";
 import { NotesEditor } from "./components/NotesEditor";
 import { SettingsDialog } from "./components/SettingsDialog";
@@ -303,11 +302,6 @@ function App() {
           filter={store.filter}
           onChange={store.setFilter}
           onClear={store.clearFilter}
-        />
-
-        <ColumnPicker
-          visible={visibleColumns}
-          onChange={store.setVisibleColumns}
         />
 
         <TreeGrid
