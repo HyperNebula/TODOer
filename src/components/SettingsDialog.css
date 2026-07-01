@@ -131,6 +131,6 @@
   padding: 16px;
   border-top: 1px solid var(--border);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
 }

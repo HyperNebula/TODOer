@@ -29,6 +29,7 @@ export function SettingsDialog({ onClose }: Props) {
     setAutoSaveEnabled,
     setAutoSaveIntervalMinutes,
     setPrintOrientation,
+    resetSettings,
   } = useSettingsStore();
 
   const allThemes = [defaultLightTheme, defaultDarkTheme, ...customThemes];
@@ -182,6 +183,18 @@ export function SettingsDialog({ onClose }: Props) {
           )}
         </div>
         <div className="settings-footer">
+          <button 
+            className="btn btn-danger" 
+            style={{ opacity: 0.8 }}
+            onClick={() => {
+              if (window.confirm("Are you sure you want to reset all settings to their defaults? This will delete any custom themes.")) {
+                resetSettings();
+                store.resetVisibleColumns();
+              }
+            }}
+          >
+            Reset to Defaults
+          </button>
           <button className="btn" onClick={onClose}>Close</button>
         </div>
       </div>

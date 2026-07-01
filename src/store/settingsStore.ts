@@ -72,6 +72,16 @@ export const defaultDarkTheme: Theme = {
   },
 };
 
+export const DEFAULT_SETTINGS = {
+  activeThemeId: "default-light",
+  customThemes: [] as Theme[],
+  fontSizeOffset: 0,
+  fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
+  autoSaveEnabled: true,
+  autoSaveIntervalMinutes: 5,
+  printOrientation: "portrait" as const,
+};
+
 export interface SettingsState {
   activeThemeId: string;
   customThemes: Theme[];
@@ -90,16 +100,11 @@ export interface SettingsState {
   setAutoSaveIntervalMinutes: (minutes: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   loadSettings: () => Promise<void>;
+  resetSettings: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
-  activeThemeId: "default-light",
-  customThemes: [],
-  fontSizeOffset: 0,
-  fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
-  autoSaveEnabled: true,
-  autoSaveIntervalMinutes: 5,
-  printOrientation: "portrait",
+  ...DEFAULT_SETTINGS,
 
   setActiveThemeId: (id) => set({ activeThemeId: id }),
   saveCustomTheme: (theme) => set((state) => {
@@ -148,7 +153,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     } catch (e) {
       console.error("Failed to load settings from tauri store", e);
     }
-  }
+  },
+  resetSettings: () => set({ ...DEFAULT_SETTINGS }),
 }));
 
 // Subscribe to changes to persist them automatically
