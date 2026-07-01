@@ -196,16 +196,13 @@ body {
 .column-item {
   display: flex;
   align-items: center;
-}
-
-.column-item.draggable {
   padding: 2px 4px;
   border: 1px solid transparent;
   border-radius: 4px;
   transition: all 0.1s;
 }
 
-.column-item.draggable:hover {
+.column-item:hover {
   background: var(--row-hover);
   border-color: var(--border);
 }

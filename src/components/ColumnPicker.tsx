@@ -40,9 +40,7 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
 
   const handleDragOver = (e: React.DragEvent, col: ColumnId) => {
     e.preventDefault();
-    if (draggedCol && draggedCol !== col) {
-      e.dataTransfer.dropEffect = "move";
-    }
+    e.dataTransfer.dropEffect = "move";
   };
 
   const handleDrop = (e: React.DragEvent, targetCol: ColumnId) => {
@@ -73,15 +71,20 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
         {activeCols.map((col) => (
           <div 
             key={col} 
-            className={`column-item draggable ${draggedCol === col ? 'dragging' : ''}`}
-            draggable
-            onDragStart={(e) => handleDragStart(e, col)}
+            className={`column-item ${draggedCol === col ? 'dragging' : ''}`}
             onDragOver={(e) => handleDragOver(e, col)}
+            onDragEnter={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(e, col)}
-            onDragEnd={() => setDraggedCol(null)}
             title="Drag to reorder"
           >
-            <span className="drag-handle">⋮⋮</span>
+            <span 
+              className="drag-handle"
+              draggable
+              onDragStart={(e) => handleDragStart(e, col)}
+              onDragEnd={() => setDraggedCol(null)}
+            >
+              ⋮⋮
+            </span>
             <label className="checkbox-label" style={{ margin: 0 }}>
               <input
                 type="checkbox"
