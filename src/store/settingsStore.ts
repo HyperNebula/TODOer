@@ -79,6 +79,7 @@ export interface SettingsState {
   fontFamily: string;
   autoSaveEnabled: boolean;
   autoSaveIntervalMinutes: number;
+  printOrientation: "portrait" | "landscape";
 
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
@@ -87,6 +88,7 @@ export interface SettingsState {
   setFontFamily: (font: string) => void;
   setAutoSaveEnabled: (enabled: boolean) => void;
   setAutoSaveIntervalMinutes: (minutes: number) => void;
+  setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   loadSettings: () => Promise<void>;
 }
 
@@ -97,6 +99,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
   autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
+  printOrientation: "portrait",
 
   setActiveThemeId: (id) => set({ activeThemeId: id }),
   saveCustomTheme: (theme) => set((state) => {
@@ -116,6 +119,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setFontFamily: (font) => set({ fontFamily: font }),
   setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
   setAutoSaveIntervalMinutes: (minutes) => set({ autoSaveIntervalMinutes: minutes }),
+  setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
 
   loadSettings: async () => {
     try {
@@ -127,6 +131,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         fontFamily?: string;
         autoSaveEnabled?: boolean;
         autoSaveIntervalMinutes?: number;
+        printOrientation?: "portrait" | "landscape";
       }>("settings_v1");
       
       if (saved) {
@@ -137,6 +142,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.fontFamily && { fontFamily: saved.fontFamily }),
           ...(saved.autoSaveEnabled !== undefined && { autoSaveEnabled: saved.autoSaveEnabled }),
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
+          ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
         });
       }
     } catch (e) {
@@ -154,6 +160,7 @@ useSettingsStore.subscribe((state) => {
     fontFamily: state.fontFamily,
     autoSaveEnabled: state.autoSaveEnabled,
     autoSaveIntervalMinutes: state.autoSaveIntervalMinutes,
+    printOrientation: state.printOrientation,
   };
   try {
     const s = getTauriStore();

@@ -16,13 +16,15 @@ export function SettingsDialog({ onClose }: Props) {
     fontFamily,
     autoSaveEnabled,
     autoSaveIntervalMinutes,
+    printOrientation,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
     setFontSizeOffset,
     setFontFamily,
     setAutoSaveEnabled,
-    setAutoSaveIntervalMinutes
+    setAutoSaveIntervalMinutes,
+    setPrintOrientation,
   } = useSettingsStore();
 
   const allThemes = [defaultLightTheme, defaultDarkTheme, ...customThemes];
@@ -155,6 +157,16 @@ export function SettingsDialog({ onClose }: Props) {
                   <input type="number" min="1" max="60" value={autoSaveIntervalMinutes} onChange={(e) => setAutoSaveIntervalMinutes(Number(e.target.value))} />
                 </div>
               )}
+              <div className="settings-group">
+                <label>Print Orientation</label>
+                <select
+                  value={printOrientation}
+                  onChange={(e) => setPrintOrientation(e.target.value as "portrait" | "landscape")}
+                >
+                  <option value="portrait">Portrait (default)</option>
+                  <option value="landscape">Landscape</option>
+                </select>
+              </div>
             </>
           )}
         </div>

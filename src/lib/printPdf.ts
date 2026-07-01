@@ -37,9 +37,8 @@ export function generatePdfBlob(
   listName: string,
   rows: FlatRow[],
   visibleColumns: ColumnId[],
+  orientation: "portrait" | "landscape" = "portrait",
 ): Uint8Array {
-  // Use portrait for few columns, landscape for many
-  const orientation = visibleColumns.length > 5 ? "landscape" : "portrait";
   const doc = new jsPDF(orientation, "pt", "a4");
 
   doc.setFontSize(18);

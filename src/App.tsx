@@ -33,7 +33,7 @@ function App() {
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { autoSaveEnabled, autoSaveIntervalMinutes } = useSettingsStore();
+  const settings = useSettingsStore();
 
   const handleSave = useCallback(async () => {
     const path = await saveTaskListDialog(
@@ -95,11 +95,12 @@ function App() {
       store.file.name,
       rows,
       visibleColumns,
+      settings.printOrientation,
     );
     
     const path = await saveTempPdf(pdfBlob);
     await openFileLink(path);
-  }, [store.file.name, rows, visibleColumns]);
+  }, [store.file.name, rows, visibleColumns, settings.printOrientation]);
 
   const handleNewSubTask = useCallback(() => {
     if (store.selectedTaskId) {
@@ -160,16 +161,16 @@ function App() {
   useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
 
   useEffect(() => {
-    if (!autoSaveEnabled || !store.filePath) return;
+    if (!settings.autoSaveEnabled || !store.filePath) return;
     
     const intervalId = setInterval(() => {
       if (dirtyRef.current) {
         handleSaveRef.current();
       }
-    }, autoSaveIntervalMinutes * 60 * 1000);
+    }, settings.autoSaveIntervalMinutes * 60 * 1000);
     
     return () => clearInterval(intervalId);
-  }, [autoSaveEnabled, autoSaveIntervalMinutes, store.filePath]);
+  }, [settings.autoSaveEnabled, settings.autoSaveIntervalMinutes, store.filePath]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
