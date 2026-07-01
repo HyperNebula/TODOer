@@ -35,10 +35,10 @@ On every push to the `main` branch, our automated workflow publishes the latest 
 
 ### macOS
 1. Download the `.dmg` from the latest GitHub Release.
-2. Open the `.dmg` and drag `ToDoList Manager.app` into your Applications folder.
+2. Open the `.dmg` and drag `TODOer.app` into your Applications folder.
 3. *Note on Gatekeeper:* Because this app is built by an independent developer and currently unsigned, macOS will flag it. To run it, open your Terminal and execute:
    ```bash
-   xattr -cr "/Applications/ToDoList Manager.app"
+   xattr -cr "/Applications/TODOer.app"
    ```
 
 ### Windows

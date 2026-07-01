@@ -3,7 +3,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 
 const TASKLIST_FILTER = {
   name: "Task List",
-  extensions: ["todolist.json", "json"],
+  extensions: ["todoer.json", "json"],
 };
 
 const CSV_FILTER = {
@@ -63,7 +63,7 @@ export async function saveTaskListDialog(
     const dir = await getTasklistsDir();
     const chosen = await save({
       filters: [TASKLIST_FILTER],
-      defaultPath: `${dir}/my-tasks.todolist.json`,
+      defaultPath: `${dir}/my-tasks.todoer.json`,
     });
     if (!chosen) return null;
     path = chosen;
@@ -79,7 +79,7 @@ export async function saveTaskListAsDialog(
   const dir = await getTasklistsDir();
   const path = await save({
     filters: [TASKLIST_FILTER],
-    defaultPath: `${dir}/my-tasks.todolist.json`,
+    defaultPath: `${dir}/my-tasks.todoer.json`,
   });
   if (!path) return null;
   await invoke("write_tasklist_file", { path, contents });

@@ -58,7 +58,7 @@ fn set_last_file_path(app: tauri::AppHandle, path: String) -> Result<(), String>
 #[tauri::command]
 fn write_temp_html(contents: String) -> Result<String, String> {
     let temp_dir = std::env::temp_dir();
-    let temp_file = temp_dir.join(format!("todolist-print-{}.html", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+    let temp_file = temp_dir.join(format!("todoer-print-{}.html", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
     fs::write(&temp_file, contents).map_err(|e| e.to_string())?;
     Ok(temp_file.to_string_lossy().to_string())
 }
@@ -66,7 +66,7 @@ fn write_temp_html(contents: String) -> Result<String, String> {
 #[tauri::command]
 fn write_temp_pdf(contents: Vec<u8>) -> Result<String, String> {
     let temp_dir = std::env::temp_dir();
-    let temp_file = temp_dir.join(format!("todolist-print-{}.pdf", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+    let temp_file = temp_dir.join(format!("todoer-print-{}.pdf", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
     fs::write(&temp_file, contents).map_err(|e| e.to_string())?;
     Ok(temp_file.to_string_lossy().to_string())
 }

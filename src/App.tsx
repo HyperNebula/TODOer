@@ -278,7 +278,7 @@ function App() {
       <ThemeApplier />
       <div className="app">
         <header className="app-header">
-          <h1>ToDoList Manager</h1>
+          <h1>TODOer</h1>
           <input
             className="list-name-input"
             value={store.file.name}
