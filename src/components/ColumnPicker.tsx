@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ColumnId } from "../types/task";
 import { COLUMN_IDS } from "../types/task";
 
@@ -20,6 +21,8 @@ interface ColumnPickerProps {
 }
 
 export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
+  const [draggedCol, setDraggedCol] = useState<ColumnId | null>(null);
+
   const toggle = (col: ColumnId) => {
     if (col === "title" || col === "done") return;
     if (visible.includes(col)) {
@@ -29,19 +32,77 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, col: ColumnId) => {
+    setDraggedCol(col);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, col: ColumnId) => {
+    e.preventDefault();
+    if (draggedCol && draggedCol !== col) {
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetCol: ColumnId) => {
+    e.preventDefault();
+    if (!draggedCol || draggedCol === targetCol) return;
+    
+    // Only reorder within visible columns
+    if (!visible.includes(draggedCol) || !visible.includes(targetCol)) return;
+
+    const newVisible = [...visible];
+    const fromIndex = newVisible.indexOf(draggedCol);
+    newVisible.splice(fromIndex, 1);
+    
+    const toIndex = newVisible.indexOf(targetCol);
+    newVisible.splice(toIndex, 0, draggedCol);
+    
+    onChange(newVisible);
+    setDraggedCol(null);
+  };
+
+  const activeCols = visible.filter((c) => c !== "done" && c !== "title");
+  const inactiveCols = COLUMN_IDS.filter((c) => !visible.includes(c) && c !== "done" && c !== "title");
+
   return (
     <div className="column-picker">
       <span className="column-picker-label">Columns:</span>
-      {COLUMN_IDS.filter((c) => c !== "done" && c !== "title").map((col) => (
-        <label key={col} className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={visible.includes(col)}
-            onChange={() => toggle(col)}
-          />
-          {LABELS[col]}
-        </label>
-      ))}
+      <div className="column-picker-group">
+        {activeCols.map((col) => (
+          <label 
+            key={col} 
+            className={`checkbox-label draggable ${draggedCol === col ? 'dragging' : ''}`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, col)}
+            onDragOver={(e) => handleDragOver(e, col)}
+            onDrop={(e) => handleDrop(e, col)}
+            onDragEnd={() => setDraggedCol(null)}
+            title="Drag to reorder"
+          >
+            <span className="drag-handle">⋮⋮</span>
+            <input
+              type="checkbox"
+              checked={true}
+              onChange={() => toggle(col)}
+            />
+            {LABELS[col]}
+          </label>
+        ))}
+      </div>
+      {inactiveCols.length > 0 && <span className="column-picker-divider">|</span>}
+      <div className="column-picker-group inactive-group">
+        {inactiveCols.map((col) => (
+          <label key={col} className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={false}
+              onChange={() => toggle(col)}
+            />
+            {LABELS[col]}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

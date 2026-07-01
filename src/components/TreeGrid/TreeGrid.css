@@ -8,6 +8,7 @@
 
 .tree-grid {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: calc(13px + var(--font-offset, 0px));
 }
@@ -27,6 +28,8 @@
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tree-grid th.col-done {
@@ -39,6 +42,9 @@
   border-bottom: 1px solid var(--border-light);
   padding: 4px 8px;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tree-grid tr:hover td {
@@ -148,4 +154,20 @@
   white-space: nowrap;
   text-align: left;
   color: var(--text);
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 2;
+  background-color: transparent;
+}
+
+.resizer:hover, .resizer:active {
+  background-color: var(--accent);
 }

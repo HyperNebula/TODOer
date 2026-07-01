@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ColumnId, FlatRow, Task } from "../../types/task";
+import { DEFAULT_COLUMN_WIDTHS } from "../../types/task";
 import { formatDate, formatMinutes, parseMinutesInput } from "../../lib/format";
 import { openFileLink } from "../../lib/fileApi";
 import "./TreeGrid.css";
@@ -20,6 +21,7 @@ const COLUMN_LABELS: Record<ColumnId, string> = {
 interface TreeGridProps {
   rows: FlatRow[];
   visibleColumns: ColumnId[];
+  columnWidths: Partial<Record<ColumnId, number>>;
   selectedTaskId: string | null;
   sortColumn: ColumnId | null;
   sortDirection: "asc" | "desc" | null;
@@ -29,6 +31,7 @@ interface TreeGridProps {
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onToggleSort: (column: ColumnId) => void;
   onEditNotes: (task: Task) => void;
+  onColumnResize: (column: ColumnId, width: number) => void;
 }
 
 interface EditState {
@@ -40,6 +43,7 @@ interface EditState {
 export function TreeGrid({
   rows,
   visibleColumns,
+  columnWidths,
   selectedTaskId,
   sortColumn,
   sortDirection,
@@ -49,8 +53,33 @@ export function TreeGrid({
   onUpdate,
   onToggleSort,
   onEditNotes,
+  onColumnResize,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
+  const [resizingCol, setResizingCol] = useState<{ col: ColumnId; startX: number; startWidth: number } | null>(null);
+
+  const startResize = (col: ColumnId, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const startWidth = columnWidths[col] || DEFAULT_COLUMN_WIDTHS[col] || 100;
+    setResizingCol({ col, startX: e.clientX, startWidth });
+  };
+
+  useEffect(() => {
+    if (!resizingCol) return;
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(40, resizingCol.startWidth + (e.clientX - resizingCol.startX));
+      onColumnResize(resizingCol.col, newWidth);
+    };
+    const onMouseUp = () => {
+      setResizingCol(null);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [resizingCol, onColumnResize]);
 
   const commitEdit = useCallback(() => {
     if (!edit) return;
@@ -292,9 +321,17 @@ export function TreeGrid({
                 key={col}
                 className={col === "done" ? "col-done" : ""}
                 onClick={() => col !== "done" && onToggleSort(col)}
+                style={{ width: columnWidths[col] || DEFAULT_COLUMN_WIDTHS[col], position: "relative" }}
               >
                 {COLUMN_LABELS[col]}
                 {col !== "done" && sortIndicator(col)}
+                {col !== "done" && (
+                  <div 
+                     className="resizer" 
+                     onClick={(e) => e.stopPropagation()} 
+                     onMouseDown={(e) => startResize(col, e)} 
+                  />
+                )}
               </th>
             ))}
           </tr>

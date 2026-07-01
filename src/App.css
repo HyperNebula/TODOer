@@ -176,15 +176,59 @@ body {
 
 .column-picker {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   font-size: calc(12px + var(--font-offset, 0px));
-  padding: 4px 0;
+  padding: 8px 0;
 }
 
 .column-picker-label {
   font-weight: 600;
+}
+
+.column-picker-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.checkbox-label.draggable {
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: all 0.1s;
+}
+
+.checkbox-label.draggable:hover {
+  background: var(--row-hover);
+  border-color: var(--border);
+}
+
+.checkbox-label.dragging {
+  opacity: 0.5;
+}
+
+.drag-handle {
+  color: var(--text-muted);
+  cursor: grab;
+  user-select: none;
+  font-size: 14px;
+  margin-right: 4px;
+  line-height: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.column-picker-divider {
+  color: var(--border);
+  margin: 0 4px;
+}
+
+.inactive-group {
+  opacity: 0.7;
 }
 
 .status-bar {

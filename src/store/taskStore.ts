@@ -69,6 +69,7 @@ interface TaskStore {
 
   setListName: (name: string) => void;
   setVisibleColumns: (columns: ColumnId[]) => void;
+  setColumnWidth: (column: ColumnId, width: number) => void;
   toggleFlatView: () => void;
 }
 
@@ -272,6 +273,21 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         settings: {
           visibleColumns: columns,
           columnWidths: s.file.settings?.columnWidths ?? {},
+        },
+      }),
+      dirty: true,
+    })),
+
+  setColumnWidth: (column, width) =>
+    set((s) => ({
+      file: touch({
+        ...s.file,
+        settings: {
+          visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS,
+          columnWidths: {
+            ...(s.file.settings?.columnWidths ?? {}),
+            [column]: width,
+          },
         },
       }),
       dirty: true,

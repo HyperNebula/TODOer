@@ -313,6 +313,7 @@ function App() {
         <TreeGrid
           rows={rows}
           visibleColumns={visibleColumns}
+          columnWidths={store.file.settings?.columnWidths ?? {}}
           selectedTaskId={store.selectedTaskId}
           sortColumn={store.sort?.column ?? null}
           sortDirection={store.sort?.direction ?? null}
@@ -322,6 +323,7 @@ function App() {
           onUpdate={store.updateTask}
           onToggleSort={store.toggleSort}
           onEditNotes={setNotesTask}
+          onColumnResize={store.setColumnWidth}
         />
 
         <StatusBar
