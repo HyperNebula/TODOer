@@ -80,6 +80,7 @@ export const DEFAULT_SETTINGS = {
   autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
   printOrientation: "portrait" as const,
+  usePriorityColors: false,
 };
 
 export interface SettingsState {
@@ -90,6 +91,7 @@ export interface SettingsState {
   autoSaveEnabled: boolean;
   autoSaveIntervalMinutes: number;
   printOrientation: "portrait" | "landscape";
+  usePriorityColors: boolean;
 
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
@@ -99,6 +101,7 @@ export interface SettingsState {
   setAutoSaveEnabled: (enabled: boolean) => void;
   setAutoSaveIntervalMinutes: (minutes: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
+  setUsePriorityColors: (use: boolean) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
 }
@@ -125,6 +128,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
   setAutoSaveIntervalMinutes: (minutes) => set({ autoSaveIntervalMinutes: minutes }),
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
+  setUsePriorityColors: (use) => set({ usePriorityColors: use }),
 
   loadSettings: async () => {
     try {

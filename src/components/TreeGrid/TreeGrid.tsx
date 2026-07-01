@@ -32,6 +32,7 @@ interface TreeGridProps {
   onToggleSort: (column: ColumnId) => void;
   onEditNotes: (task: Task) => void;
   onColumnResize: (column: ColumnId, width: number) => void;
+  usePriorityColors?: boolean;
 }
 
 interface EditState {
@@ -54,6 +55,7 @@ export function TreeGrid({
   onToggleSort,
   onEditNotes,
   onColumnResize,
+  usePriorityColors,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [resizingCol, setResizingCol] = useState<{ col: ColumnId; startX: number; startWidth: number } | null>(null);
@@ -347,13 +349,11 @@ export function TreeGrid({
             rows.map((row) => (
               <tr
                 key={row.task.id}
-                className={
-                  row.task.id === selectedTaskId
-                    ? "row-selected"
-                    : row.task.archived
-                      ? "row-archived"
-                      : ""
-                }
+                className={`
+                  ${row.task.id === selectedTaskId ? "row-selected" : ""} 
+                  ${row.task.archived ? "row-archived" : ""} 
+                  ${usePriorityColors ? `priority-${row.task.priority}` : ""}
+                `.trim()}
                 onClick={() => onSelect(row.task.id)}
               >
                 {visibleColumns.map((col) => renderCell(row, col))}

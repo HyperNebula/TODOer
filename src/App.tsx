@@ -318,6 +318,7 @@ function App() {
           onToggleSort={store.toggleSort}
           onEditNotes={setNotesTask}
           onColumnResize={store.setColumnWidth}
+          usePriorityColors={settings.usePriorityColors}
         />
 
         <StatusBar

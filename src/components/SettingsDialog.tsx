@@ -21,6 +21,7 @@ export function SettingsDialog({ onClose }: Props) {
     autoSaveEnabled,
     autoSaveIntervalMinutes,
     printOrientation,
+    usePriorityColors,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -29,6 +30,7 @@ export function SettingsDialog({ onClose }: Props) {
     setAutoSaveEnabled,
     setAutoSaveIntervalMinutes,
     setPrintOrientation,
+    setUsePriorityColors,
     resetSettings,
   } = useSettingsStore();
 
@@ -98,6 +100,16 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value='Verdana, sans-serif'>Verdana</option>
                   <option value='Georgia, serif'>Georgia</option>
                 </select>
+              </div>
+              <div className="settings-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={usePriorityColors}
+                    onChange={(e) => setUsePriorityColors(e.target.checked)}
+                  />
+                  Use Priority Colors in Grid
+                </label>
               </div>
             </>
           )}
