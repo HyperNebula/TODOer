@@ -19,7 +19,7 @@ const COLUMN_LABELS: Record<ColumnId, string> = {
 function cellValue(row: FlatRow, col: ColumnId): string {
   if (col === "done") return row.task.done ? "Yes" : "";
   if (col === "title") {
-    const indent = "  ".repeat(row.depth);
+    const indent = "    ".repeat(row.depth);
     return indent + row.task.title;
   }
   if (col === "createdAt") return formatDate(row.task.createdAt);
