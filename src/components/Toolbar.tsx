@@ -108,12 +108,19 @@ export function Toolbar({
         Save As
       </button>
       <span className="toolbar-sep" />
-      <button type="button" className="btn" onClick={onExportCsv}>
-        Export CSV
-      </button>
-      <button type="button" className="btn" onClick={onExportTaskpaper}>
-        Export Taskpaper
-      </button>
+      <select
+        className="btn"
+        onChange={(e) => {
+          if (e.target.value === "csv") onExportCsv();
+          else if (e.target.value === "taskpaper") onExportTaskpaper();
+          e.target.value = "";
+        }}
+        value=""
+      >
+        <option value="" disabled>Export...</option>
+        <option value="csv">to CSV</option>
+        <option value="taskpaper">to Taskpaper</option>
+      </select>
       <button type="button" className="btn" onClick={onImportCsv}>
         Import CSV
       </button>
