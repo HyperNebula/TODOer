@@ -46,6 +46,8 @@ function getSortValue(task: Task, column: ColumnId): string | number | boolean |
       return task.category.toLowerCase();
     case "notes":
       return task.notes.toLowerCase();
+    case "isProject":
+      return task.isProject || false;
     default:
       return null;
   }
