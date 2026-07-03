@@ -13,6 +13,7 @@ const LABELS: Record<ColumnId, string> = {
   fileLink: "File Link",
   category: "Category",
   notes: "Notes",
+  isProject: "Project",
 };
 
 interface ColumnPickerProps {
@@ -30,7 +31,7 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
     }
   };
 
-  const activeCols = visible.filter((c) => c !== "done" && c !== "title");
+  const activeCols = visible.filter((c) => c !== "done");
 
   const moveUp = (index: number) => {
     if (index <= 0) return;
@@ -88,6 +89,7 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
                 <input
                   type="checkbox"
                   checked={true}
+                  disabled={col === "title"}
                   onChange={() => toggle(col)}
                 />
                 <span>{LABELS[col]}</span>

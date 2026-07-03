@@ -23,6 +23,7 @@ export function SettingsDialog({ onClose }: Props) {
     autoSaveIntervalMinutes,
     printOrientation,
     usePriorityColors,
+    archiveFormat,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -32,6 +33,7 @@ export function SettingsDialog({ onClose }: Props) {
     setAutoSaveIntervalMinutes,
     setPrintOrientation,
     setUsePriorityColors,
+    setArchiveFormat,
     resetSettings,
   } = useSettingsStore();
 
@@ -73,7 +75,7 @@ export function SettingsDialog({ onClose }: Props) {
 
   const handleOpenArchiveFile = async () => {
     try {
-      const path = await getArchiveFilePath();
+      const path = await getArchiveFilePath(archiveFormat);
       await openFileLink(path);
     } catch (e) {
       console.error(e);
@@ -213,6 +215,28 @@ export function SettingsDialog({ onClose }: Props) {
                   All tasks removed via <strong>Archive Completed</strong> are stored in a
                   global backup file on your computer. You can browse them here at any time.
                 </p>
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginRight: "16px", fontWeight: "normal" }}>
+                    <input
+                      type="radio"
+                      name="archiveFormat"
+                      value="csv"
+                      checked={archiveFormat === "csv"}
+                      onChange={() => setArchiveFormat("csv")}
+                    />
+                    CSV
+                  </label>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
+                    <input
+                      type="radio"
+                      name="archiveFormat"
+                      value="json"
+                      checked={archiveFormat === "json"}
+                      onChange={() => setArchiveFormat("json")}
+                    />
+                    JSON
+                  </label>
+                </div>
                 <button
                   id="open-archive-viewer-btn"
                   className="btn"

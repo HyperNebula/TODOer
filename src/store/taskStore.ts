@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { parseTaskListFile, serializeTaskListFile } from "../lib/schema";
 import { parseCsvToTasks } from "../lib/csvImport";
 import type { CsvImportResult } from "../lib/csvImport";
+import { tasksToCsv } from "../lib/csvExport";
+import { useSettingsStore } from "./settingsStore";
 import {
   filterTasksTreeAware,
   sortTasksFlat,
@@ -241,8 +243,16 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       file: touch({ ...s.file, tasks: remaining }),
       dirty: true,
     }));
-    // Fire-and-forget: persist archived tasks to global_archive.json
-    void appendToArchive(archived);
+    
+    // Fire-and-forget: persist archived tasks
+    const archiveFormat = useSettingsStore.getState().archiveFormat;
+    if (archiveFormat === "csv") {
+      const rows: FlatRow[] = archived.map(t => ({ task: t, depth: 0, hasChildren: false }));
+      const csvData = tasksToCsv(rows, archived);
+      void appendToArchive(csvData, "csv");
+    } else {
+      void appendToArchive(JSON.stringify(archived), "json");
+    }
   },
 
   setSort: (sort) => set({ sort }),

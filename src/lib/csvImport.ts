@@ -147,6 +147,7 @@ const EXPECTED_HEADERS = [
   "Notes",
   "Done",
   "Archived",
+  "IsProject",
   "Depth",
   "ParentTitle",
 ] as const;
@@ -301,6 +302,10 @@ export function parseCsvToTasks(csv: string): CsvImportResult {
     const archived =
       rawArchived === "true" || rawArchived === "1" || rawArchived === "yes";
 
+    const rawIsProject = getField(row, "IsProject").toLowerCase();
+    const isProject =
+      rawIsProject === "true" || rawIsProject === "1" || rawIsProject === "yes";
+
     const task = createTask({
       title,
       parentId,
@@ -315,6 +320,7 @@ export function parseCsvToTasks(csv: string): CsvImportResult {
       done,
       completedAt: done ? new Date().toISOString() : null,
       archived,
+      isProject,
       order: tasks.filter((t) => t.parentId === parentId).length,
     });
 

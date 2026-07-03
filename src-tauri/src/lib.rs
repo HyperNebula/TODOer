@@ -72,46 +72,74 @@ fn write_temp_pdf(contents: Vec<u8>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn append_to_archive(app: tauri::AppHandle, tasks_json: String) -> Result<(), String> {
+fn append_to_archive(app: tauri::AppHandle, data: String, format: String) -> Result<(), String> {
     let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
-    let archive_path = data_dir.join("global_archive.json");
 
-    // Parse the incoming tasks array
-    let new_tasks: serde_json::Value =
-        serde_json::from_str(&tasks_json).map_err(|e| e.to_string())?;
-    let new_arr = new_tasks
-        .as_array()
-        .ok_or("tasks_json must be a JSON array")?;
-
-    // Read existing archive (or start with empty array)
-    let mut existing: Vec<serde_json::Value> = if archive_path.exists() {
-        let raw = fs::read_to_string(&archive_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&raw).unwrap_or_default()
+    if format == "csv" {
+        let archive_path = data_dir.join("global_archive.csv");
+        let mut existing = if archive_path.exists() {
+            fs::read_to_string(&archive_path).unwrap_or_default()
+        } else {
+            String::new()
+        };
+        
+        if existing.is_empty() {
+            existing = data;
+        } else {
+            if let Some(idx) = data.find('\n') {
+                if data.len() > idx + 1 {
+                    if !existing.ends_with('\n') {
+                        existing.push('\n');
+                    }
+                    existing.push_str(&data[idx + 1..]);
+                }
+            } else {
+                if !existing.ends_with('\n') {
+                    existing.push('\n');
+                }
+                existing.push_str(&data);
+            }
+        }
+        atomic_write(&archive_path, &existing)
     } else {
-        Vec::new()
-    };
+        let archive_path = data_dir.join("global_archive.json");
+        let new_tasks: serde_json::Value =
+            serde_json::from_str(&data).map_err(|e| e.to_string())?;
+        let new_arr = new_tasks
+            .as_array()
+            .ok_or("data must be a JSON array")?;
 
-    existing.extend_from_slice(new_arr);
+        let mut existing: Vec<serde_json::Value> = if archive_path.exists() {
+            let raw = fs::read_to_string(&archive_path).map_err(|e| e.to_string())?;
+            serde_json::from_str(&raw).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
 
-    let merged = serde_json::to_string_pretty(&existing).map_err(|e| e.to_string())?;
-    atomic_write(&archive_path, &merged)
+        existing.extend_from_slice(new_arr);
+
+        let merged = serde_json::to_string_pretty(&existing).map_err(|e| e.to_string())?;
+        atomic_write(&archive_path, &merged)
+    }
 }
 
 #[tauri::command]
-fn read_archive(app: tauri::AppHandle) -> Result<String, String> {
+fn read_archive(app: tauri::AppHandle, format: String) -> Result<String, String> {
     let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-    let archive_path = data_dir.join("global_archive.json");
+    let file_name = if format == "csv" { "global_archive.csv" } else { "global_archive.json" };
+    let archive_path = data_dir.join(file_name);
     if !archive_path.exists() {
-        return Ok("[]".to_string());
+        return Ok(if format == "csv" { String::new() } else { "[]".to_string() });
     }
     fs::read_to_string(archive_path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn get_archive_path(app: tauri::AppHandle) -> Result<String, String> {
+fn get_archive_path(app: tauri::AppHandle, format: String) -> Result<String, String> {
     let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-    let archive_path = data_dir.join("global_archive.json");
+    let file_name = if format == "csv" { "global_archive.csv" } else { "global_archive.json" };
+    let archive_path = data_dir.join(file_name);
     Ok(archive_path.to_string_lossy().to_string())
 }
 

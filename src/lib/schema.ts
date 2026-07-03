@@ -13,6 +13,7 @@ const columnIdSchema = z.enum([
   "fileLink",
   "category",
   "notes",
+  "isProject",
 ]);
 
 const taskSchema = z.object({
@@ -32,6 +33,7 @@ const taskSchema = z.object({
   completedAt: z.string().nullable(),
   archived: z.boolean().default(false),
   collapsed: z.boolean(),
+  isProject: z.boolean().optional(),
 });
 
 const taskListFileSchema = z.object({

@@ -16,6 +16,7 @@ const COLUMN_LABELS: Record<ColumnId, string> = {
   fileLink: "File",
   category: "Category",
   notes: "Notes",
+  isProject: "Project",
 };
 
 interface TreeGridProps {
@@ -187,6 +188,17 @@ export function TreeGrid({
               checked={task.done}
               onChange={() => onToggleDone(task.id)}
               aria-label={`Mark ${task.title} done`}
+            />
+          </td>
+        );
+      case "isProject":
+        return (
+          <td key={column} className="col-done">
+            <input
+              type="checkbox"
+              checked={task.isProject || false}
+              onChange={() => onUpdate(task.id, { isProject: !task.isProject })}
+              aria-label={`Mark ${task.title} as project`}
             />
           </td>
         );

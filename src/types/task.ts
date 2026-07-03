@@ -9,6 +9,7 @@ export const COLUMN_IDS = [
   "fileLink",
   "category",
   "notes",
+  "isProject",
 ] as const;
 
 export type ColumnId = (typeof COLUMN_IDS)[number];
@@ -35,6 +36,7 @@ export interface Task {
   completedAt: string | null;
   archived: boolean;
   collapsed: boolean;
+  isProject?: boolean;
 }
 
 export interface TaskListFile {
@@ -92,6 +94,7 @@ export const DEFAULT_COLUMN_WIDTHS: Partial<Record<ColumnId, number>> = {
   fileLink: 140,
   category: 100,
   notes: 160,
+  isProject: 60,
 };
 
 export const DEFAULT_FILTER: FilterState = {
@@ -139,6 +142,7 @@ export function createTask(partial: Partial<Task> & Pick<Task, "title">): Task {
     completedAt: null,
     archived: false,
     collapsed: false,
+    isProject: false,
     ...partial,
   };
 }

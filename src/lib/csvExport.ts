@@ -21,6 +21,7 @@ export function tasksToCsv(rows: FlatRow[], allTasks: Task[]): string {
     "Notes",
     "Done",
     "Archived",
+    "IsProject",
     "Depth",
     "ParentTitle",
   ];
@@ -40,6 +41,7 @@ export function tasksToCsv(rows: FlatRow[], allTasks: Task[]): string {
       escapeCsv(task.notes),
       String(task.done),
       String(task.archived),
+      String(task.isProject || false),
       String(depth),
       escapeCsv(getParentTitle(allTasks, task)),
     ];

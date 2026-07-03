@@ -81,6 +81,7 @@ export const DEFAULT_SETTINGS = {
   autoSaveIntervalMinutes: 5,
   printOrientation: "portrait" as const,
   usePriorityColors: false,
+  archiveFormat: "csv" as "csv" | "json",
 };
 
 export interface SettingsState {
@@ -92,6 +93,7 @@ export interface SettingsState {
   autoSaveIntervalMinutes: number;
   printOrientation: "portrait" | "landscape";
   usePriorityColors: boolean;
+  archiveFormat: "csv" | "json";
 
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
@@ -102,6 +104,7 @@ export interface SettingsState {
   setAutoSaveIntervalMinutes: (minutes: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   setUsePriorityColors: (use: boolean) => void;
+  setArchiveFormat: (format: "csv" | "json") => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
 }
@@ -129,6 +132,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setAutoSaveIntervalMinutes: (minutes) => set({ autoSaveIntervalMinutes: minutes }),
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
   setUsePriorityColors: (use) => set({ usePriorityColors: use }),
+  setArchiveFormat: (format) => set({ archiveFormat: format }),
 
   loadSettings: async () => {
     try {
@@ -142,6 +146,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         autoSaveIntervalMinutes?: number;
         printOrientation?: "portrait" | "landscape";
         usePriorityColors?: boolean;
+        archiveFormat?: "csv" | "json";
       }>("settings_v1");
       
       if (saved) {
@@ -154,6 +159,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
           ...(saved.usePriorityColors !== undefined && { usePriorityColors: saved.usePriorityColors }),
+          ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
         });
       }
     } catch (e) {
@@ -174,6 +180,7 @@ useSettingsStore.subscribe((state) => {
     autoSaveIntervalMinutes: state.autoSaveIntervalMinutes,
     printOrientation: state.printOrientation,
     usePriorityColors: state.usePriorityColors,
+    archiveFormat: state.archiveFormat,
   };
   try {
     const s = getTauriStore();

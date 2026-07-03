@@ -122,18 +122,20 @@ export async function openFileLink(pathOrUrl: string): Promise<void> {
   await invoke("open_path", { path: pathOrUrl });
 }
 
-export async function appendToArchive(tasks: unknown[]): Promise<void> {
+export async function appendToArchive(data: string, format: "csv" | "json"): Promise<void> {
   try {
-    const tasksJson = JSON.stringify(tasks);
-    await invoke("append_to_archive", { tasksJson });
+    await invoke("append_to_archive", { data, format });
   } catch (err) {
     console.error("Failed to write to global archive:", err);
   }
 }
 
-export async function loadArchive(): Promise<unknown[]> {
+export async function loadArchive(format: "csv" | "json"): Promise<unknown[]> {
   try {
-    const raw = await invoke<string>("read_archive");
+    const raw = await invoke<string>("read_archive", { format });
+    if (format === "csv") {
+        return [raw]; // Or properly parse CSV if needed
+    }
     return JSON.parse(raw) as unknown[];
   } catch (err) {
     console.error("Failed to read global archive:", err);
@@ -141,8 +143,8 @@ export async function loadArchive(): Promise<unknown[]> {
   }
 }
 
-export async function getArchiveFilePath(): Promise<string> {
-  return await invoke<string>("get_archive_path");
+export async function getArchiveFilePath(format: "csv" | "json"): Promise<string> {
+  return await invoke<string>("get_archive_path", { format });
 }
 
 
