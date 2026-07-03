@@ -14,6 +14,7 @@ const COLUMN_LABELS: Record<ColumnId, string> = {
   fileLink: "File Link",
   category: "Category",
   notes: "Notes",
+  isProject: "Project",
 };
 
 function cellValue(row: FlatRow, col: ColumnId): string {
@@ -29,6 +30,7 @@ function cellValue(row: FlatRow, col: ColumnId): string {
   if (col === "fileLink") return row.task.fileLink || "";
   if (col === "category") return row.task.category || "";
   if (col === "notes") return row.task.notes || "";
+  if (col === "isProject") return row.task.isProject ? "Yes" : "";
   return "";
 }
 
