@@ -108,6 +108,12 @@ export function addSubTask(
     title: "New Sub-task",
     parentId,
     order,
+    dueDate: parent.dueDate,
+    priority: parent.priority,
+    percentDone: parent.percentDone,
+    timeEstimateMinutes: parent.timeEstimateMinutes,
+    fileLink: parent.fileLink,
+    category: parent.category,
   });
 
   const updated = tasks.map((t) =>

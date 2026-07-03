@@ -25,7 +25,7 @@ interface TreeGridProps {
   selectedTaskId: string | null;
   sortColumn: ColumnId | null;
   sortDirection: "asc" | "desc" | null;
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   onToggleDone: (id: string) => void;
   onToggleCollapsed: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
@@ -112,6 +112,11 @@ export function TreeGrid({
       case "category":
         onUpdate(taskId, { category: value });
         break;
+      case "createdAt":
+        if (value) {
+          onUpdate(taskId, { createdAt: new Date(value).toISOString() });
+        }
+        break;
       default:
         break;
     }
@@ -129,7 +134,7 @@ export function TreeGrid({
   }, [edit]);
 
   const startEdit = (task: Task, column: ColumnId) => {
-    if (column === "done" || column === "createdAt" || column === "notes") return;
+    if (column === "done" || column === "notes") return;
     let value = "";
     switch (column) {
       case "title":
@@ -155,6 +160,9 @@ export function TreeGrid({
         break;
       case "category":
         value = task.category;
+        break;
+      case "createdAt":
+        value = task.createdAt ? task.createdAt.split("T")[0] : "";
         break;
     }
     setEdit({ taskId: task.id, column, value });
@@ -240,7 +248,7 @@ export function TreeGrid({
   const renderEditableCell = (task: Task, column: ColumnId) => {
     if (edit?.taskId === task.id && edit.column === column) {
       const inputType =
-        column === "dueDate"
+        column === "dueDate" || column === "createdAt"
           ? "date"
           : column === "priority" || column === "percentDone"
             ? "number"
@@ -314,7 +322,7 @@ export function TreeGrid({
   };
 
   return (
-    <div className="tree-grid-wrap">
+    <div className="tree-grid-wrap" onClick={() => onSelect(null)}>
       <table className="tree-grid">
         <thead>
           <tr>
@@ -354,7 +362,10 @@ export function TreeGrid({
                   ${row.task.archived ? "row-archived" : ""} 
                   ${usePriorityColors ? `priority-${row.task.priority}` : ""}
                 `.trim()}
-                onClick={() => onSelect(row.task.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(row.task.id);
+                }}
               >
                 {visibleColumns.map((col) => renderCell(row, col))}
               </tr>

@@ -141,6 +141,10 @@ export async function loadArchive(): Promise<unknown[]> {
   }
 }
 
+export async function getArchiveFilePath(): Promise<string> {
+  return await invoke<string>("get_archive_path");
+}
+
 
 export async function openHtmlForPrint(html: string): Promise<void> {
   const path = await invoke<string>("write_temp_html", { contents: html });

@@ -125,15 +125,6 @@ export function FilterBar({ filter, onChange, onClear }: FilterBarProps) {
         />
       </label>
 
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={filter.showArchived}
-          onChange={(e) => onChange({ showArchived: e.target.checked })}
-        />
-        Show archived
-      </label>
-
       <button type="button" className="btn-secondary" onClick={onClear}>
         Clear filters
       </button>

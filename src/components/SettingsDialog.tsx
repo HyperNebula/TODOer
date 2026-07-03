@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
-import { ArchiveViewer } from "./ArchiveViewer";
+import { getArchiveFilePath, openFileLink } from "../lib/fileApi";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -11,7 +11,6 @@ interface Props {
 
 export function SettingsDialog({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "data">("appearance");
-  const [showArchive, setShowArchive] = useState(false);
   const store = useTaskStore();
   const visibleColumns = store.getVisibleColumns();
   
@@ -69,6 +68,16 @@ export function SettingsDialog({ onClose }: Props) {
       setActiveThemeId(newTheme.id);
     } else {
       saveCustomTheme(editingTheme);
+    }
+  };
+
+  const handleOpenArchiveFile = async () => {
+    try {
+      const path = await getArchiveFilePath();
+      await openFileLink(path);
+    } catch (e) {
+      console.error(e);
+      alert("Could not open archive file.");
     }
   };
 
@@ -207,15 +216,14 @@ export function SettingsDialog({ onClose }: Props) {
                 <button
                   id="open-archive-viewer-btn"
                   className="btn"
-                  onClick={() => setShowArchive(true)}
+                  onClick={handleOpenArchiveFile}
                 >
-                  View Archived Tasks
+                  Open Archive File
                 </button>
               </div>
             </>
           )}
         </div>
-        {showArchive && <ArchiveViewer onClose={() => setShowArchive(false)} />}
         <div className="settings-footer">
           <button 
             className="btn btn-danger" 

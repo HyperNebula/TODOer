@@ -108,6 +108,13 @@ fn read_archive(app: tauri::AppHandle) -> Result<String, String> {
     fs::read_to_string(archive_path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn get_archive_path(app: tauri::AppHandle) -> Result<String, String> {
+    let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let archive_path = data_dir.join("global_archive.json");
+    Ok(archive_path.to_string_lossy().to_string())
+}
+
 fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let new_list = MenuItem::with_id(app, "new_list", "New List", true, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Open…", true, Some("CmdOrCtrl+O"))?;
@@ -214,7 +221,8 @@ pub fn run() {
             write_temp_html,
             write_temp_pdf,
             append_to_archive,
-            read_archive
+            read_archive,
+            get_archive_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
