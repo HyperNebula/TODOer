@@ -162,6 +162,22 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         &[&new_task, &new_subtask, &delete_task, &archive],
     )?;
 
+    let edit_menu = Submenu::with_items(
+        app,
+        "Edit",
+        true,
+        &[
+            &PredefinedMenuItem::undo(app, None)?,
+            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, None)?,
+            &PredefinedMenuItem::copy(app, None)?,
+            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::select_all(app, None)?,
+        ],
+    )?;
+
     let open_settings = MenuItem::with_id(app, "open_settings", "Open Settings", true, Some("CmdOrCtrl+,"))?;
     let settings_menu = Submenu::with_items(
         app,
@@ -170,7 +186,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         &[&open_settings],
     )?;
 
-    Menu::with_items(app, &[&file_menu, &task_menu, &settings_menu])
+    Menu::with_items(app, &[&file_menu, &edit_menu, &task_menu, &settings_menu])
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
