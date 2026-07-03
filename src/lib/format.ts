@@ -1,7 +1,13 @@
 export function formatDate(iso: string | null): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleDateString();
+    // Date-only strings (YYYY-MM-DD) are parsed as UTC midnight by new Date(),
+    // which shifts back a day in western timezones. Parse as local date instead.
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+    const d = dateOnly
+      ? new Date(iso + "T00:00:00")   // local midnight
+      : new Date(iso);
+    return d.toLocaleDateString();
   } catch {
     return iso.slice(0, 10);
   }

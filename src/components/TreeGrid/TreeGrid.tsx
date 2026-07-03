@@ -114,7 +114,7 @@ export function TreeGrid({
         break;
       case "createdAt":
         if (value) {
-          onUpdate(taskId, { createdAt: new Date(value).toISOString() });
+          onUpdate(taskId, { createdAt: value });
         }
         break;
       default:

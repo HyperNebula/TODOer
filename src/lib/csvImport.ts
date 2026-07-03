@@ -238,10 +238,10 @@ export function parseCsvToTasks(csv: string): CsvImportResult {
     if (rawCreated) {
       const parsed = new Date(rawCreated);
       if (!isNaN(parsed.getTime())) {
-        // If date-only (YYYY-MM-DD), set to midnight UTC
+        // Keep date-only strings as YYYY-MM-DD to avoid timezone shift
         createdAt = rawCreated.includes("T")
           ? parsed.toISOString()
-          : `${rawCreated}T00:00:00.000Z`;
+          : rawCreated;
       } else {
         warnings.push(
           `Record ${recIdx + 1}: Invalid "Created" date "${rawCreated}", using current time.`,
@@ -255,7 +255,7 @@ export function parseCsvToTasks(csv: string): CsvImportResult {
     if (rawDue) {
       const parsed = new Date(rawDue);
       if (!isNaN(parsed.getTime())) {
-        dueDate = rawDue.includes("T") ? rawDue : `${rawDue}T00:00:00.000Z`;
+        dueDate = rawDue;
       } else {
         warnings.push(
           `Record ${recIdx + 1}: Invalid "Due" date "${rawDue}", skipping.`,
