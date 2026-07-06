@@ -89,7 +89,7 @@ export const DEFAULT_SETTINGS = {
   autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
   printOrientation: "portrait" as const,
-  usePriorityColors: false,
+  usePriorityColors: true,
   archiveFormat: "csv" as "csv" | "json",
   hotkeys: {
     deleteTask: "",
