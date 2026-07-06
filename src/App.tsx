@@ -39,8 +39,10 @@ function App() {
     title: string;
     message: string;
     confirmLabel?: string;
+    confirmVariant?: "primary" | "danger" | "secondary";
     cancelLabel?: string;
     thirdLabel?: string;
+    thirdVariant?: "primary" | "danger" | "secondary";
     onConfirm: () => void;
     onThird?: () => void;
   } | null>(null);
@@ -296,8 +298,10 @@ function App() {
               title: "Save changes?",
               message: "You have unsaved changes. Save before closing?",
               confirmLabel: "Save",
+              confirmVariant: "primary",
               cancelLabel: "Cancel",
               thirdLabel: "Don't Save",
+              thirdVariant: "danger",
               onConfirm: async () => {
                 setConfirmState(null);
                 await handleSaveRef.current();
@@ -472,8 +476,10 @@ function App() {
             title={confirmState.title}
             message={confirmState.message}
             confirmLabel={confirmState.confirmLabel}
+            confirmVariant={confirmState.confirmVariant}
             cancelLabel={confirmState.cancelLabel}
             thirdLabel={confirmState.thirdLabel}
+            thirdVariant={confirmState.thirdVariant}
             onConfirm={confirmState.onConfirm}
             onCancel={() => setConfirmState(null)}
             onThird={confirmState.onThird}
