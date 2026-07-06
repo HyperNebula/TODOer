@@ -134,3 +134,22 @@
   justify-content: space-between;
   gap: 8px;
 }
+
+.hotkey-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: monospace;
+  font-size: calc(13px + var(--font-offset, 0px));
+  cursor: pointer;
+  text-align: center;
+}
+
+.hotkey-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}

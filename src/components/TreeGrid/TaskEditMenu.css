@@ -1,0 +1,81 @@
+.task-edit-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  backdrop-filter: blur(2px);
+}
+
+.task-edit-menu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 420px;
+  max-width: 92vw;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  outline: none;
+}
+
+.task-edit-menu-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-edit-menu-title {
+  font-size: calc(15px + var(--font-offset, 0px));
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-edit-menu-hint {
+  font-size: calc(11px + var(--font-offset, 0px));
+  color: var(--text-muted);
+}
+
+.task-edit-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.task-edit-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+  gap: 12px;
+}
+
+.task-edit-menu-item:hover,
+.task-edit-menu-item.focused {
+  background: var(--row-selected);
+}
+
+.task-edit-menu-label {
+  font-size: calc(13px + var(--font-offset, 0px));
+  font-weight: 500;
+  color: var(--text);
+  min-width: 120px;
+}
+
+.task-edit-menu-value {
+  font-size: calc(13px + var(--font-offset, 0px));
+  color: var(--text-muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}

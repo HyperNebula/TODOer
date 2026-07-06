@@ -3,6 +3,7 @@ import type { ColumnId, FlatRow, Task } from "../../types/task";
 import { DEFAULT_COLUMN_WIDTHS } from "../../types/task";
 import { formatDate, formatMinutes, parseMinutesInput } from "../../lib/format";
 import { openFileLink } from "../../lib/fileApi";
+import { TaskEditMenu } from "./TaskEditMenu";
 import "./TreeGrid.css";
 
 const COLUMN_LABELS: Record<ColumnId, string> = {
@@ -33,7 +34,12 @@ interface TreeGridProps {
   onToggleSort: (column: ColumnId) => void;
   onEditNotes: (task: Task) => void;
   onColumnResize: (column: ColumnId, width: number) => void;
+  onRequestEditMenu?: (task: Task) => void;
   usePriorityColors?: boolean;
+  onNavigateUp?: () => void;
+  onNavigateDown?: () => void;
+  onNavigateLeft?: () => void;
+  onNavigateRight?: () => void;
 }
 
 interface EditState {
@@ -57,8 +63,13 @@ export function TreeGrid({
   onEditNotes,
   onColumnResize,
   usePriorityColors,
+  onNavigateUp,
+  onNavigateDown,
+  onNavigateLeft,
+  onNavigateRight,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
+  const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
   const [resizingCol, setResizingCol] = useState<{ col: ColumnId; startX: number; startWidth: number } | null>(null);
 
   const startResize = (col: ColumnId, e: React.MouseEvent) => {
@@ -126,13 +137,39 @@ export function TreeGrid({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && edit) {
-        setEdit(null);
+      // If an edit menu is open, let the menu handle its own keys
+      if (editMenuTaskId) return;
+      // Skip if editing inline
+      if (edit) {
+        if (e.key === "Escape") setEdit(null);
+        return;
+      }
+      if (!selectedTaskId) return;
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        setEditMenuTaskId(selectedTaskId);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        onNavigateUp?.();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        onNavigateDown?.();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        onNavigateLeft?.();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        onNavigateRight?.();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [edit]);
+  }, [edit, editMenuTaskId, selectedTaskId, onNavigateUp, onNavigateDown, onNavigateLeft, onNavigateRight]);
 
   const startEdit = (task: Task, column: ColumnId) => {
     if (column === "done" || column === "notes") return;
@@ -333,58 +370,75 @@ export function TreeGrid({
     }
   };
 
+  const editMenuTask = editMenuTaskId
+    ? rows.find((r) => r.task.id === editMenuTaskId)?.task ?? null
+    : null;
+
   return (
-    <div className="tree-grid-wrap" onClick={() => onSelect(null)}>
-      <table className="tree-grid">
-        <thead>
-          <tr>
-            {visibleColumns.map((col) => (
-              <th
-                key={col}
-                className={col === "done" ? "col-done" : ""}
-                onClick={() => col !== "done" && onToggleSort(col)}
-                style={{ width: columnWidths[col] || DEFAULT_COLUMN_WIDTHS[col], position: "relative" }}
-              >
-                {COLUMN_LABELS[col]}
-                {col !== "done" && sortIndicator(col)}
-                {col !== "done" && (
-                  <div 
-                     className="resizer" 
-                     onClick={(e) => e.stopPropagation()} 
-                     onMouseDown={(e) => startResize(col, e)} 
-                  />
-                )}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
+    <>
+      <div className="tree-grid-wrap" onClick={() => onSelect(null)}>
+        <table className="tree-grid">
+          <thead>
             <tr>
-              <td colSpan={visibleColumns.length} className="empty-row">
-                No tasks. Click &quot;New Task&quot; to add one.
-              </td>
+              {visibleColumns.map((col) => (
+                <th
+                  key={col}
+                  className={col === "done" ? "col-done" : ""}
+                  onClick={() => col !== "done" && onToggleSort(col)}
+                  style={{ width: columnWidths[col] || DEFAULT_COLUMN_WIDTHS[col], position: "relative" }}
+                >
+                  {COLUMN_LABELS[col]}
+                  {col !== "done" && sortIndicator(col)}
+                  {col !== "done" && (
+                    <div 
+                       className="resizer" 
+                       onClick={(e) => e.stopPropagation()} 
+                       onMouseDown={(e) => startResize(col, e)} 
+                    />
+                  )}
+                </th>
+              ))}
             </tr>
-          ) : (
-            rows.map((row) => (
-              <tr
-                key={row.task.id}
-                className={`
-                  ${row.task.id === selectedTaskId ? "row-selected" : ""} 
-                  ${row.task.archived ? "row-archived" : ""} 
-                  ${usePriorityColors ? `priority-${row.task.priority}` : ""}
-                `.trim()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect(row.task.id);
-                }}
-              >
-                {visibleColumns.map((col) => renderCell(row, col))}
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={visibleColumns.length} className="empty-row">
+                  No tasks. Click &quot;New Task&quot; to add one.
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+            ) : (
+              rows.map((row) => (
+                <tr
+                  key={row.task.id}
+                  className={`
+                    ${row.task.id === selectedTaskId ? "row-selected" : ""} 
+                    ${row.task.archived ? "row-archived" : ""} 
+                    ${usePriorityColors ? `priority-${row.task.priority}` : ""}
+                  `.trim()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(row.task.id);
+                  }}
+                >
+                  {visibleColumns.map((col) => renderCell(row, col))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {editMenuTask && (
+        <TaskEditMenu
+          task={editMenuTask}
+          visibleColumns={visibleColumns}
+          onStartEdit={(column) => {
+            setEditMenuTaskId(null);
+            startEdit(editMenuTask, column);
+          }}
+          onClose={() => setEditMenuTaskId(null)}
+        />
+      )}
+    </>
   );
 }

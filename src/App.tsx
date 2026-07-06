@@ -159,6 +159,49 @@ function App() {
     }
   }, [store]);
 
+  const handleNavigateUp = useCallback(() => {
+    if (!store.selectedTaskId) {
+      if (rows.length > 0) store.setSelectedTaskId(rows[rows.length - 1].task.id);
+      return;
+    }
+    const idx = rows.findIndex((r) => r.task.id === store.selectedTaskId);
+    if (idx > 0) store.setSelectedTaskId(rows[idx - 1].task.id);
+  }, [rows, store]);
+
+  const handleNavigateDown = useCallback(() => {
+    if (!store.selectedTaskId) {
+      if (rows.length > 0) store.setSelectedTaskId(rows[0].task.id);
+      return;
+    }
+    const idx = rows.findIndex((r) => r.task.id === store.selectedTaskId);
+    if (idx < rows.length - 1) store.setSelectedTaskId(rows[idx + 1].task.id);
+  }, [rows, store]);
+
+  const handleNavigateLeft = useCallback(() => {
+    if (!store.selectedTaskId) return;
+    const task = store.file.tasks.find((t) => t.id === store.selectedTaskId);
+    if (!task) return;
+    const hasChildren = store.file.tasks.some((t) => t.parentId === store.selectedTaskId);
+    if (hasChildren && !task.collapsed) {
+      store.toggleCollapsed(store.selectedTaskId);
+    } else if (task.parentId) {
+      store.setSelectedTaskId(task.parentId);
+    }
+  }, [store]);
+
+  const handleNavigateRight = useCallback(() => {
+    if (!store.selectedTaskId) return;
+    const task = store.file.tasks.find((t) => t.id === store.selectedTaskId);
+    if (!task) return;
+    const hasChildren = store.file.tasks.some((t) => t.parentId === store.selectedTaskId);
+    if (hasChildren && task.collapsed) {
+      store.toggleCollapsed(store.selectedTaskId);
+    } else if (hasChildren) {
+      const firstChild = store.file.tasks.find((t) => t.parentId === store.selectedTaskId);
+      if (firstChild) store.setSelectedTaskId(firstChild.id);
+    }
+  }, [store]);
+
   useEffect(() => {
     let mounted = true;
     const loadLast = async () => {
@@ -401,6 +444,10 @@ function App() {
           onEditNotes={setNotesTask}
           onColumnResize={store.setColumnWidth}
           usePriorityColors={settings.usePriorityColors}
+          onNavigateUp={handleNavigateUp}
+          onNavigateDown={handleNavigateDown}
+          onNavigateLeft={handleNavigateLeft}
+          onNavigateRight={handleNavigateRight}
         />
 
         <StatusBar
