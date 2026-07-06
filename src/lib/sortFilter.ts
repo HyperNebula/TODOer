@@ -177,22 +177,46 @@ export function filterTasksTreeAware(
 
   function nodeMatches(node: TreeNode): boolean {
     const selfMatch = taskMatchesFilter(node.task, filter);
-    const childMatch = node.children.some((c) => nodeMatches(c));
-    if (selfMatch || childMatch) {
-      visibleIds.add(node.task.id);
-      for (const child of node.children) {
-        nodeMatches(child);
+    
+    let childMatch = false;
+    for (const child of node.children) {
+      if (nodeMatches(child)) {
+        childMatch = true;
       }
-      return true;
     }
-    return false;
+
+    const excludedByProjectFilter = 
+      (filter.projectFilter === "projects" && !node.task.isProject) ||
+      (filter.projectFilter === "non-projects" && node.task.isProject);
+
+    const hasVisibleContent = selfMatch || childMatch;
+
+    if (hasVisibleContent && !excludedByProjectFilter) {
+      visibleIds.add(node.task.id);
+    }
+    
+    return hasVisibleContent;
   }
 
   for (const root of tree) {
     nodeMatches(root);
   }
 
-  return tasks.filter((t) => visibleIds.has(t.id));
+  const taskMap = new Map(tasks.map(t => [t.id, t]));
+
+  return tasks
+    .filter((t) => visibleIds.has(t.id))
+    .map((t) => {
+      let pid = t.parentId;
+      while (pid && !visibleIds.has(pid)) {
+        const pTask = taskMap.get(pid);
+        pid = pTask ? pTask.parentId : null;
+      }
+      if (pid !== t.parentId) {
+        return { ...t, parentId: pid };
+      }
+      return t;
+    });
 }
 
 export function isFilterActive(filter: FilterState): boolean {

@@ -3,8 +3,10 @@ import { createTask } from "../types/task";
 
 export function buildTree(tasks: Task[]): TreeNode[] {
   const byParent = new Map<string | null, Task[]>();
+  const taskIds = new Set(tasks.map((t) => t.id));
+
   for (const task of tasks) {
-    const key = task.parentId;
+    const key = task.parentId && taskIds.has(task.parentId) ? task.parentId : null;
     if (!byParent.has(key)) byParent.set(key, []);
     byParent.get(key)!.push(task);
   }
