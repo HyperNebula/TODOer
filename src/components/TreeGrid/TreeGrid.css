@@ -200,9 +200,15 @@
   border-bottom: 2px solid var(--accent);
 }
 
-/* "Make child" indicator: subtle accent background */
+/* "Make child" indicator: subtle accent background + border on outer edges only */
 .tree-grid tr.drop-into td {
   background: color-mix(in srgb, var(--accent, #4f8ef7) 18%, transparent) !important;
-  outline: 1px solid var(--accent, #4f8ef7);
-  outline-offset: -1px;
+  border-top: 1px solid var(--accent);
+  border-bottom: 1px solid var(--accent);
+}
+.tree-grid tr.drop-into td:first-child {
+  border-left: 2px solid var(--accent);
+}
+.tree-grid tr.drop-into td:last-child {
+  border-right: 2px solid var(--accent);
 }
