@@ -7,6 +7,7 @@ import {
   deleteTask,
   flattenVisible,
   getDescendantIds,
+  moveTask,
   toggleCollapsed,
   toggleDone,
 } from "./treeUtils";
@@ -135,5 +136,68 @@ describe("treeUtils", () => {
       expect(archived).toHaveLength(0);
     });
   });
+
+  describe("moveTask", () => {
+    function makeForMove() {
+      return [
+        createTask({ id: "A", title: "A", parentId: null, order: 0 }),
+        createTask({ id: "B", title: "B", parentId: null, order: 1 }),
+        createTask({ id: "C", title: "C", parentId: null, order: 2 }),
+        createTask({ id: "B1", title: "B1", parentId: "B", order: 0 }),
+        createTask({ id: "B2", title: "B2", parentId: "B", order: 1 }),
+      ];
+    }
+
+    it("reorders a sibling forward (A moves after C at root)", () => {
+      const result = moveTask(makeForMove(), "A", null, 2);
+      const get = (id: string) => result.find((t) => t.id === id)!;
+      expect(get("A").order).toBe(2);
+      expect(get("B").order).toBe(0);
+      expect(get("C").order).toBe(1);
+    });
+
+    it("reorders a sibling backward (C moves before A at root)", () => {
+      const result = moveTask(makeForMove(), "C", null, 0);
+      const get = (id: string) => result.find((t) => t.id === id)!;
+      expect(get("C").order).toBe(0);
+      expect(get("A").order).toBe(1);
+      expect(get("B").order).toBe(2);
+    });
+
+    it("reparents a child to root (B1 → before A)", () => {
+      const result = moveTask(makeForMove(), "B1", null, 0);
+      const get = (id: string) => result.find((t) => t.id === id)!;
+      expect(get("B1").parentId).toBeNull();
+      expect(get("B1").order).toBe(0);
+      expect(get("A").order).toBe(1);
+      expect(get("B").order).toBe(2);
+      expect(get("C").order).toBe(3);
+      expect(get("B2").order).toBe(0);
+    });
+
+    it("reparents a root task as a child (C → under B, appended)", () => {
+      const result = moveTask(makeForMove(), "C", "B", 2);
+      const get = (id: string) => result.find((t) => t.id === id)!;
+      expect(get("C").parentId).toBe("B");
+      expect(get("C").order).toBe(2);
+      expect(get("B1").order).toBe(0);
+      expect(get("B2").order).toBe(1);
+      expect(get("A").order).toBe(0);
+      expect(get("B").order).toBe(1);
+    });
+
+    it("prevents cycles: cannot drop a parent onto its own descendant", () => {
+      const tasks = makeForMove();
+      const result = moveTask(tasks, "B", "B1", 0);
+      expect(result).toEqual(tasks);
+    });
+
+    it("is a no-op when dropping a task onto itself", () => {
+      const tasks = makeForMove();
+      const result = moveTask(tasks, "B", "B", 0);
+      expect(result).toEqual(tasks);
+    });
+  });
 });
+
 

@@ -208,3 +208,56 @@ export function getParentTitle(tasks: Task[], task: Task): string {
   const parent = getTaskById(tasks, task.parentId);
   return parent?.title ?? "";
 }
+
+/**
+ * Move a task to a new parent and position, renumbering affected siblings.
+ * Returns the original array unchanged if the move would create a cycle
+ * (i.e. newParentId is a descendant of draggedId).
+ */
+export function moveTask(
+  tasks: Task[],
+  draggedId: string,
+  newParentId: string | null,
+  newOrder: number,
+): Task[] {
+  const dragged = getTaskById(tasks, draggedId);
+  if (!dragged) return tasks;
+
+  // Prevent cycles: newParentId must not be a descendant of draggedId
+  if (newParentId !== null) {
+    const descendants = getDescendantIds(tasks, draggedId);
+    if (descendants.has(newParentId) || newParentId === draggedId) return tasks;
+  }
+
+  const oldParentId = dragged.parentId;
+  const oldOrder = dragged.order;
+
+  // Snapshot original orders before any mutation
+  const originalOrder = new Map<string, number>(tasks.map((t) => [t.id, t.order]));
+
+  return tasks.map((t) => {
+    if (t.id === draggedId) {
+      return { ...t, parentId: newParentId, order: newOrder };
+    }
+
+    const orig = originalOrder.get(t.id)!;
+
+    if (oldParentId === newParentId) {
+      // Reorder within the same parent
+      if (t.parentId !== oldParentId) return t;
+      if (orig === oldOrder) return t; // the dragged task itself (handled above)
+      if (orig < oldOrder && orig >= newOrder) return { ...t, order: orig + 1 };
+      if (orig > oldOrder && orig <= newOrder) return { ...t, order: orig - 1 };
+      return t;
+    }
+
+    // Cross-parent move: close gap in old parent, open gap in new parent
+    if (t.parentId === oldParentId && orig > oldOrder) {
+      return { ...t, order: orig - 1 };
+    }
+    if (t.parentId === newParentId && orig >= newOrder) {
+      return { ...t, order: orig + 1 };
+    }
+    return t;
+  });
+}

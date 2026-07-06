@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ColumnId, FlatRow, Task } from "../../types/task";
 import { DEFAULT_COLUMN_WIDTHS } from "../../types/task";
 import { formatDate, formatMinutes, parseMinutesInput } from "../../lib/format";
@@ -40,12 +40,20 @@ interface TreeGridProps {
   onNavigateDown?: () => void;
   onNavigateLeft?: () => void;
   onNavigateRight?: () => void;
+  onMoveTask?: (draggedId: string, newParentId: string | null, newOrder: number) => void;
+  isFlatView?: boolean;
 }
 
 interface EditState {
   taskId: string;
   column: ColumnId;
   value: string;
+}
+
+interface DragState {
+  draggedId: string;
+  overRowId: string | null;
+  zone: "above" | "into" | "below" | null;
 }
 
 export function TreeGrid({
@@ -67,10 +75,14 @@ export function TreeGrid({
   onNavigateDown,
   onNavigateLeft,
   onNavigateRight,
+  onMoveTask,
+  isFlatView,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
   const [resizingCol, setResizingCol] = useState<{ col: ColumnId; startX: number; startWidth: number } | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const expandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startResize = (col: ColumnId, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -94,6 +106,111 @@ export function TreeGrid({
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, [resizingCol, onColumnResize]);
+
+  // ── Drag helpers ────────────────────────────────────────────────────────────
+
+  const cancelExpandTimer = () => {
+    if (expandTimerRef.current !== null) {
+      clearTimeout(expandTimerRef.current);
+      expandTimerRef.current = null;
+    }
+  };
+
+  const getDropZone = (e: React.DragEvent<HTMLTableRowElement>): "above" | "into" | "below" => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    const h = rect.height;
+    if (relY < h * 0.25) return "above";
+    if (relY > h * 0.75) return "below";
+    return "into";
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, taskId: string) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", taskId);
+    // Use setTimeout so the drag image is captured before we dim the row
+    setTimeout(() => setDrag({ draggedId: taskId, overRowId: null, zone: null }), 0);
+  };
+
+  const handleDragEnd = () => {
+    cancelExpandTimer();
+    setDrag(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>, row: FlatRow) => {
+    if (!drag) return;
+    if (row.task.id === drag.draggedId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const zone = getDropZone(e);
+
+    const zoneChanged = drag.overRowId !== row.task.id || drag.zone !== zone;
+    if (zoneChanged) {
+      setDrag((d) => d ? { ...d, overRowId: row.task.id, zone } : d);
+    }
+
+    // Auto-expand collapsed tasks when hovering in the 'into' zone
+    if (zone === "into" && row.hasChildren && row.task.collapsed) {
+      if (drag.overRowId !== row.task.id || drag.zone !== "into") {
+        cancelExpandTimer();
+        expandTimerRef.current = setTimeout(() => {
+          onToggleCollapsed(row.task.id);
+        }, 600);
+      }
+    } else {
+      cancelExpandTimer();
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLTableRowElement>) => {
+    // Only clear when truly leaving this row (not entering a child element)
+    const related = e.relatedTarget as Node | null;
+    if (related && e.currentTarget.contains(related)) return;
+    cancelExpandTimer();
+    setDrag((d) => d ? { ...d, overRowId: null, zone: null } : d);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTableRowElement>, targetRow: FlatRow) => {
+    e.preventDefault();
+    cancelExpandTimer();
+    if (!drag || !onMoveTask) { setDrag(null); return; }
+    if (targetRow.task.id === drag.draggedId) { setDrag(null); return; }
+
+    const zone = getDropZone(e);
+    let newParentId: string | null;
+    let newOrder: number;
+
+    if (zone === "into") {
+      newParentId = targetRow.task.id;
+      // Append as last child
+      const childCount = rows.filter((r) => r.task.parentId === targetRow.task.id).length;
+      newOrder = childCount;
+    } else if (zone === "above") {
+      newParentId = targetRow.task.parentId ?? null;
+      newOrder = targetRow.task.order;
+    } else {
+      // below
+      newParentId = targetRow.task.parentId ?? null;
+      newOrder = targetRow.task.order + 1;
+    }
+
+    onMoveTask(drag.draggedId, newParentId, newOrder);
+    setDrag(null);
+  };
+
+  // ── Row CSS class helper ─────────────────────────────────────────────────────
+
+  const rowDragClass = (row: FlatRow): string => {
+    if (!drag) return "";
+    if (row.task.id === drag.draggedId) return "row-dragging";
+    if (drag.overRowId === row.task.id) {
+      if (drag.zone === "above") return "drop-above";
+      if (drag.zone === "into") return "drop-into";
+      if (drag.zone === "below") return "drop-below";
+    }
+    return "";
+  };
+
 
   const commitEdit = useCallback(() => {
     if (!edit) return;
@@ -411,15 +528,22 @@ export function TreeGrid({
               rows.map((row) => (
                 <tr
                   key={row.task.id}
-                  className={`
-                    ${row.task.id === selectedTaskId ? "row-selected" : ""} 
-                    ${row.task.archived ? "row-archived" : ""} 
-                    ${usePriorityColors ? `priority-${row.task.priority}` : ""}
-                  `.trim()}
+                  className={[
+                    row.task.id === selectedTaskId ? "row-selected" : "",
+                    row.task.archived ? "row-archived" : "",
+                    usePriorityColors ? `priority-${row.task.priority}` : "",
+                    rowDragClass(row),
+                  ].filter(Boolean).join(" ")}
+                  draggable={!isFlatView}
                   onClick={(e) => {
                     e.stopPropagation();
                     onSelect(row.task.id);
                   }}
+                  onDragStart={(e) => handleDragStart(e, row.task.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, row)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, row)}
                 >
                   {visibleColumns.map((col) => renderCell(row, col))}
                 </tr>

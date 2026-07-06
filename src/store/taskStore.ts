@@ -16,6 +16,7 @@ import {
   buildTree,
   deleteTask,
   flattenVisible,
+  moveTask,
   toggleCollapsed,
   toggleDone,
   updateTask,
@@ -63,6 +64,8 @@ interface TaskStore {
   toggleCollapsed: (taskId: string) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   archiveCompleted: () => void;
+
+  moveTask: (draggedId: string, newParentId: string | null, newOrder: number) => void;
 
   setSort: (sort: SortState | null) => void;
   toggleSort: (column: ColumnId) => void;
@@ -253,6 +256,15 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     } else {
       void appendToArchive(JSON.stringify(archived), "json");
     }
+  },
+
+  moveTask: (draggedId, newParentId, newOrder) => {
+    const tasks = moveTask(get().file.tasks, draggedId, newParentId, newOrder);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+      sort: null,
+    }));
   },
 
   setSort: (sort) => set({ sort }),

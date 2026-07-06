@@ -448,6 +448,8 @@ function App() {
           onNavigateDown={handleNavigateDown}
           onNavigateLeft={handleNavigateLeft}
           onNavigateRight={handleNavigateRight}
+          onMoveTask={store.moveTask}
+          isFlatView={store.filter.flatView}
         />
 
         <StatusBar
