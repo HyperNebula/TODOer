@@ -82,6 +82,9 @@ export function TreeGrid({
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
   const [resizingCol, setResizingCol] = useState<{ col: ColumnId; startX: number; startWidth: number } | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  // useRef so handleDragOver can read draggedId synchronously before the first
+  // React re-render (the setState in handleDragStart is deferred via setTimeout).
+  const draggedIdRef = useRef<string | null>(null);
   const expandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startResize = (col: ColumnId, e: React.MouseEvent) => {
@@ -128,30 +131,38 @@ export function TreeGrid({
   const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, taskId: string) => {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", taskId);
-    // Use setTimeout so the drag image is captured before we dim the row
+    // Write to ref synchronously so handleDragOver can read it immediately.
+    draggedIdRef.current = taskId;
+    // Defer the visual dimming so the drag-image snapshot is taken first.
     setTimeout(() => setDrag({ draggedId: taskId, overRowId: null, zone: null }), 0);
   };
 
   const handleDragEnd = () => {
     cancelExpandTimer();
+    draggedIdRef.current = null;
     setDrag(null);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>, row: FlatRow) => {
-    if (!drag) return;
-    if (row.task.id === drag.draggedId) return;
+    const activeDragId = draggedIdRef.current;
+    // If this row is the one being dragged, don't accept a drop onto itself.
+    if (!activeDragId || row.task.id === activeDragId) return;
+    // e.preventDefault() MUST be called unconditionally (before any other guard)
+    // to signal to the browser that this is a valid drop target.
+    // Omitting it causes the red no-drop cursor.
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     const zone = getDropZone(e);
 
-    const zoneChanged = drag.overRowId !== row.task.id || drag.zone !== zone;
-    if (zoneChanged) {
-      setDrag((d) => d ? { ...d, overRowId: row.task.id, zone } : d);
-    }
+    setDrag((d) => {
+      const base = d ?? { draggedId: activeDragId, overRowId: null, zone: null };
+      if (base.overRowId === row.task.id && base.zone === zone) return d;
+      return { ...base, overRowId: row.task.id, zone };
+    });
 
     // Auto-expand collapsed tasks when hovering in the 'into' zone
     if (zone === "into" && row.hasChildren && row.task.collapsed) {
-      if (drag.overRowId !== row.task.id || drag.zone !== "into") {
+      if (drag?.overRowId !== row.task.id || drag?.zone !== "into") {
         cancelExpandTimer();
         expandTimerRef.current = setTimeout(() => {
           onToggleCollapsed(row.task.id);
@@ -336,7 +347,7 @@ export function TreeGrid({
     switch (column) {
       case "done":
         return (
-          <td key={column} className="col-done">
+          <td key={column} className="col-done" onDragStart={(e) => e.preventDefault()}>
             <input
               type="checkbox"
               checked={task.done}
@@ -347,7 +358,7 @@ export function TreeGrid({
         );
       case "isProject":
         return (
-          <td key={column} className="col-done">
+          <td key={column} className="col-done" onDragStart={(e) => e.preventDefault()}>
             <input
               type="checkbox"
               checked={task.isProject || false}
