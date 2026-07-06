@@ -8,6 +8,7 @@ import { StatusBar } from "./components/StatusBar";
 import { ThemeApplier } from "./components/ThemeApplier";
 import { Toolbar } from "./components/Toolbar";
 import { TreeGrid } from "./components/TreeGrid/TreeGrid";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { tasksToCsv } from "./lib/csvExport";
 import { tasksToTaskpaper } from "./lib/taskpaperExport";
 import {
@@ -34,6 +35,15 @@ function App() {
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    thirdLabel?: string;
+    onConfirm: () => void;
+    onThird?: () => void;
+  } | null>(null);
   const settings = useSettingsStore();
 
   const handleSave = useCallback(async () => {
@@ -50,14 +60,41 @@ function App() {
   }, [store]);
 
   const handleOpen = useCallback(async () => {
-    if (store.dirty && !confirm("Discard unsaved changes?")) return;
-    const result = await openTaskListDialog();
-    if (result) store.loadList(result.path, result.contents);
+    const doOpen = async () => {
+      const result = await openTaskListDialog();
+      if (result) store.loadList(result.path, result.contents);
+    };
+
+    if (store.dirty) {
+      setConfirmState({
+        title: "Unsaved Changes",
+        message: "Discard unsaved changes?",
+        confirmLabel: "Discard",
+        onConfirm: () => {
+          setConfirmState(null);
+          doOpen();
+        },
+      });
+      return;
+    }
+    doOpen();
   }, [store]);
 
   const handleNewList = useCallback(() => {
-    if (store.dirty && !confirm("Discard unsaved changes?")) return;
-    store.newList();
+    const doNew = () => store.newList();
+    if (store.dirty) {
+      setConfirmState({
+        title: "Unsaved Changes",
+        message: "Discard unsaved changes?",
+        confirmLabel: "Discard",
+        onConfirm: () => {
+          setConfirmState(null);
+          doNew();
+        },
+      });
+      return;
+    }
+    doNew();
   }, [store]);
 
   const handleDelete = useCallback(() => {
@@ -69,7 +106,15 @@ function App() {
     const msg = hasChildren
       ? `Delete "${task?.title}" and all sub-tasks?`
       : `Delete "${task?.title}"?`;
-    if (confirm(msg)) store.deleteSelectedTask();
+    setConfirmState({
+      title: "Delete Task",
+      message: msg,
+      confirmLabel: "Delete",
+      onConfirm: () => {
+        setConfirmState(null);
+        store.deleteSelectedTask();
+      },
+    });
   }, [store]);
 
   const handleExportCsv = useCallback(async () => {
@@ -188,13 +233,22 @@ function App() {
           // Tauri will no longer close the window automatically.
           event.preventDefault();
           if (dirtyRef.current) {
-            if (confirm("Save changes before closing?")) {
-              await handleSaveRef.current();
-              await win.destroy();
-            } else if (confirm("Close without saving?")) {
-              await win.destroy();
-            }
-            // If the user cancels both prompts, stay open (intended).
+            setConfirmState({
+              title: "Save changes?",
+              message: "You have unsaved changes. Save before closing?",
+              confirmLabel: "Save",
+              cancelLabel: "Cancel",
+              thirdLabel: "Don't Save",
+              onConfirm: async () => {
+                setConfirmState(null);
+                await handleSaveRef.current();
+                await win.destroy();
+              },
+              onThird: async () => {
+                setConfirmState(null);
+                await win.destroy();
+              },
+            });
           } else {
             await win.destroy();
           }
@@ -348,6 +402,18 @@ function App() {
           onClose={() => setNotesTask(null)}
         />
         {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
+        {confirmState && (
+          <ConfirmDialog
+            title={confirmState.title}
+            message={confirmState.message}
+            confirmLabel={confirmState.confirmLabel}
+            cancelLabel={confirmState.cancelLabel}
+            thirdLabel={confirmState.thirdLabel}
+            onConfirm={confirmState.onConfirm}
+            onCancel={() => setConfirmState(null)}
+            onThird={confirmState.onThird}
+          />
+        )}
       </div>
     </>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { getArchiveFilePath, openFileLink } from "../lib/fileApi";
 import "./SettingsDialog.css";
 
@@ -11,6 +12,13 @@ interface Props {
 
 export function SettingsDialog({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "data">("appearance");
+  const [confirmState, setConfirmState] = useState<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm: () => void;
+  } | null>(null);
   const store = useTaskStore();
   const visibleColumns = store.getVisibleColumns();
   
@@ -253,10 +261,16 @@ export function SettingsDialog({ onClose }: Props) {
             className="btn btn-danger" 
             style={{ opacity: 0.8 }}
             onClick={() => {
-              if (window.confirm("Are you sure you want to reset all settings to their defaults? This will delete any custom themes.")) {
-                resetSettings();
-                store.resetVisibleColumns();
-              }
+              setConfirmState({
+                title: "Reset Settings",
+                message: "Are you sure you want to reset all settings to their defaults? This will delete any custom themes.",
+                confirmLabel: "Reset",
+                onConfirm: () => {
+                  setConfirmState(null);
+                  resetSettings();
+                  store.resetVisibleColumns();
+                }
+              });
             }}
           >
             Reset to Defaults
@@ -264,6 +278,16 @@ export function SettingsDialog({ onClose }: Props) {
           <button className="btn" onClick={onClose}>Close</button>
         </div>
       </div>
+      {confirmState && (
+        <ConfirmDialog
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          cancelLabel={confirmState.cancelLabel}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     </div>
   );
 }
