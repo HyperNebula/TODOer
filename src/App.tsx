@@ -182,27 +182,43 @@ function App() {
       : "ctrl";
 
     const onKey = (e: KeyboardEvent) => {
+      // Don't trigger hotkeys if user is typing in an input field (except for the custom hotkey inputs which we handle)
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
       const key = e.key.toLowerCase();
-      if (e.getModifierState(mod === "meta" ? "Meta" : "Control")) {
-        if (key === "s") {
+      const hasMod = e.getModifierState(mod === "meta" ? "Meta" : "Control");
+      const { hotkeys } = settings;
+
+      if (hasMod) {
+        if (key === hotkeys.save.toLowerCase()) {
           e.preventDefault();
           handleSave();
-        } else if (key === "n") {
+        } else if (key === hotkeys.newTask.toLowerCase() && !e.shiftKey) {
           e.preventDefault();
-          if (e.shiftKey) handleNewSubTask();
-          else store.addTask();
-        } else if (key === "o") {
+          store.addTask();
+        } else if (key === hotkeys.newSubTask.toLowerCase()) {
+          e.preventDefault();
+          handleNewSubTask();
+        } else if (key === hotkeys.open.toLowerCase()) {
           e.preventDefault();
           handleOpen();
+        } else if (key === hotkeys.print.toLowerCase()) {
+          e.preventDefault();
+          handlePrint();
         }
-      } else if (key === "delete" && store.selectedTaskId) {
+      } else if (key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
       }
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleSave, handleOpen, handleDelete, handleNewSubTask, store]);
+  }, [handleSave, handleOpen, handleDelete, handleNewSubTask, handlePrint, store, settings]);
 
   // Keep refs so the close handler always reads the latest values
   // without needing to re-register the listener on every change.

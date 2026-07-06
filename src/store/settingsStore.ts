@@ -72,6 +72,15 @@ export const defaultDarkTheme: Theme = {
   },
 };
 
+export type Hotkeys = {
+  deleteTask: string;
+  newTask: string;
+  newSubTask: string;
+  save: string;
+  open: string;
+  print: string;
+};
+
 export const DEFAULT_SETTINGS = {
   activeThemeId: "default-light",
   customThemes: [] as Theme[],
@@ -82,6 +91,14 @@ export const DEFAULT_SETTINGS = {
   printOrientation: "portrait" as const,
   usePriorityColors: false,
   archiveFormat: "csv" as "csv" | "json",
+  hotkeys: {
+    deleteTask: "delete",
+    newTask: "n",
+    newSubTask: "N",
+    save: "s",
+    open: "o",
+    print: "p",
+  } as Hotkeys,
 };
 
 export interface SettingsState {
@@ -94,6 +111,7 @@ export interface SettingsState {
   printOrientation: "portrait" | "landscape";
   usePriorityColors: boolean;
   archiveFormat: "csv" | "json";
+  hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
@@ -105,6 +123,7 @@ export interface SettingsState {
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   setUsePriorityColors: (use: boolean) => void;
   setArchiveFormat: (format: "csv" | "json") => void;
+  setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
 }
@@ -133,6 +152,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
   setUsePriorityColors: (use) => set({ usePriorityColors: use }),
   setArchiveFormat: (format) => set({ archiveFormat: format }),
+  setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
     try {
@@ -147,6 +167,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         printOrientation?: "portrait" | "landscape";
         usePriorityColors?: boolean;
         archiveFormat?: "csv" | "json";
+        hotkeys?: Hotkeys;
       }>("settings_v1");
       
       if (saved) {
@@ -160,6 +181,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
           ...(saved.usePriorityColors !== undefined && { usePriorityColors: saved.usePriorityColors }),
           ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
+          ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
     } catch (e) {
@@ -181,6 +203,7 @@ useSettingsStore.subscribe((state) => {
     printOrientation: state.printOrientation,
     usePriorityColors: state.usePriorityColors,
     archiveFormat: state.archiveFormat,
+    hotkeys: state.hotkeys,
   };
   try {
     const s = getTauriStore();

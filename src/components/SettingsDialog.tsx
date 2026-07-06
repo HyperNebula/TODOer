@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function SettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "data">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data">("appearance");
   const [confirmState, setConfirmState] = useState<{
     title: string;
     message: string;
@@ -42,6 +42,7 @@ export function SettingsDialog({ onClose }: Props) {
     setPrintOrientation,
     setUsePriorityColors,
     setArchiveFormat,
+    setHotkey,
     resetSettings,
   } = useSettingsStore();
 
@@ -103,6 +104,7 @@ export function SettingsDialog({ onClose }: Props) {
           <button className={`settings-tab ${activeTab === "columns" ? "active" : ""}`} onClick={() => setActiveTab("columns")}>Columns</button>
           <button className={`settings-tab ${activeTab === "themes" ? "active" : ""}`} onClick={() => setActiveTab("themes")}>Themes</button>
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
+          <button className={`settings-tab ${activeTab === "hotkeys" ? "active" : ""}`} onClick={() => setActiveTab("hotkeys")}>Hotkeys</button>
           <button className={`settings-tab ${activeTab === "data" ? "active" : ""}`} onClick={() => setActiveTab("data")}>Data</button>
         </div>
         <div className="settings-content">
@@ -212,6 +214,89 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value="portrait">Portrait (default)</option>
                   <option value="landscape">Landscape</option>
                 </select>
+              </div>
+            </>
+          )}
+          {activeTab === "hotkeys" && (
+            <>
+              <div className="settings-group">
+                <p style={{ margin: "0 0 16px", color: "var(--text-muted)", fontSize: "calc(13px + var(--font-offset, 0px))" }}>
+                  Click an input and press any key to set the hotkey. (Note: Hotkeys are modified by Ctrl on Windows/Linux or Cmd on macOS, except for the Delete action which acts alone).
+                </p>
+                <div className="hotkey-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Delete Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.deleteTask}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        setHotkey("deleteTask", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>New Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.newTask}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        setHotkey("newTask", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>New Sub Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.newSubTask}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        setHotkey("newSubTask", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Save</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.save}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        setHotkey("save", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Open</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.open}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        setHotkey("open", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Print</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.print}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        setHotkey("print", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      className="hotkey-input"
+                    />
+                  </label>
+                </div>
               </div>
             </>
           )}
