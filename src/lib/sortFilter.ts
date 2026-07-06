@@ -145,6 +145,9 @@ function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   }
   if (!filter.showArchived && task.archived) return false;
 
+  if (filter.projectFilter === "projects" && !task.isProject) return false;
+  if (filter.projectFilter === "non-projects" && task.isProject) return false;
+
   return true;
 }
 
@@ -162,6 +165,7 @@ export function filterTasksTreeAware(
     filter.dueAfter !== null ||
     filter.createdBefore !== null ||
     filter.createdAfter !== null ||
+    filter.projectFilter !== "all" ||
     filter.showArchived;
 
   if (!hasActiveFilter) {
@@ -201,6 +205,7 @@ export function isFilterActive(filter: FilterState): boolean {
     filter.dueBefore !== null ||
     filter.dueAfter !== null ||
     filter.createdBefore !== null ||
-    filter.createdAfter !== null
+    filter.createdAfter !== null ||
+    filter.projectFilter !== "all"
   );
 }

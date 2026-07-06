@@ -72,6 +72,20 @@ export function FilterBar({ filter, onChange, onClear }: FilterBarProps) {
       </label>
 
       <label>
+        Type
+        <select
+          value={filter.projectFilter}
+          onChange={(e) =>
+            onChange({ projectFilter: e.target.value as FilterState["projectFilter"] })
+          }
+        >
+          <option value="all">All</option>
+          <option value="projects">Projects</option>
+          <option value="non-projects">Non-Projects</option>
+        </select>
+      </label>
+
+      <label>
         Title
         <input
           type="text"
