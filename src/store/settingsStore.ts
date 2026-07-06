@@ -92,7 +92,7 @@ export const DEFAULT_SETTINGS = {
   usePriorityColors: false,
   archiveFormat: "csv" as "csv" | "json",
   hotkeys: {
-    deleteTask: "delete",
+    deleteTask: "",
     newTask: "n",
     newSubTask: "N",
     save: "s",

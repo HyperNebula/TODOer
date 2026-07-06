@@ -195,23 +195,23 @@ function App() {
       const { hotkeys } = settings;
 
       if (hasMod) {
-        if (key === hotkeys.save.toLowerCase()) {
+        if (hotkeys.save && key === hotkeys.save.toLowerCase()) {
           e.preventDefault();
           handleSave();
-        } else if (key === hotkeys.newTask.toLowerCase() && !e.shiftKey) {
+        } else if (hotkeys.newTask && key === hotkeys.newTask.toLowerCase() && !e.shiftKey) {
           e.preventDefault();
           store.addTask();
-        } else if (key === hotkeys.newSubTask.toLowerCase()) {
+        } else if (hotkeys.newSubTask && key === hotkeys.newSubTask.toLowerCase()) {
           e.preventDefault();
           handleNewSubTask();
-        } else if (key === hotkeys.open.toLowerCase()) {
+        } else if (hotkeys.open && key === hotkeys.open.toLowerCase()) {
           e.preventDefault();
           handleOpen();
-        } else if (key === hotkeys.print.toLowerCase()) {
+        } else if (hotkeys.print && key === hotkeys.print.toLowerCase()) {
           e.preventDefault();
           handlePrint();
         }
-      } else if (key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
+      } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
       }
     };

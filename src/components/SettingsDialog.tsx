@@ -221,7 +221,7 @@ export function SettingsDialog({ onClose }: Props) {
             <>
               <div className="settings-group">
                 <p style={{ margin: "0 0 16px", color: "var(--text-muted)", fontSize: "calc(13px + var(--font-offset, 0px))" }}>
-                  Click an input and press any key to set the hotkey. (Note: Hotkeys are modified by Ctrl on Windows/Linux or Cmd on macOS, except for the Delete action which acts alone).
+                  Click an input and press any key to set the hotkey. Press <strong>Escape</strong> to clear a hotkey. (Note: Hotkeys are modified by Ctrl on Windows/Linux or Cmd on macOS, except for the Delete action which acts alone).
                 </p>
                 <div className="hotkey-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -230,9 +230,11 @@ export function SettingsDialog({ onClose }: Props) {
                       value={useSettingsStore.getState().hotkeys.deleteTask}
                       onKeyDown={(e) => {
                         e.preventDefault();
-                        setHotkey("deleteTask", e.key.toLowerCase());
+                        if (e.key === "Escape") setHotkey("deleteTask", "");
+                        else setHotkey("deleteTask", e.key.toLowerCase());
                       }}
                       readOnly
+                      placeholder="None"
                       className="hotkey-input"
                     />
                   </label>
@@ -242,9 +244,11 @@ export function SettingsDialog({ onClose }: Props) {
                       value={useSettingsStore.getState().hotkeys.newTask}
                       onKeyDown={(e) => {
                         e.preventDefault();
-                        setHotkey("newTask", e.key.toLowerCase());
+                        if (e.key === "Escape") setHotkey("newTask", "");
+                        else setHotkey("newTask", e.key.toLowerCase());
                       }}
                       readOnly
+                      placeholder="None"
                       className="hotkey-input"
                     />
                   </label>
@@ -254,9 +258,11 @@ export function SettingsDialog({ onClose }: Props) {
                       value={useSettingsStore.getState().hotkeys.newSubTask}
                       onKeyDown={(e) => {
                         e.preventDefault();
-                        setHotkey("newSubTask", e.key.toLowerCase());
+                        if (e.key === "Escape") setHotkey("newSubTask", "");
+                        else setHotkey("newSubTask", e.key.toLowerCase());
                       }}
                       readOnly
+                      placeholder="None"
                       className="hotkey-input"
                     />
                   </label>
@@ -266,9 +272,11 @@ export function SettingsDialog({ onClose }: Props) {
                       value={useSettingsStore.getState().hotkeys.save}
                       onKeyDown={(e) => {
                         e.preventDefault();
-                        setHotkey("save", e.key.toLowerCase());
+                        if (e.key === "Escape") setHotkey("save", "");
+                        else setHotkey("save", e.key.toLowerCase());
                       }}
                       readOnly
+                      placeholder="None"
                       className="hotkey-input"
                     />
                   </label>
@@ -278,9 +286,11 @@ export function SettingsDialog({ onClose }: Props) {
                       value={useSettingsStore.getState().hotkeys.open}
                       onKeyDown={(e) => {
                         e.preventDefault();
-                        setHotkey("open", e.key.toLowerCase());
+                        if (e.key === "Escape") setHotkey("open", "");
+                        else setHotkey("open", e.key.toLowerCase());
                       }}
                       readOnly
+                      placeholder="None"
                       className="hotkey-input"
                     />
                   </label>
@@ -290,9 +300,11 @@ export function SettingsDialog({ onClose }: Props) {
                       value={useSettingsStore.getState().hotkeys.print}
                       onKeyDown={(e) => {
                         e.preventDefault();
-                        setHotkey("print", e.key.toLowerCase());
+                        if (e.key === "Escape") setHotkey("print", "");
+                        else setHotkey("print", e.key.toLowerCase());
                       }}
                       readOnly
+                      placeholder="None"
                       className="hotkey-input"
                     />
                   </label>
