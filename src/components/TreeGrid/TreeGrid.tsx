@@ -400,7 +400,10 @@ export function TreeGrid({
                   }
                   onBlur={commitEdit}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") commitEdit();
+                    if (e.key === "Enter") {
+                      e.stopPropagation();
+                      commitEdit();
+                    }
                   }}
                 />
               ) : (
@@ -441,7 +444,10 @@ export function TreeGrid({
           onChange={(e) => setEdit({ ...edit, value: e.target.value })}
           onBlur={commitEdit}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commitEdit();
+            if (e.key === "Enter") {
+              e.stopPropagation();
+              commitEdit();
+            }
           }}
         />
       );
