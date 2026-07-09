@@ -223,9 +223,8 @@ export function TreeGrid({
   };
 
 
-  const commitEdit = useCallback(() => {
-    if (!edit) return;
-    const { taskId, column, value } = edit;
+  const saveEdit = useCallback((editState: EditState) => {
+    const { taskId, column, value } = editState;
     switch (column) {
       case "title":
         onUpdate(taskId, { title: value });
@@ -260,8 +259,43 @@ export function TreeGrid({
       default:
         break;
     }
+  }, [onUpdate]);
+
+  const commitEdit = useCallback(() => {
+    if (!edit) return;
+    saveEdit(edit);
     setEdit(null);
-  }, [edit, onUpdate]);
+  }, [edit, saveEdit]);
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, task: Task) => {
+    if (e.key === "Enter") {
+      e.stopPropagation();
+      commitEdit();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!edit) return;
+      
+      saveEdit(edit);
+      
+      const currentIndex = visibleColumns.indexOf(edit.column);
+      let nextIndex = currentIndex;
+      const dir = e.shiftKey ? -1 : 1;
+      
+      while (true) {
+        nextIndex += dir;
+        if (nextIndex < 0 || nextIndex >= visibleColumns.length) {
+          setEdit(null);
+          break;
+        }
+        const nextCol = visibleColumns[nextIndex];
+        if (nextCol !== "done" && nextCol !== "notes" && nextCol !== "isProject") {
+          startEdit(task, nextCol);
+          break;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -399,12 +433,7 @@ export function TreeGrid({
                     setEdit({ ...edit, value: e.target.value })
                   }
                   onBlur={commitEdit}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.stopPropagation();
-                      commitEdit();
-                    }
-                  }}
+                  onKeyDown={(e) => handleEditKeyDown(e, task)}
                 />
               ) : (
                 <span className="title-text">{task.title}</span>
@@ -443,12 +472,7 @@ export function TreeGrid({
           max={column === "priority" ? 10 : column === "percentDone" ? 100 : undefined}
           onChange={(e) => setEdit({ ...edit, value: e.target.value })}
           onBlur={commitEdit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.stopPropagation();
-              commitEdit();
-            }
-          }}
+          onKeyDown={(e) => handleEditKeyDown(e, task)}
         />
       );
     }
