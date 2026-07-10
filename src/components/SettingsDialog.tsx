@@ -308,6 +308,34 @@ export function SettingsDialog({ onClose }: Props) {
                       className="hotkey-input"
                     />
                   </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Navigate Up</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.navigateUp}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("navigateUp", "");
+                        else setHotkey("navigateUp", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Navigate Down</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.navigateDown}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("navigateDown", "");
+                        else setHotkey("navigateDown", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
                 </div>
               </div>
             </>

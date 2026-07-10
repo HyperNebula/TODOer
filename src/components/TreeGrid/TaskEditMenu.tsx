@@ -38,10 +38,10 @@ export function TaskEditMenu({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
+      if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
         e.preventDefault();
         setFocusedIndex((i) => (i + 1) % visibleFields.length);
-      } else if (e.key === "ArrowUp") {
+      } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
         e.preventDefault();
         setFocusedIndex((i) => (i - 1 + visibleFields.length) % visibleFields.length);
       } else if (e.key === "Enter") {

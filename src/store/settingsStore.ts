@@ -79,6 +79,8 @@ export type Hotkeys = {
   save: string;
   open: string;
   print: string;
+  navigateUp: string;
+  navigateDown: string;
 };
 
 export const DEFAULT_SETTINGS = {
@@ -98,6 +100,8 @@ export const DEFAULT_SETTINGS = {
     save: "s",
     open: "o",
     print: "p",
+    navigateUp: "arrowup",
+    navigateDown: "arrowdown",
   } as Hotkeys,
 };
 

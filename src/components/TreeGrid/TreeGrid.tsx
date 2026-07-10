@@ -4,6 +4,7 @@ import { DEFAULT_COLUMN_WIDTHS } from "../../types/task";
 import { formatDate, formatMinutes, parseMinutesInput } from "../../lib/format";
 import { openFileLink } from "../../lib/fileApi";
 import { TaskEditMenu } from "./TaskEditMenu";
+import { useSettingsStore } from "../../store/settingsStore";
 import "./TreeGrid.css";
 
 const COLUMN_LABELS: Record<ColumnId, string> = {
@@ -223,8 +224,9 @@ export function TreeGrid({
   };
 
 
-  const saveEdit = useCallback((editState: EditState) => {
-    const { taskId, column, value } = editState;
+  const commitEdit = useCallback(() => {
+    if (!edit) return;
+    const { taskId, column, value } = edit;
     switch (column) {
       case "title":
         onUpdate(taskId, { title: value });
@@ -259,43 +261,8 @@ export function TreeGrid({
       default:
         break;
     }
-  }, [onUpdate]);
-
-  const commitEdit = useCallback(() => {
-    if (!edit) return;
-    saveEdit(edit);
     setEdit(null);
-  }, [edit, saveEdit]);
-
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, task: Task) => {
-    if (e.key === "Enter") {
-      e.stopPropagation();
-      commitEdit();
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!edit) return;
-      
-      saveEdit(edit);
-      
-      const currentIndex = visibleColumns.indexOf(edit.column);
-      let nextIndex = currentIndex;
-      const dir = e.shiftKey ? -1 : 1;
-      
-      while (true) {
-        nextIndex += dir;
-        if (nextIndex < 0 || nextIndex >= visibleColumns.length) {
-          setEdit(null);
-          break;
-        }
-        const nextCol = visibleColumns[nextIndex];
-        if (nextCol !== "done" && nextCol !== "notes" && nextCol !== "isProject") {
-          startEdit(task, nextCol);
-          break;
-        }
-      }
-    }
-  };
+  }, [edit, onUpdate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -312,13 +279,16 @@ export function TreeGrid({
         document.activeElement?.tagName === "TEXTAREA"
       ) return;
 
+      const key = e.key.toLowerCase();
+      const hotkeys = useSettingsStore.getState().hotkeys;
+
       if (e.key === "Enter") {
         e.preventDefault();
         setEditMenuTaskId(selectedTaskId);
-      } else if (e.key === "ArrowUp") {
+      } else if (key === hotkeys.navigateUp.toLowerCase() || (e.key === "Tab" && e.shiftKey)) {
         e.preventDefault();
         onNavigateUp?.();
-      } else if (e.key === "ArrowDown") {
+      } else if (key === hotkeys.navigateDown.toLowerCase() || (e.key === "Tab" && !e.shiftKey)) {
         e.preventDefault();
         onNavigateDown?.();
       } else if (e.key === "ArrowLeft") {
@@ -433,7 +403,12 @@ export function TreeGrid({
                     setEdit({ ...edit, value: e.target.value })
                   }
                   onBlur={commitEdit}
-                  onKeyDown={(e) => handleEditKeyDown(e, task)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.stopPropagation();
+                      commitEdit();
+                    }
+                  }}
                 />
               ) : (
                 <span className="title-text">{task.title}</span>
@@ -472,7 +447,12 @@ export function TreeGrid({
           max={column === "priority" ? 10 : column === "percentDone" ? 100 : undefined}
           onChange={(e) => setEdit({ ...edit, value: e.target.value })}
           onBlur={commitEdit}
-          onKeyDown={(e) => handleEditKeyDown(e, task)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+              commitEdit();
+            }
+          }}
         />
       );
     }
