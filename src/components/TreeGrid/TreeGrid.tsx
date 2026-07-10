@@ -273,7 +273,6 @@ export function TreeGrid({
         if (e.key === "Escape") setEdit(null);
         return;
       }
-      if (!selectedTaskId) return;
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
@@ -283,8 +282,10 @@ export function TreeGrid({
       const hotkeys = useSettingsStore.getState().hotkeys;
 
       if (e.key === "Enter") {
-        e.preventDefault();
-        setEditMenuTaskId(selectedTaskId);
+        if (selectedTaskId) {
+          e.preventDefault();
+          setEditMenuTaskId(selectedTaskId);
+        }
       } else if (key === hotkeys.navigateUp.toLowerCase() || (e.key === "Tab" && e.shiftKey)) {
         e.preventDefault();
         onNavigateUp?.();
@@ -292,11 +293,15 @@ export function TreeGrid({
         e.preventDefault();
         onNavigateDown?.();
       } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        onNavigateLeft?.();
+        if (selectedTaskId) {
+          e.preventDefault();
+          onNavigateLeft?.();
+        }
       } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        onNavigateRight?.();
+        if (selectedTaskId) {
+          e.preventDefault();
+          onNavigateRight?.();
+        }
       }
     };
     window.addEventListener("keydown", onKey);
