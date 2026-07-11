@@ -397,7 +397,7 @@ export function TreeGrid({
             className={`col-title ${doneClass} ${isSelected ? "selected" : ""}`}
             onDoubleClick={() => startEdit(task, column)}
           >
-            <div className="title-cell" style={{ paddingLeft: depth * 16 }}>
+            <div className="title-cell" style={{ paddingLeft: depth * 32 }}>
               {hasChildren ? (
                 <button
                   type="button"
