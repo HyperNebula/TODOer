@@ -35,6 +35,7 @@ function App() {
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [newlyCreatedTaskId, setNewlyCreatedTaskId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<{
     title: string;
     message: string;
@@ -155,9 +156,15 @@ function App() {
     await openFileLink(path);
   }, [store.file.name, rows, visibleColumns, settings.printOrientation]);
 
+  const handleNewTask = useCallback(() => {
+    const id = store.addTask();
+    setNewlyCreatedTaskId(id);
+  }, [store]);
+
   const handleNewSubTask = useCallback(() => {
     if (store.selectedTaskId) {
-      store.addSubTask(store.selectedTaskId);
+      const id = store.addSubTask(store.selectedTaskId);
+      setNewlyCreatedTaskId(id);
     }
   }, [store]);
 
@@ -245,7 +252,7 @@ function App() {
           handleSave();
         } else if (hotkeys.newTask && key === hotkeys.newTask.toLowerCase() && !e.shiftKey) {
           e.preventDefault();
-          store.addTask();
+          handleNewTask();
         } else if (hotkeys.newSubTask && key === hotkeys.newSubTask.toLowerCase()) {
           e.preventDefault();
           handleNewSubTask();
@@ -263,7 +270,7 @@ function App() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleSave, handleOpen, handleDelete, handleNewSubTask, handlePrint, store, settings]);
+  }, [handleSave, handleOpen, handleDelete, handleNewTask, handleNewSubTask, handlePrint, store, settings]);
 
   // Keep refs so the close handler always reads the latest values
   // without needing to re-register the listener on every change.
@@ -352,7 +359,7 @@ function App() {
           handlePrint();
           break;
         case "new_task":
-          store.addTask();
+          handleNewTask();
           break;
         case "new_subtask":
           handleNewSubTask();
@@ -380,6 +387,7 @@ function App() {
     handleExportTaskpaper,
     handleImportCsv,
     handlePrint,
+    handleNewTask,
     handleNewSubTask,
     handleDelete,
     store,
@@ -405,7 +413,7 @@ function App() {
         </header>
 
         <Toolbar
-          onNewTask={() => store.addTask()}
+          onNewTask={handleNewTask}
           onNewSubTask={handleNewSubTask}
           onDelete={handleDelete}
           onSave={handleSave}
@@ -438,6 +446,8 @@ function App() {
           visibleColumns={visibleColumns}
           columnWidths={store.file.settings?.columnWidths ?? {}}
           selectedTaskId={store.selectedTaskId}
+          newlyCreatedTaskId={newlyCreatedTaskId}
+          onEditStarted={() => setNewlyCreatedTaskId(null)}
           sortColumn={store.sort?.column ?? null}
           sortDirection={store.sort?.direction ?? null}
           onSelect={store.setSelectedTaskId}

@@ -43,6 +43,8 @@ interface TreeGridProps {
   onNavigateRight?: () => void;
   onMoveTask?: (draggedId: string, newParentId: string | null, newOrder: number) => void;
   isFlatView?: boolean;
+  newlyCreatedTaskId?: string | null;
+  onEditStarted?: () => void;
 }
 
 interface EditState {
@@ -78,6 +80,8 @@ export function TreeGrid({
   onNavigateRight,
   onMoveTask,
   isFlatView,
+  newlyCreatedTaskId,
+  onEditStarted,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
@@ -110,6 +114,16 @@ export function TreeGrid({
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, [resizingCol, onColumnResize]);
+
+  useEffect(() => {
+    if (newlyCreatedTaskId) {
+      const task = rows.find(r => r.task.id === newlyCreatedTaskId)?.task;
+      if (task) {
+        setEdit({ taskId: task.id, column: "title", value: task.title });
+        onEditStarted?.();
+      }
+    }
+  }, [newlyCreatedTaskId, rows, onEditStarted]);
 
   // ── Drag helpers ────────────────────────────────────────────────────────────
 
