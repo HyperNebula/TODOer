@@ -81,6 +81,7 @@ export type Hotkeys = {
   print: string;
   navigateUp: string;
   navigateDown: string;
+  toggleFoldAll: string;
 };
 
 export const DEFAULT_SETTINGS = {
@@ -102,7 +103,9 @@ export const DEFAULT_SETTINGS = {
     print: "p",
     navigateUp: "arrowup",
     navigateDown: "arrowdown",
+    toggleFoldAll: "",
   } as Hotkeys,
+  projectStyle: "none" as "none" | "bold" | "star",
 };
 
 export interface SettingsState {
@@ -115,6 +118,7 @@ export interface SettingsState {
   printOrientation: "portrait" | "landscape";
   usePriorityColors: boolean;
   archiveFormat: "csv" | "json";
+  projectStyle: "none" | "bold" | "star";
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -127,6 +131,7 @@ export interface SettingsState {
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   setUsePriorityColors: (use: boolean) => void;
   setArchiveFormat: (format: "csv" | "json") => void;
+  setProjectStyle: (style: "none" | "bold" | "star") => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -156,6 +161,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
   setUsePriorityColors: (use) => set({ usePriorityColors: use }),
   setArchiveFormat: (format) => set({ archiveFormat: format }),
+  setProjectStyle: (style) => set({ projectStyle: style }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -171,6 +177,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         printOrientation?: "portrait" | "landscape";
         usePriorityColors?: boolean;
         archiveFormat?: "csv" | "json";
+        projectStyle?: "none" | "bold" | "star";
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -185,6 +192,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
           ...(saved.usePriorityColors !== undefined && { usePriorityColors: saved.usePriorityColors }),
           ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
+          ...(saved.projectStyle && { projectStyle: saved.projectStyle }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -207,6 +215,7 @@ useSettingsStore.subscribe((state) => {
     printOrientation: state.printOrientation,
     usePriorityColors: state.usePriorityColors,
     archiveFormat: state.archiveFormat,
+    projectStyle: state.projectStyle,
     hotkeys: state.hotkeys,
   };
   try {

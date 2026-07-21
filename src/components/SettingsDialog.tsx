@@ -32,6 +32,7 @@ export function SettingsDialog({ onClose }: Props) {
     printOrientation,
     usePriorityColors,
     archiveFormat,
+    projectStyle,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -42,6 +43,7 @@ export function SettingsDialog({ onClose }: Props) {
     setPrintOrientation,
     setUsePriorityColors,
     setArchiveFormat,
+    setProjectStyle,
     setHotkey,
     resetSettings,
   } = useSettingsStore();
@@ -134,6 +136,14 @@ export function SettingsDialog({ onClose }: Props) {
                   />
                   Use Priority Colors in Grid
                 </label>
+              </div>
+              <div className="settings-group">
+                <label>Project Style</label>
+                <select value={projectStyle} onChange={(e) => setProjectStyle(e.target.value as any)}>
+                  <option value="none">None (Default)</option>
+                  <option value="bold">Bold Title</option>
+                  <option value="star">Star Emoji</option>
+                </select>
               </div>
             </>
           )}
@@ -330,6 +340,20 @@ export function SettingsDialog({ onClose }: Props) {
                         e.preventDefault();
                         if (e.key === "Escape") setHotkey("navigateDown", "");
                         else setHotkey("navigateDown", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Toggle Fold All Tasks</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.toggleFoldAll}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("toggleFoldAll", "");
+                        else setHotkey("toggleFoldAll", e.key.toLowerCase());
                       }}
                       readOnly
                       placeholder="None"

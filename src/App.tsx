@@ -265,6 +265,9 @@ function App() {
         }
       } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
+      } else if (hotkeys.toggleFoldAll && key === hotkeys.toggleFoldAll.toLowerCase()) {
+        e.preventDefault();
+        store.toggleAllTasksFolded();
       }
     };
 
@@ -464,6 +467,7 @@ function App() {
           onNavigateRight={handleNavigateRight}
           onMoveTask={store.moveTask}
           isFlatView={store.filter.flatView}
+          projectStyle={settings.projectStyle}
         />
 
         <StatusBar

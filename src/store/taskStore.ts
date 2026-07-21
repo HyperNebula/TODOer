@@ -62,6 +62,7 @@ interface TaskStore {
   toggleSelectedDone: () => void;
   toggleDone: (taskId: string) => void;
   toggleCollapsed: (taskId: string) => void;
+  toggleAllTasksFolded: () => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   archiveCompleted: () => void;
 
@@ -225,6 +226,27 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   toggleCollapsed: (taskId) => {
     const tasks = toggleCollapsed(get().file.tasks, taskId);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+    }));
+  },
+
+  toggleAllTasksFolded: () => {
+    const file = get().file;
+    const parentIds = new Set(file.tasks.map(t => t.parentId).filter(id => id !== null));
+    const parentTasks = file.tasks.filter(t => parentIds.has(t.id));
+    if (parentTasks.length === 0) return;
+
+    const shouldCollapse = parentTasks.some(t => !t.collapsed);
+
+    const tasks = file.tasks.map(t => {
+      if (parentIds.has(t.id)) {
+        return { ...t, collapsed: shouldCollapse };
+      }
+      return t;
+    });
+
     set((s) => ({
       file: touch({ ...s.file, tasks }),
       dirty: true,

@@ -45,6 +45,7 @@ interface TreeGridProps {
   isFlatView?: boolean;
   newlyCreatedTaskId?: string | null;
   onEditStarted?: () => void;
+  projectStyle?: "none" | "bold" | "star";
 }
 
 interface EditState {
@@ -82,6 +83,7 @@ export function TreeGrid({
   isFlatView,
   newlyCreatedTaskId,
   onEditStarted,
+  projectStyle = "none",
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
@@ -430,7 +432,9 @@ export function TreeGrid({
                   }}
                 />
               ) : (
-                <span className="title-text">{task.title}</span>
+                <span className="title-text" style={{ fontWeight: task.isProject && projectStyle === "bold" ? "bold" : "normal" }}>
+                  {task.isProject && projectStyle === "star" ? "⭐ " : ""}{task.title}
+                </span>
               )}
             </div>
           </td>
