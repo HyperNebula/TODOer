@@ -262,12 +262,12 @@ function App() {
         } else if (hotkeys.print && key === hotkeys.print.toLowerCase()) {
           e.preventDefault();
           handlePrint();
+        } else if (hotkeys.toggleFoldAll && key === hotkeys.toggleFoldAll.toLowerCase()) {
+          e.preventDefault();
+          store.toggleAllTasksFolded();
         }
       } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
-      } else if (hotkeys.toggleFoldAll && key === hotkeys.toggleFoldAll.toLowerCase()) {
-        e.preventDefault();
-        store.toggleAllTasksFolded();
       }
     };
 
