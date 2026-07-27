@@ -261,3 +261,53 @@ export function moveTask(
     return t;
   });
 }
+
+export function duplicateTask(
+  tasks: Task[],
+  taskId: string,
+): { tasks: Task[]; newTaskId: string } {
+  const target = getTaskById(tasks, taskId);
+  if (!target) return { tasks, newTaskId: "" };
+
+  const descendants = Array.from(getDescendantIds(tasks, taskId))
+    .map((id) => getTaskById(tasks, id)!)
+    .filter(Boolean);
+
+  const allToCopy = [target, ...descendants];
+
+  // Map old IDs to new IDs
+  const idMap = new Map<string, string>();
+  for (const t of allToCopy) {
+    idMap.set(t.id, crypto.randomUUID());
+  }
+
+  const newTaskId = idMap.get(taskId)!;
+  const newOrder = target.order + 1;
+
+  // Shift orders of existing siblings
+  const updatedExisting = tasks.map((t) => {
+    if (t.parentId === target.parentId && t.order >= newOrder) {
+      return { ...t, order: t.order + 1 };
+    }
+    return t;
+  });
+
+  const duplicatedTasks = allToCopy.map((t) => {
+    const isRoot = t.id === taskId;
+    const newParentId = isRoot
+      ? target.parentId
+      : t.parentId
+        ? idMap.get(t.parentId)!
+        : null;
+
+    return {
+      ...t,
+      id: idMap.get(t.id)!,
+      parentId: newParentId,
+      order: isRoot ? newOrder : t.order, // preserve order for descendants
+      createdAt: new Date().toISOString(),
+    };
+  });
+
+  return { tasks: [...updatedExisting, ...duplicatedTasks], newTaskId };
+}

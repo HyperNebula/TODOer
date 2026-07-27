@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
@@ -11,7 +12,12 @@ interface Props {
 }
 
 export function SettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data" | "about">("appearance");
+  const [appVersion, setAppVersion] = useState<string>("");
+  
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(console.error);
+  }, []);
   const [confirmState, setConfirmState] = useState<{
     title: string;
     message: string;
@@ -46,6 +52,8 @@ export function SettingsDialog({ onClose }: Props) {
     setArchiveFormat,
     setProjectStyle,
     setProjectEmoji,
+    indentSpacing,
+    setIndentSpacing,
     setHotkey,
     resetSettings,
   } = useSettingsStore();
@@ -110,13 +118,18 @@ export function SettingsDialog({ onClose }: Props) {
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
           <button className={`settings-tab ${activeTab === "hotkeys" ? "active" : ""}`} onClick={() => setActiveTab("hotkeys")}>Hotkeys</button>
           <button className={`settings-tab ${activeTab === "data" ? "active" : ""}`} onClick={() => setActiveTab("data")}>Data</button>
+          <button className={`settings-tab ${activeTab === "about" ? "active" : ""}`} onClick={() => setActiveTab("about")}>About</button>
         </div>
         <div className="settings-content">
           {activeTab === "appearance" && (
             <>
               <div className="settings-group">
                 <label>Font Size Offset</label>
-                <input type="number" min="-5" max="10" value={fontSizeOffset} onChange={(e) => setFontSizeOffset(Number(e.target.value))} />
+                <input type="number" min="-5" max="50" value={fontSizeOffset} onChange={(e) => setFontSizeOffset(Number(e.target.value))} />
+              </div>
+              <div className="settings-group">
+                <label>Indent Spacing (px)</label>
+                <input type="number" min="8" max="100" value={indentSpacing} onChange={(e) => setIndentSpacing(Number(e.target.value))} />
               </div>
               <div className="settings-group">
                 <label>Font Family</label>
@@ -255,6 +268,20 @@ export function SettingsDialog({ onClose }: Props) {
                         e.preventDefault();
                         if (e.key === "Escape") setHotkey("deleteTask", "");
                         else setHotkey("deleteTask", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Duplicate Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.duplicateTask}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("duplicateTask", "");
+                        else setHotkey("duplicateTask", e.key.toLowerCase());
                       }}
                       readOnly
                       placeholder="None"
@@ -414,6 +441,14 @@ export function SettingsDialog({ onClose }: Props) {
                 >
                   Open Archive File
                 </button>
+              </div>
+            </>
+          )}
+          {activeTab === "about" && (
+            <>
+              <div className="settings-group" style={{ textAlign: "center", padding: "40px 20px" }}>
+                <h3 style={{ margin: "0 0 8px", fontSize: "1.5em", fontWeight: "600" }}>TODOer</h3>
+                <p style={{ margin: "0", color: "var(--text-muted)" }}>Version {appVersion || "Loading..."}</p>
               </div>
             </>
           )}

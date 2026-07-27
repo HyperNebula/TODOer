@@ -82,6 +82,7 @@ export type Hotkeys = {
   navigateUp: string;
   navigateDown: string;
   toggleFoldAll: string;
+  duplicateTask: string;
 };
 
 export const DEFAULT_SETTINGS = {
@@ -104,9 +105,11 @@ export const DEFAULT_SETTINGS = {
     navigateUp: "arrowup",
     navigateDown: "arrowdown",
     toggleFoldAll: "",
+    duplicateTask: "d",
   } as Hotkeys,
   projectStyle: "none" as "none" | "bold" | "star",
   projectEmoji: "⭐",
+  indentSpacing: 32,
 };
 
 export interface SettingsState {
@@ -121,6 +124,7 @@ export interface SettingsState {
   archiveFormat: "csv" | "json";
   projectStyle: "none" | "bold" | "star";
   projectEmoji: string;
+  indentSpacing: number;
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -135,6 +139,7 @@ export interface SettingsState {
   setArchiveFormat: (format: "csv" | "json") => void;
   setProjectStyle: (style: "none" | "bold" | "star") => void;
   setProjectEmoji: (emoji: string) => void;
+  setIndentSpacing: (spacing: number) => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -166,6 +171,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setArchiveFormat: (format) => set({ archiveFormat: format }),
   setProjectStyle: (style) => set({ projectStyle: style }),
   setProjectEmoji: (emoji) => set({ projectEmoji: emoji }),
+  setIndentSpacing: (spacing) => set({ indentSpacing: spacing }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -183,6 +189,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         archiveFormat?: "csv" | "json";
         projectStyle?: "none" | "bold" | "star";
         projectEmoji?: string;
+        indentSpacing?: number;
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -199,6 +206,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
           ...(saved.projectStyle && { projectStyle: saved.projectStyle }),
           ...(saved.projectEmoji && { projectEmoji: saved.projectEmoji }),
+          ...(saved.indentSpacing !== undefined && { indentSpacing: saved.indentSpacing }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -223,6 +231,7 @@ useSettingsStore.subscribe((state) => {
     archiveFormat: state.archiveFormat,
     projectStyle: state.projectStyle,
     projectEmoji: state.projectEmoji,
+    indentSpacing: state.indentSpacing,
     hotkeys: state.hotkeys,
   };
   try {

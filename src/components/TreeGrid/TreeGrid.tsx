@@ -47,6 +47,7 @@ interface TreeGridProps {
   onEditStarted?: () => void;
   projectStyle?: "none" | "bold" | "star";
   projectEmoji?: string;
+  indentSpacing?: number;
 }
 
 interface EditState {
@@ -86,6 +87,7 @@ export function TreeGrid({
   onEditStarted,
   projectStyle = "none",
   projectEmoji = "⭐",
+  indentSpacing = 32,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
@@ -401,7 +403,7 @@ export function TreeGrid({
             className={`col-title ${doneClass} ${isSelected ? "selected" : ""}`}
             onDoubleClick={() => startEdit(task, column)}
           >
-            <div className="title-cell" style={{ paddingLeft: depth * 32 }}>
+            <div className="title-cell" style={{ paddingLeft: depth * indentSpacing }}>
               {hasChildren ? (
                 <button
                   type="button"

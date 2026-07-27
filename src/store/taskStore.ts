@@ -20,6 +20,7 @@ import {
   toggleCollapsed,
   toggleDone,
   updateTask,
+  duplicateTask,
 } from "../lib/treeUtils";
 import { appendToArchive } from "../lib/fileApi";
 import type {
@@ -63,6 +64,7 @@ interface TaskStore {
   toggleDone: (taskId: string) => void;
   toggleCollapsed: (taskId: string) => void;
   toggleAllTasksFolded: () => void;
+  duplicateSelectedTask: () => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   archiveCompleted: () => void;
 
@@ -250,6 +252,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((s) => ({
       file: touch({ ...s.file, tasks }),
       dirty: true,
+    }));
+  },
+
+  duplicateSelectedTask: () => {
+    const id = get().selectedTaskId;
+    if (!id) return;
+    const { tasks, newTaskId } = duplicateTask(get().file.tasks, id);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+      selectedTaskId: newTaskId,
     }));
   },
 

@@ -265,6 +265,9 @@ function App() {
         } else if (hotkeys.toggleFoldAll && key === hotkeys.toggleFoldAll.toLowerCase()) {
           e.preventDefault();
           store.toggleAllTasksFolded();
+        } else if (hotkeys.duplicateTask && key === hotkeys.duplicateTask.toLowerCase()) {
+          e.preventDefault();
+          store.duplicateSelectedTask();
         }
       } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
@@ -469,6 +472,7 @@ function App() {
           isFlatView={store.filter.flatView}
           projectStyle={settings.projectStyle}
           projectEmoji={settings.projectEmoji}
+          indentSpacing={settings.indentSpacing}
         />
 
         <StatusBar
