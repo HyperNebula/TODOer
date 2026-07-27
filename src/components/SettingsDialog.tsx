@@ -157,7 +157,7 @@ export function SettingsDialog({ onClose }: Props) {
                 <select value={projectStyle} onChange={(e) => setProjectStyle(e.target.value as any)}>
                   <option value="none">None (Default)</option>
                   <option value="bold">Bold Title</option>
-                  <option value="star">Star Emoji</option>
+                  <option value="star">Emoji</option>
                 </select>
               </div>
               {projectStyle === "star" && (
