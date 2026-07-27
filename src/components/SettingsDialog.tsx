@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function SettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data" | "about">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data">("appearance");
   const [appVersion, setAppVersion] = useState<string>("");
   
   useEffect(() => {
@@ -118,7 +118,6 @@ export function SettingsDialog({ onClose }: Props) {
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
           <button className={`settings-tab ${activeTab === "hotkeys" ? "active" : ""}`} onClick={() => setActiveTab("hotkeys")}>Hotkeys</button>
           <button className={`settings-tab ${activeTab === "data" ? "active" : ""}`} onClick={() => setActiveTab("data")}>Data</button>
-          <button className={`settings-tab ${activeTab === "about" ? "active" : ""}`} onClick={() => setActiveTab("about")}>About</button>
         </div>
         <div className="settings-content">
           {activeTab === "appearance" && (
@@ -444,35 +443,32 @@ export function SettingsDialog({ onClose }: Props) {
               </div>
             </>
           )}
-          {activeTab === "about" && (
-            <>
-              <div className="settings-group" style={{ textAlign: "center", padding: "40px 20px" }}>
-                <h3 style={{ margin: "0 0 8px", fontSize: "1.5em", fontWeight: "600" }}>TODOer</h3>
-                <p style={{ margin: "0", color: "var(--text-muted)" }}>Version {appVersion || "Loading..."}</p>
-              </div>
-            </>
-          )}
         </div>
         <div className="settings-footer">
-          <button 
-            className="btn btn-danger" 
-            style={{ opacity: 0.8 }}
-            onClick={() => {
-              setConfirmState({
-                title: "Reset Settings",
-                message: "Are you sure you want to reset all settings to their defaults? This will delete any custom themes.",
-                confirmLabel: "Reset",
-                onConfirm: () => {
-                  setConfirmState(null);
-                  resetSettings();
-                  store.resetVisibleColumns();
-                }
-              });
-            }}
-          >
-            Reset to Defaults
-          </button>
-          <button className="btn" onClick={onClose}>Close</button>
+          <span style={{ alignSelf: "center", color: "var(--text-muted)", fontSize: "0.9em" }}>
+            v{appVersion || "..."}
+          </span>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button 
+              className="btn btn-danger" 
+              style={{ opacity: 0.8 }}
+              onClick={() => {
+                setConfirmState({
+                  title: "Reset Settings",
+                  message: "Are you sure you want to reset all settings to their defaults? This will delete any custom themes.",
+                  confirmLabel: "Reset",
+                  onConfirm: () => {
+                    setConfirmState(null);
+                    resetSettings();
+                    store.resetVisibleColumns();
+                  }
+                });
+              }}
+            >
+              Reset to Defaults
+            </button>
+            <button className="btn" onClick={onClose}>Close</button>
+          </div>
         </div>
       </div>
       {confirmState && (
