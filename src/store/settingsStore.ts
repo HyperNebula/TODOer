@@ -106,6 +106,7 @@ export const DEFAULT_SETTINGS = {
     toggleFoldAll: "",
   } as Hotkeys,
   projectStyle: "none" as "none" | "bold" | "star",
+  projectEmoji: "⭐",
 };
 
 export interface SettingsState {
@@ -119,6 +120,7 @@ export interface SettingsState {
   usePriorityColors: boolean;
   archiveFormat: "csv" | "json";
   projectStyle: "none" | "bold" | "star";
+  projectEmoji: string;
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -132,6 +134,7 @@ export interface SettingsState {
   setUsePriorityColors: (use: boolean) => void;
   setArchiveFormat: (format: "csv" | "json") => void;
   setProjectStyle: (style: "none" | "bold" | "star") => void;
+  setProjectEmoji: (emoji: string) => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -162,6 +165,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setUsePriorityColors: (use) => set({ usePriorityColors: use }),
   setArchiveFormat: (format) => set({ archiveFormat: format }),
   setProjectStyle: (style) => set({ projectStyle: style }),
+  setProjectEmoji: (emoji) => set({ projectEmoji: emoji }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -178,6 +182,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         usePriorityColors?: boolean;
         archiveFormat?: "csv" | "json";
         projectStyle?: "none" | "bold" | "star";
+        projectEmoji?: string;
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -193,6 +198,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.usePriorityColors !== undefined && { usePriorityColors: saved.usePriorityColors }),
           ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
           ...(saved.projectStyle && { projectStyle: saved.projectStyle }),
+          ...(saved.projectEmoji && { projectEmoji: saved.projectEmoji }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -216,6 +222,7 @@ useSettingsStore.subscribe((state) => {
     usePriorityColors: state.usePriorityColors,
     archiveFormat: state.archiveFormat,
     projectStyle: state.projectStyle,
+    projectEmoji: state.projectEmoji,
     hotkeys: state.hotkeys,
   };
   try {

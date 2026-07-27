@@ -46,6 +46,7 @@ interface TreeGridProps {
   newlyCreatedTaskId?: string | null;
   onEditStarted?: () => void;
   projectStyle?: "none" | "bold" | "star";
+  projectEmoji?: string;
 }
 
 interface EditState {
@@ -84,6 +85,7 @@ export function TreeGrid({
   newlyCreatedTaskId,
   onEditStarted,
   projectStyle = "none",
+  projectEmoji = "⭐",
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
@@ -433,7 +435,7 @@ export function TreeGrid({
                 />
               ) : (
                 <span className="title-text" style={{ fontWeight: task.isProject && projectStyle === "bold" ? "bold" : "normal" }}>
-                  {task.isProject && projectStyle === "star" ? "⭐ " : ""}{task.title}
+                  {task.isProject && projectStyle === "star" ? `${projectEmoji} ` : ""}{task.title}
                 </span>
               )}
             </div>

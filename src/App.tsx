@@ -468,6 +468,7 @@ function App() {
           onMoveTask={store.moveTask}
           isFlatView={store.filter.flatView}
           projectStyle={settings.projectStyle}
+          projectEmoji={settings.projectEmoji}
         />
 
         <StatusBar

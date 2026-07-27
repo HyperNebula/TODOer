@@ -33,6 +33,7 @@ export function SettingsDialog({ onClose }: Props) {
     usePriorityColors,
     archiveFormat,
     projectStyle,
+    projectEmoji,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -44,6 +45,7 @@ export function SettingsDialog({ onClose }: Props) {
     setUsePriorityColors,
     setArchiveFormat,
     setProjectStyle,
+    setProjectEmoji,
     setHotkey,
     resetSettings,
   } = useSettingsStore();
@@ -145,6 +147,17 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value="star">Star Emoji</option>
                 </select>
               </div>
+              {projectStyle === "star" && (
+                <div className="settings-group">
+                  <label>Project Emoji</label>
+                  <input
+                    type="text"
+                    value={projectEmoji}
+                    onChange={(e) => setProjectEmoji(e.target.value)}
+                    style={{ maxWidth: "100px" }}
+                  />
+                </div>
+              )}
             </>
           )}
           {activeTab === "columns" && (
