@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
+// @ts-expect-error process is a nodejs global
+const pkg = await import("./package.json", { with: { type: "json" } });
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
@@ -28,5 +30,8 @@ export default defineConfig(async () => ({
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.default.version),
   },
 }));

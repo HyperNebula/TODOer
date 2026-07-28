@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
+
+declare const __APP_VERSION__: string;
 import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
@@ -16,7 +18,9 @@ export function SettingsDialog({ onClose }: Props) {
   const [appVersion, setAppVersion] = useState<string>("");
   
   useEffect(() => {
-    getVersion().then(setAppVersion).catch(console.error);
+    getVersion()
+      .then(setAppVersion)
+      .catch(() => setAppVersion(__APP_VERSION__));
   }, []);
   const [confirmState, setConfirmState] = useState<{
     title: string;
