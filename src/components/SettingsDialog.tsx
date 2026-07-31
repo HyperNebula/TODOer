@@ -40,7 +40,8 @@ export function SettingsDialog({ onClose }: Props) {
     autoSaveEnabled,
     autoSaveIntervalMinutes,
     printOrientation,
-    usePriorityColors,
+    priorityColorStyle,
+    showVerticalBorders,
     archiveFormat,
     projectStyle,
     projectEmoji,
@@ -52,7 +53,8 @@ export function SettingsDialog({ onClose }: Props) {
     setAutoSaveEnabled,
     setAutoSaveIntervalMinutes,
     setPrintOrientation,
-    setUsePriorityColors,
+    setPriorityColorStyle,
+    setShowVerticalBorders,
     setArchiveFormat,
     setProjectStyle,
     setProjectEmoji,
@@ -146,13 +148,24 @@ export function SettingsDialog({ onClose }: Props) {
                 </select>
               </div>
               <div className="settings-group">
+                <label>Priority Colors in Grid</label>
+                <select
+                  value={priorityColorStyle}
+                  onChange={(e) => setPriorityColorStyle(e.target.value as any)}
+                >
+                  <option value="none">None</option>
+                  <option value="row">Whole Row</option>
+                  <option value="cell">Priority Cell Only</option>
+                </select>
+              </div>
+              <div className="settings-group">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={usePriorityColors}
-                    onChange={(e) => setUsePriorityColors(e.target.checked)}
+                    checked={showVerticalBorders}
+                    onChange={(e) => setShowVerticalBorders(e.target.checked)}
                   />
-                  Use Priority Colors in Grid
+                  Show Vertical Grid Lines
                 </label>
               </div>
               <div className="settings-group">

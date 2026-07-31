@@ -93,7 +93,8 @@ export const DEFAULT_SETTINGS = {
   autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
   printOrientation: "portrait" as const,
-  usePriorityColors: true,
+  priorityColorStyle: "row" as "none" | "row" | "cell",
+  showVerticalBorders: false,
   archiveFormat: "csv" as "csv" | "json",
   hotkeys: {
     deleteTask: "",
@@ -120,7 +121,8 @@ export interface SettingsState {
   autoSaveEnabled: boolean;
   autoSaveIntervalMinutes: number;
   printOrientation: "portrait" | "landscape";
-  usePriorityColors: boolean;
+  priorityColorStyle: "none" | "row" | "cell";
+  showVerticalBorders: boolean;
   archiveFormat: "csv" | "json";
   projectStyle: "none" | "bold" | "star";
   projectEmoji: string;
@@ -135,7 +137,8 @@ export interface SettingsState {
   setAutoSaveEnabled: (enabled: boolean) => void;
   setAutoSaveIntervalMinutes: (minutes: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
-  setUsePriorityColors: (use: boolean) => void;
+  setPriorityColorStyle: (style: "none" | "row" | "cell") => void;
+  setShowVerticalBorders: (show: boolean) => void;
   setArchiveFormat: (format: "csv" | "json") => void;
   setProjectStyle: (style: "none" | "bold" | "star") => void;
   setProjectEmoji: (emoji: string) => void;
@@ -167,7 +170,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
   setAutoSaveIntervalMinutes: (minutes) => set({ autoSaveIntervalMinutes: minutes }),
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
-  setUsePriorityColors: (use) => set({ usePriorityColors: use }),
+  setPriorityColorStyle: (style) => set({ priorityColorStyle: style }),
+  setShowVerticalBorders: (show) => set({ showVerticalBorders: show }),
   setArchiveFormat: (format) => set({ archiveFormat: format }),
   setProjectStyle: (style) => set({ projectStyle: style }),
   setProjectEmoji: (emoji) => set({ projectEmoji: emoji }),
@@ -185,7 +189,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         autoSaveEnabled?: boolean;
         autoSaveIntervalMinutes?: number;
         printOrientation?: "portrait" | "landscape";
-        usePriorityColors?: boolean;
+        usePriorityColors?: boolean; // legacy
+        priorityColorStyle?: "none" | "row" | "cell";
+        showVerticalBorders?: boolean;
         archiveFormat?: "csv" | "json";
         projectStyle?: "none" | "bold" | "star";
         projectEmoji?: string;
@@ -202,7 +208,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.autoSaveEnabled !== undefined && { autoSaveEnabled: saved.autoSaveEnabled }),
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
-          ...(saved.usePriorityColors !== undefined && { usePriorityColors: saved.usePriorityColors }),
+          ...(saved.usePriorityColors !== undefined && { priorityColorStyle: saved.usePriorityColors ? "row" : "none" }),
+          ...(saved.priorityColorStyle && { priorityColorStyle: saved.priorityColorStyle }),
+          ...(saved.showVerticalBorders !== undefined && { showVerticalBorders: saved.showVerticalBorders }),
           ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
           ...(saved.projectStyle && { projectStyle: saved.projectStyle }),
           ...(saved.projectEmoji && { projectEmoji: saved.projectEmoji }),
@@ -227,7 +235,8 @@ useSettingsStore.subscribe((state) => {
     autoSaveEnabled: state.autoSaveEnabled,
     autoSaveIntervalMinutes: state.autoSaveIntervalMinutes,
     printOrientation: state.printOrientation,
-    usePriorityColors: state.usePriorityColors,
+    priorityColorStyle: state.priorityColorStyle,
+    showVerticalBorders: state.showVerticalBorders,
     archiveFormat: state.archiveFormat,
     projectStyle: state.projectStyle,
     projectEmoji: state.projectEmoji,

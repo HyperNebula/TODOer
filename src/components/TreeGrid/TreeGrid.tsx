@@ -36,7 +36,8 @@ interface TreeGridProps {
   onEditNotes: (task: Task) => void;
   onColumnResize: (column: ColumnId, width: number) => void;
   onRequestEditMenu?: (task: Task) => void;
-  usePriorityColors?: boolean;
+  priorityColorStyle?: "none" | "row" | "cell";
+  showVerticalBorders?: boolean;
   onNavigateUp?: () => void;
   onNavigateDown?: () => void;
   onNavigateLeft?: () => void;
@@ -76,7 +77,8 @@ export function TreeGrid({
   onToggleSort,
   onEditNotes,
   onColumnResize,
-  usePriorityColors,
+  priorityColorStyle,
+  showVerticalBorders,
   onNavigateUp,
   onNavigateDown,
   onNavigateLeft,
@@ -447,7 +449,11 @@ export function TreeGrid({
         return (
           <td
             key={column}
-            className={`${doneClass} ${isSelected ? "selected" : ""}`}
+            className={[
+              doneClass,
+              isSelected ? "selected" : "",
+              priorityColorStyle === "cell" && column === "priority" ? `priority-${task.priority}` : ""
+            ].filter(Boolean).join(" ")}
             onDoubleClick={() => startEdit(task, column)}
           >
             {renderEditableCell(task, column)}
@@ -542,7 +548,7 @@ export function TreeGrid({
   return (
     <>
       <div className="tree-grid-wrap" onClick={() => onSelect(null)}>
-        <table className="tree-grid">
+        <table className={`tree-grid ${showVerticalBorders ? "tree-grid-vertical-lines" : ""}`}>
           <thead>
             <tr>
               {visibleColumns.map((col) => (
@@ -579,7 +585,7 @@ export function TreeGrid({
                   className={[
                     row.task.id === selectedTaskId ? "row-selected" : "",
                     row.task.archived ? "row-archived" : "",
-                    usePriorityColors ? `priority-${row.task.priority}` : "",
+                    priorityColorStyle === "row" ? `priority-${row.task.priority}` : "",
                     rowDragClass(row),
                   ].filter(Boolean).join(" ")}
                   draggable={!isFlatView}

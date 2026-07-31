@@ -430,7 +430,7 @@ function App() {
               onClick={() => setActiveView(v => v === "tasks" ? "calendar" : "tasks")}
               title={activeView === "tasks" ? "Switch to Calendar" : "Switch to Tasks"}
             >
-              {activeView === "tasks" ? "📅 Calendar" : "📋 Tasks"}
+              {activeView === "tasks" ? "Calendar" : "Tasks"}
             </button>
           )}
         </header>
@@ -485,7 +485,8 @@ function App() {
             onToggleSort={store.toggleSort}
             onEditNotes={setNotesTask}
             onColumnResize={store.setColumnWidth}
-            usePriorityColors={settings.usePriorityColors}
+            priorityColorStyle={settings.priorityColorStyle}
+            showVerticalBorders={settings.showVerticalBorders}
             onNavigateUp={handleNavigateUp}
             onNavigateDown={handleNavigateDown}
             onNavigateLeft={handleNavigateLeft}
