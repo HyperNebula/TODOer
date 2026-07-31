@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { FilterBar } from "./components/FilterBar";
@@ -29,6 +29,13 @@ import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
 import "./App.css";
 
+// Calendar component — lazy-loaded and tree-shaken when __CALENDAR_ENABLED__ is false
+const CalendarView = __CALENDAR_ENABLED__
+  ? React.lazy(() => import("./components/Calendar/CalendarView").then(m => ({ default: m.CalendarView })))
+  : null;
+
+type AppView = "tasks" | "calendar";
+
 function App() {
   const store = useTaskStore();
   const rows = store.getFlatRows();
@@ -36,6 +43,7 @@ function App() {
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newlyCreatedTaskId, setNewlyCreatedTaskId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<AppView>("tasks");
   const [confirmState, setConfirmState] = useState<{
     title: string;
     message: string;
@@ -447,33 +455,58 @@ function App() {
           onClear={store.clearFilter}
         />
 
-        <TreeGrid
-          rows={rows}
-          visibleColumns={visibleColumns}
-          columnWidths={store.file.settings?.columnWidths ?? {}}
-          selectedTaskId={store.selectedTaskId}
-          newlyCreatedTaskId={newlyCreatedTaskId}
-          onEditStarted={() => setNewlyCreatedTaskId(null)}
-          sortColumn={store.sort?.column ?? null}
-          sortDirection={store.sort?.direction ?? null}
-          onSelect={store.setSelectedTaskId}
-          onToggleDone={store.toggleDone}
-          onToggleCollapsed={store.toggleCollapsed}
-          onUpdate={store.updateTask}
-          onToggleSort={store.toggleSort}
-          onEditNotes={setNotesTask}
-          onColumnResize={store.setColumnWidth}
-          usePriorityColors={settings.usePriorityColors}
-          onNavigateUp={handleNavigateUp}
-          onNavigateDown={handleNavigateDown}
-          onNavigateLeft={handleNavigateLeft}
-          onNavigateRight={handleNavigateRight}
-          onMoveTask={store.moveTask}
-          isFlatView={store.filter.flatView}
-          projectStyle={settings.projectStyle}
-          projectEmoji={settings.projectEmoji}
-          indentSpacing={settings.indentSpacing}
-        />
+        {__CALENDAR_ENABLED__ && (
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn${activeView === "tasks" ? " active" : ""}`}
+              onClick={() => setActiveView("tasks")}
+            >
+              📋 Tasks
+            </button>
+            <button
+              className={`view-toggle-btn${activeView === "calendar" ? " active" : ""}`}
+              onClick={() => setActiveView("calendar")}
+            >
+              📅 Calendar
+            </button>
+          </div>
+        )}
+
+        {activeView === "tasks" ? (
+          <TreeGrid
+            rows={rows}
+            visibleColumns={visibleColumns}
+            columnWidths={store.file.settings?.columnWidths ?? {}}
+            selectedTaskId={store.selectedTaskId}
+            newlyCreatedTaskId={newlyCreatedTaskId}
+            onEditStarted={() => setNewlyCreatedTaskId(null)}
+            sortColumn={store.sort?.column ?? null}
+            sortDirection={store.sort?.direction ?? null}
+            onSelect={store.setSelectedTaskId}
+            onToggleDone={store.toggleDone}
+            onToggleCollapsed={store.toggleCollapsed}
+            onUpdate={store.updateTask}
+            onToggleSort={store.toggleSort}
+            onEditNotes={setNotesTask}
+            onColumnResize={store.setColumnWidth}
+            usePriorityColors={settings.usePriorityColors}
+            onNavigateUp={handleNavigateUp}
+            onNavigateDown={handleNavigateDown}
+            onNavigateLeft={handleNavigateLeft}
+            onNavigateRight={handleNavigateRight}
+            onMoveTask={store.moveTask}
+            isFlatView={store.filter.flatView}
+            projectStyle={settings.projectStyle}
+            projectEmoji={settings.projectEmoji}
+            indentSpacing={settings.indentSpacing}
+          />
+        ) : (
+          __CALENDAR_ENABLED__ && CalendarView && (
+            <React.Suspense fallback={<div className="calendar-loading">Loading calendar…</div>}>
+              <CalendarView />
+            </React.Suspense>
+          )
+        )}
 
         <StatusBar
           totalTasks={store.file.tasks.filter((t) => !t.archived).length}

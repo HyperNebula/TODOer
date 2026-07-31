@@ -33,5 +33,9 @@ export default defineConfig(async () => ({
   },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.default.version),
+    __CALENDAR_ENABLED__: JSON.stringify(
+      // @ts-expect-error process is a nodejs global
+      process.env.CALENDAR_ENABLED === "true"
+    ),
   },
 }));

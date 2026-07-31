@@ -1,6 +1,6 @@
 [package]
 name = "todoer"
-version = "0.6.1"
+version = "0.7.0"
 description = "A Tauri App"
 authors = ["David"]
 edition = "2021"
@@ -13,6 +13,10 @@ edition = "2021"
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "tauri_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = []
+calendar = []
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

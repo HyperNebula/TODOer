@@ -3,6 +3,9 @@ use tauri::{Emitter, Manager};
 use std::fs;
 use std::path::Path;
 
+#[cfg(feature = "calendar")]
+mod calendar;
+
 fn atomic_write(path: &Path, contents: &str) -> Result<(), String> {
     let parent = path.parent().ok_or("Invalid path")?;
     fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -226,7 +229,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -237,21 +240,43 @@ pub fn run() {
         })
         .on_menu_event(|app, event| {
             let _ = app.emit("menu-action", event.id().as_ref());
-        })
-        .invoke_handler(tauri::generate_handler![
-            read_tasklist_file,
-            write_tasklist_file,
-            write_csv_file,
-            open_path,
-            get_tasklists_dir,
-            get_last_file_path,
-            set_last_file_path,
-            write_temp_html,
-            write_temp_pdf,
-            append_to_archive,
-            read_archive,
-            get_archive_path
-        ])
+        });
+
+    #[cfg(not(feature = "calendar"))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        read_tasklist_file,
+        write_tasklist_file,
+        write_csv_file,
+        open_path,
+        get_tasklists_dir,
+        get_last_file_path,
+        set_last_file_path,
+        write_temp_html,
+        write_temp_pdf,
+        append_to_archive,
+        read_archive,
+        get_archive_path
+    ]);
+
+    #[cfg(feature = "calendar")]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        read_tasklist_file,
+        write_tasklist_file,
+        write_csv_file,
+        open_path,
+        get_tasklists_dir,
+        get_last_file_path,
+        set_last_file_path,
+        write_temp_html,
+        write_temp_pdf,
+        append_to_archive,
+        read_archive,
+        get_archive_path,
+        calendar::read_schedule_file,
+        calendar::write_schedule_file
+    ]);
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

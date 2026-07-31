@@ -1,17 +1,21 @@
 {
   "name": "todoer",
   "private": true,
-  "version": "0.6.1",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:plus": "cross-env CALENDAR_ENABLED=true vite",
     "build": "tsc && vite build",
+    "build:plus": "cross-env CALENDAR_ENABLED=true tsc && cross-env CALENDAR_ENABLED=true vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:dev:plus": "cross-env CALENDAR_ENABLED=true tauri dev --config src-tauri/tauri.conf.plus.json -- --features calendar",
+    "tauri:build": "tauri build",
+    "tauri:build:plus": "cross-env CALENDAR_ENABLED=true tauri build --config src-tauri/tauri.conf.plus.json -- --features calendar"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -34,6 +38,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "@vitest/coverage-v8": "^4.1.9",
+    "cross-env": "^7.0.3",
     "jsdom": "^29.1.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",

@@ -1,0 +1,21 @@
+.calendar-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.calendar-placeholder {
+  text-align: center;
+  color: var(--text-secondary, #888);
+}
+
+.calendar-placeholder h2 {
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+}
+
+.calendar-placeholder p {
+  font-size: 0.9rem;
+}

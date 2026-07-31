@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TODOer",
+  "productName": "TODOer+",
   "version": "0.7.0",
-  "identifier": "com.david.todoer",
+  "identifier": "com.david.todoer-plus",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev:plus",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run build:plus",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "TODOer",
+        "title": "TODOer+",
         "width": 1200,
         "height": 800,
         "minWidth": 800,

@@ -33,8 +33,31 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Tauri app
+      # --- TODOer (todolist only) ---
+      - name: Build TODOer
         run: npm run tauri:build
+
+      - name: Upload TODOer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: todoer-${{ matrix.platform }}
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+
+      # --- TODOer+ (todolist + calendar) ---
+      - name: Build TODOer+
+        run: npm run tauri:build:plus
+
+      - name: Upload TODOer+ artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: todoer-plus-${{ matrix.platform }}
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
 
       - name: Get version
         id: version
@@ -43,18 +66,45 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}-build.${{ github.run_number }}
           name: "v${{ steps.version.outputs.version }} (Build ${{ github.run_number }})"
-          body: "See the assets below to download and install this version."
+          body: |
+            ## Downloads
+
+            ### TODOer (Todolist only)
+            See `TODOer-*` assets below.
+
+            ### TODOer+ (Todolist + Calendar)
+            See `TODOer+-*` assets below.
           draft: false
           prerelease: false
           files: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
+            artifacts/**/*.dmg
+            artifacts/**/*.exe
+            artifacts/**/*.msi
 
   pages:
     runs-on: ubuntu-latest
