@@ -39,12 +39,21 @@ export interface Task {
   isProject?: boolean;
 }
 
+export interface Timeblock {
+  id: string;
+  title?: string;
+  startTime: string; // ISO 8601 timestamp
+  endTime: string;   // ISO 8601 timestamp
+  taskIds: string[];
+}
+
 export interface TaskListFile {
   version: 1;
   name: string;
   modifiedAt: string;
   settings?: TaskListSettings;
   tasks: Task[];
+  timeblocks?: Timeblock[];
 }
 
 export interface TreeNode {
@@ -123,6 +132,7 @@ export function createEmptyTaskList(name = "Untitled"): TaskListFile {
       columnWidths: DEFAULT_COLUMN_WIDTHS,
     },
     tasks: [],
+    timeblocks: [],
   };
 }
 

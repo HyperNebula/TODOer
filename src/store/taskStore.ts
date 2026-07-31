@@ -30,6 +30,7 @@ import type {
   SortState,
   Task,
   TaskListFile,
+  Timeblock,
 } from "../types/task";
 import {
   DEFAULT_FILTER,
@@ -81,6 +82,13 @@ interface TaskStore {
   resetVisibleColumns: () => void;
   setColumnWidth: (column: ColumnId, width: number) => void;
   toggleFlatView: () => void;
+
+  // Timeblock actions
+  addTimeblock: (startTime: string, endTime: string, title?: string) => string;
+  updateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
+  deleteTimeblock: (id: string) => void;
+  assignTaskToTimeblock: (timeblocId: string, taskId: string) => void;
+  removeTaskFromTimeblock: (timeblocId: string, taskId: string) => void;
 }
 
 function touch(file: TaskListFile): TaskListFile {
@@ -371,4 +379,61 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   toggleFlatView: () =>
     set((s) => ({ filter: { ...s.filter, flatView: !s.filter.flatView } })),
+
+  // ── Timeblock actions ────────────────────────────────────────────────────
+  addTimeblock: (startTime, endTime, title) => {
+    const id = crypto.randomUUID();
+    const block: Timeblock = { id, startTime, endTime, taskIds: [], ...(title ? { title } : {}) };
+    set((s) => ({
+      file: touch({ ...s.file, timeblocks: [...(s.file.timeblocks ?? []), block] }),
+      dirty: true,
+    }));
+    return id;
+  },
+
+  updateTimeblock: (id, updates) =>
+    set((s) => ({
+      file: touch({
+        ...s.file,
+        timeblocks: (s.file.timeblocks ?? []).map((b) =>
+          b.id === id ? { ...b, ...updates } : b
+        ),
+      }),
+      dirty: true,
+    })),
+
+  deleteTimeblock: (id) =>
+    set((s) => ({
+      file: touch({
+        ...s.file,
+        timeblocks: (s.file.timeblocks ?? []).filter((b) => b.id !== id),
+      }),
+      dirty: true,
+    })),
+
+  assignTaskToTimeblock: (timeblocId, taskId) =>
+    set((s) => ({
+      file: touch({
+        ...s.file,
+        timeblocks: (s.file.timeblocks ?? []).map((b) =>
+          b.id === timeblocId && !b.taskIds.includes(taskId)
+            ? { ...b, taskIds: [...b.taskIds, taskId] }
+            : b
+        ),
+      }),
+      dirty: true,
+    })),
+
+  removeTaskFromTimeblock: (timeblocId, taskId) =>
+    set((s) => ({
+      file: touch({
+        ...s.file,
+        timeblocks: (s.file.timeblocks ?? []).map((b) =>
+          b.id === timeblocId
+            ? { ...b, taskIds: b.taskIds.filter((id) => id !== taskId) }
+            : b
+        ),
+      }),
+      dirty: true,
+    })),
 }));
