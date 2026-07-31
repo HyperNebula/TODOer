@@ -132,7 +132,97 @@ export const solarizedLightTheme: Theme = {
   },
 };
 
-export const BUILT_IN_THEMES = [defaultLightTheme, defaultDarkTheme, nordTheme, draculaTheme, solarizedLightTheme];
+export const darkblueTheme: Theme = {
+  id: "darkblue",
+  name: "Darkblue",
+  colorScheme: "dark",
+  colors: {
+    bg: "#000033",
+    surface: "#00004d",
+    border: "#00008b",
+    borderLight: "#0000cd",
+    headerBg: "#00004d",
+    text: "#cccccc",
+    textMuted: "#8888aa",
+    accent: "#00ffff",
+    accentHover: "#00cccc",
+    rowHover: "#00005f",
+    rowSelected: "#00008b",
+    danger: "#ff0000",
+  },
+};
+
+export const elflordTheme: Theme = {
+  id: "elflord",
+  name: "Elflord",
+  colorScheme: "dark",
+  colors: {
+    bg: "#000000",
+    surface: "#1a1a1a",
+    border: "#333333",
+    borderLight: "#4d4d4d",
+    headerBg: "#1a1a1a",
+    text: "#00ffff",
+    textMuted: "#00aa00",
+    accent: "#ffff00",
+    accentHover: "#cccc00",
+    rowHover: "#111111",
+    rowSelected: "#333333",
+    danger: "#ff0000",
+  },
+};
+
+export const gruvboxTheme: Theme = {
+  id: "gruvbox",
+  name: "Gruvbox",
+  colorScheme: "dark",
+  colors: {
+    bg: "#282828",
+    surface: "#3c3836",
+    border: "#504945",
+    borderLight: "#665c54",
+    headerBg: "#3c3836",
+    text: "#ebdbb2",
+    textMuted: "#a89984",
+    accent: "#d79921",
+    accentHover: "#fabd2f",
+    rowHover: "#3c3836",
+    rowSelected: "#504945",
+    danger: "#cc241d",
+  },
+};
+
+export const ayuTheme: Theme = {
+  id: "ayu",
+  name: "Ayu Dark",
+  colorScheme: "dark",
+  colors: {
+    bg: "#0a0e14",
+    surface: "#0f1419",
+    border: "#242930",
+    borderLight: "#3e4b59",
+    headerBg: "#0f1419",
+    text: "#b3b1ad",
+    textMuted: "#4d5a68",
+    accent: "#ffb454",
+    accentHover: "#ff8f40",
+    rowHover: "#151b21",
+    rowSelected: "#242930",
+    danger: "#f07178",
+  },
+};
+
+export const BUILT_IN_THEMES = [
+  defaultLightTheme,
+  defaultDarkTheme,
+  nordTheme,
+  draculaTheme,
+  solarizedLightTheme,
+  darkblueTheme,
+  elflordTheme,
+  gruvboxTheme,
+  ayuTheme
+];
 
 export type Hotkeys = {
   deleteTask: string;
