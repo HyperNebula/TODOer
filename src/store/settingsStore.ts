@@ -39,8 +39,8 @@ export const defaultLightTheme: Theme = {
   colors: {
     bg: "#f0f2f5",
     surface: "#ffffff",
-    border: "#c8cdd3",
-    borderLight: "#e8eaed",
+    border: "#9ca3af",
+    borderLight: "#d1d5db",
     headerBg: "#e4e7eb",
     text: "#1a1a1a",
     textMuted: "#666666",
@@ -59,8 +59,8 @@ export const defaultDarkTheme: Theme = {
   colors: {
     bg: "#0f1117",
     surface: "#1a1d27",
-    border: "#2e3244",
-    borderLight: "#252838",
+    border: "#4b5563",
+    borderLight: "#374151",
     headerBg: "#1e2130",
     text: "#e8eaf0",
     textMuted: "#8b91a8",
