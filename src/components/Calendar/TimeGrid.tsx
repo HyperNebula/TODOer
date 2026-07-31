@@ -7,6 +7,7 @@ export const GRID_START_HOUR = 6;   // 6 AM
 export const GRID_END_HOUR = 22;    // 10 PM
 export const PX_PER_MIN = 1.5;      // pixels per minute
 export const GRID_START_MIN = GRID_START_HOUR * 60;
+export const COL_HEADER_PX = 32;    // height of the sticky date heading
 
 interface TimeGridProps {
   /** ISO date strings for the columns shown (1 = day view, 7 = week view) */
@@ -39,6 +40,15 @@ function snapMin(min: number) {
   return Math.round(min / 15) * 15;
 }
 
+/** Convert a block's startTime / endTime to minutes-from-grid-start */
+function blockToGridMinutes(block: Timeblock): { startMin: number; endMin: number } {
+  const s = new Date(block.startTime);
+  const e = new Date(block.endTime);
+  const startMin = s.getHours() * 60 + s.getMinutes() - GRID_START_MIN;
+  const endMin   = e.getHours() * 60 + e.getMinutes() - GRID_START_MIN;
+  return { startMin, endMin };
+}
+
 /**
  * The time grid renders hour lines and all timeblocks for the visible dates.
  * Clicking on an empty area creates a new timeblock (default 60 min).
@@ -54,13 +64,18 @@ export function TimeGrid({
   onAssignTask,
   onRemoveTask,
 }: TimeGridProps) {
-  const gridRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  /** Convert a clientY position into a minute offset from GRID_START_MIN */
-  function clientYToMin(clientY: number): number {
-    if (!gridRef.current) return 0;
-    const rect = gridRef.current.getBoundingClientRect();
-    const relY = clientY - rect.top + gridRef.current.scrollTop;
+  /**
+   * Convert a clientY value into minutes-from-grid-start, accounting for:
+   *  - the wrapper's scroll position
+   *  - the wrapper's bounding rect top
+   *  - the sticky column header height
+   */
+  function clientYToGridMin(clientY: number): number {
+    if (!wrapperRef.current) return 0;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const relY = clientY - rect.top + wrapperRef.current.scrollTop - COL_HEADER_PX;
     const rawMin = relY / PX_PER_MIN;
     return Math.max(0, Math.min(rawMin, TOTAL_HOURS * 60));
   }
@@ -75,7 +90,7 @@ export function TimeGrid({
   // ── Click on empty column area to create a timeblock ──────────────────────
   function handleColumnClick(e: React.MouseEvent, isoDate: string) {
     if ((e.target as HTMLElement).closest(".timeblock-block")) return;
-    const rawMin = clientYToMin(e.clientY);
+    const rawMin = clientYToGridMin(e.clientY);
     const startMin = snapMin(rawMin);
     const endMin = startMin + 60;
     onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin));
@@ -92,27 +107,26 @@ export function TimeGrid({
     const taskId = e.dataTransfer.getData("text/plain");
     if (!taskId) return;
 
-    const rawMin = clientYToMin(e.clientY);
-    const startMin = snapMin(rawMin);
+    const rawMin = clientYToGridMin(e.clientY);
+    const dropMin = snapMin(rawMin); // minutes from grid start where the user dropped
 
-    // Find if the drop landed on an existing block
-    const totalMin = GRID_START_MIN + startMin;
+    // Check if the drop landed inside an existing block on this date.
+    // Compare purely in grid-minutes so the arithmetic is simple.
     const blocksOnDate = timeblocks.filter((b) => b.startTime.startsWith(isoDate));
     const target = blocksOnDate.find((b) => {
-      const bStart = GRID_START_MIN + (new Date(b.startTime).getHours() * 60 + new Date(b.startTime).getMinutes() - GRID_START_MIN);
-      const bEnd = GRID_START_MIN + (new Date(b.endTime).getHours() * 60 + new Date(b.endTime).getMinutes() - GRID_START_MIN);
-      return totalMin >= bStart && totalMin < bEnd;
+      const { startMin, endMin } = blockToGridMinutes(b);
+      return dropMin >= startMin && dropMin < endMin;
     });
 
     if (target) {
-      // Assign task to existing block
+      // Assign to existing block
       onAssignTask(target.id, taskId);
     } else {
-      // Get the task's time estimate, or default to 60 min
+      // Create a new block; use the task's estimate if available
       const task = tasks.find((t) => t.id === taskId);
       const dur = task?.timeEstimateMinutes ?? 60;
-      const endMin = startMin + dur;
-      const newId = onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin));
+      const endMin = dropMin + dur;
+      const newId = onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin));
       onAssignTask(newId, taskId);
     }
   }
@@ -120,18 +134,22 @@ export function TimeGrid({
   const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => GRID_START_HOUR + i);
 
   return (
-    <div className="time-grid-wrapper" ref={gridRef}>
+    <div className="time-grid-wrapper" ref={wrapperRef}>
       {/* Hour labels column */}
       <div className="time-grid-hours">
-        {hours.map((h) => (
-          <div
-            key={h}
-            className="time-grid-hour-label"
-            style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
-          >
-            {formatHour(h)}
-          </div>
-        ))}
+        {/* Spacer that matches the sticky column header so labels align */}
+        <div style={{ height: COL_HEADER_PX, flexShrink: 0 }} />
+        <div className="time-grid-hours-inner">
+          {hours.map((h) => (
+            <div
+              key={h}
+              className="time-grid-hour-label"
+              style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
+            >
+              {formatHour(h)}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Columns — one per date */}
@@ -143,10 +161,10 @@ export function TimeGrid({
 
           return (
             <div key={isoDate} className="time-grid-column">
-              {/* Date heading */}
+              {/* Sticky date heading */}
               <div className="time-grid-col-header">{formatDateHeading(isoDate)}</div>
 
-              {/* Clickable / droppable area */}
+              {/* Clickable / droppable body */}
               <div
                 className="time-grid-col-body"
                 style={{ height: GRID_HEIGHT }}

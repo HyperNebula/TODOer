@@ -9,6 +9,8 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
 /* ── Toolbar ──────────────────────────────────────────────── */
@@ -41,6 +43,41 @@
 }
 
 .cal-today-btn { min-width: 56px; }
+
+/* ── Date range picker button ─────────────────────────────── */
+.cal-date-picker-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cal-date-range-btn {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  min-width: 180px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cal-date-range-btn:hover {
+  border-color: var(--accent);
+  background: var(--row-hover);
+}
+
+/* Invisible native date input — triggered programmatically */
+.cal-date-input-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  left: 50%;
+  top: 100%;
+  border: none;
+  padding: 0;
+}
 
 .cal-tasks-btn.active,
 .cal-view-btn.active {
@@ -193,8 +230,9 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
+  /* Use flex so children stretch to the wrapper's full height */
   display: flex;
-  position: relative;
+  align-items: stretch;
   scrollbar-width: thin;
 }
 
@@ -202,8 +240,21 @@
 .time-grid-hours {
   width: 52px;
   flex-shrink: 0;
-  position: relative;
+  /* Stretch to fill wrapper height so the border goes all the way down */
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--border);
+  /* Stick to the left edge while columns scroll horizontally */
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--bg);
+}
+
+/* The inner container is relative so labels can be absolutely positioned */
+.time-grid-hours-inner {
+  position: relative;
+  flex: 1;
 }
 
 .time-grid-hour-label {
@@ -221,6 +272,8 @@
   display: flex;
   flex: 1;
   min-width: 0;
+  /* Columns must stretch to fill the wrapper so borders extend to the bottom */
+  align-items: stretch;
 }
 
 .time-grid-column {
@@ -229,6 +282,8 @@
   flex-direction: column;
   border-right: 1px solid var(--border-light);
   min-width: 120px;
+  /* Stretch to fill so the border reaches the bottom of the scrollable area */
+  align-self: stretch;
 }
 
 .time-grid-col-header {
