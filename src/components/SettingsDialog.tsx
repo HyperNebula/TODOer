@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
 declare const __APP_VERSION__: string;
-import { useSettingsStore, BUILT_IN_THEMES, Theme } from "../store/settingsStore";
+import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -13,6 +13,21 @@ import "./SettingsDialog.css";
 interface Props {
   onClose: () => void;
 }
+
+const COLOR_LABELS: Record<keyof ThemeColors, string> = {
+  bg: "App Background",
+  surface: "Surface Background",
+  border: "Border",
+  borderLight: "Light Border",
+  headerBg: "Header Background",
+  text: "Main Text",
+  textMuted: "Muted Text",
+  accent: "Accent Color",
+  accentHover: "Accent Hover",
+  rowHover: "Row Hover",
+  rowSelected: "Row Selected",
+  danger: "Danger Color",
+};
 
 export function SettingsDialog({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data">("appearance");
@@ -232,7 +247,7 @@ export function SettingsDialog({ onClose }: Props) {
               <div className="settings-group color-picker-grid">
                 {Object.entries(editingTheme.colors).map(([key, val]) => (
                   <div key={key} className="color-item">
-                    <span>{key}</span>
+                    <span>{COLOR_LABELS[key as keyof ThemeColors] || key}</span>
                     <input 
                       type="color" 
                       value={val} 
