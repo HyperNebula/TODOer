@@ -37,6 +37,16 @@
   box-sizing: border-box;
 }
 
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  /* Ensure there's space for the arrow */
+  padding-right: 28px !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -165,7 +175,7 @@ body {
   padding: 2px 6px;
   border: 1px solid var(--border);
   border-radius: 3px;
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
 }
 

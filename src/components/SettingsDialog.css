@@ -96,7 +96,7 @@
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   font-family: inherit;
 }
