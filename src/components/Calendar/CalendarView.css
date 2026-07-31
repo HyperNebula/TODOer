@@ -264,7 +264,10 @@
   /* Use flex so children stretch to the wrapper's full height */
   display: flex;
   align-items: stretch;
-  scrollbar-width: thin;
+  scrollbar-width: none; /* Firefox */
+}
+.time-grid-wrapper::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
 }
 
 /* ── Hour labels ──────────────────────────────────────────── */
