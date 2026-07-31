@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useSettingsStore, defaultLightTheme, defaultDarkTheme } from "../store/settingsStore";
+import { useSettingsStore, BUILT_IN_THEMES } from "../store/settingsStore";
 
 export function ThemeApplier() {
   const { activeThemeId, customThemes, fontSizeOffset, fontFamily, loadSettings } = useSettingsStore();
@@ -11,13 +11,9 @@ export function ThemeApplier() {
 
   useEffect(() => {
     // Find active theme
-    let theme = defaultLightTheme;
-    if (activeThemeId === "default-dark") {
-      theme = defaultDarkTheme;
-    } else if (activeThemeId !== "default-light") {
-      const custom = customThemes.find(t => t.id === activeThemeId);
-      if (custom) theme = custom;
-    }
+    let theme = BUILT_IN_THEMES.find(t => t.id === activeThemeId) || 
+                customThemes.find(t => t.id === activeThemeId) || 
+                BUILT_IN_THEMES[0];
 
     const root = document.documentElement;
     
