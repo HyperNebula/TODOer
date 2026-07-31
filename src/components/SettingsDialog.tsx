@@ -6,6 +6,7 @@ import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "..
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { PromptDialog } from "./PromptDialog";
 import { getArchiveFilePath, openFileLink } from "../lib/fileApi";
 import "./SettingsDialog.css";
 
@@ -28,6 +29,12 @@ export function SettingsDialog({ onClose }: Props) {
     confirmLabel?: string;
     cancelLabel?: string;
     onConfirm: () => void;
+  } | null>(null);
+  const [promptState, setPromptState] = useState<{
+    title: string;
+    message: string;
+    initialValue?: string;
+    onConfirm: (val: string) => void;
   } | null>(null);
   const store = useTaskStore();
   const visibleColumns = store.getVisibleColumns();
@@ -86,15 +93,22 @@ export function SettingsDialog({ onClose }: Props) {
 
   const handleSaveTheme = () => {
     if (isBuiltIn) {
-      const newName = prompt("Enter a name for your custom theme:", "My Custom Theme");
-      if (!newName) return;
-      const newTheme: Theme = {
-        ...editingTheme,
-        id: "custom-" + Date.now(),
-        name: newName,
-      };
-      saveCustomTheme(newTheme);
-      setActiveThemeId(newTheme.id);
+      setPromptState({
+        title: "New Custom Theme",
+        message: "Enter a name for your custom theme:",
+        initialValue: "My Custom Theme",
+        onConfirm: (newName) => {
+          setPromptState(null);
+          if (!newName.trim()) return;
+          const newTheme: Theme = {
+            ...editingTheme,
+            id: "custom-" + Date.now(),
+            name: newName.trim(),
+          };
+          saveCustomTheme(newTheme);
+          setActiveThemeId(newTheme.id);
+        }
+      });
     } else {
       saveCustomTheme(editingTheme);
     }
@@ -496,6 +510,15 @@ export function SettingsDialog({ onClose }: Props) {
           cancelLabel={confirmState.cancelLabel}
           onConfirm={confirmState.onConfirm}
           onCancel={() => setConfirmState(null)}
+        />
+      )}
+      {promptState && (
+        <PromptDialog
+          title={promptState.title}
+          message={promptState.message}
+          initialValue={promptState.initialValue}
+          onConfirm={promptState.onConfirm}
+          onCancel={() => setPromptState(null)}
         />
       )}
     </div>
