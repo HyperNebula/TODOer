@@ -265,6 +265,7 @@
   display: flex;
   align-items: stretch;
   scrollbar-width: none; /* Firefox */
+  overscroll-behavior: none;
 }
 .time-grid-wrapper::-webkit-scrollbar {
   display: none; /* Safari and Chrome */
