@@ -223,6 +223,39 @@
   min-width: 0;
 }
 
+.time-grid-outer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Fixed Header Row ─────────────────────────────────────── */
+.time-grid-header-row {
+  display: flex;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.time-grid-hours-spacer {
+  width: 52px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+}
+
+.time-grid-header-cols {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+  scrollbar-width: none;
+}
+.time-grid-header-cols::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Time grid wrapper (scrollable) ──────────────────────── */
 .time-grid-wrapper {
   flex: 1;
@@ -286,6 +319,8 @@
 }
 
 .time-grid-col-header {
+  flex: 1;
+  min-width: 120px;
   height: 32px;
   display: flex;
   align-items: center;
@@ -293,13 +328,10 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--surface);
-  position: sticky;
-  top: 0;
-  z-index: 2;
   transition: background 0.15s, color 0.15s;
+  border-right: 1px solid var(--border-light);
 }
 
 /* Today highlight — accent-coloured pill text */

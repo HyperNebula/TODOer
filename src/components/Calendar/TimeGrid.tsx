@@ -53,8 +53,11 @@ function blockToGridMinutes(block: Timeblock): { startMin: number; endMin: numbe
 
 /**
  * The time grid renders hour lines and all timeblocks for the visible dates.
- * Clicking on an empty area creates a new timeblock (default 60 min).
- * Dropping a task ID on a column assigns the task to an existing or new block.
+ *
+ * Header row is rendered OUTSIDE the scroll wrapper so it is always visible.
+ * When the body scrolls horizontally (week view, narrow window), an onScroll
+ * handler mirrors the scrollLeft onto the header's inner scroll container so
+ * headers stay aligned with their columns.
  */
 export function TimeGrid({
   dates,
@@ -67,18 +70,28 @@ export function TimeGrid({
   onAssignTask,
   onRemoveTask,
 }: TimeGridProps) {
+  // The vertically + horizontally scrollable body
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // The header columns scroll container — scrollLeft is driven by the body
+  const headerColsRef = useRef<HTMLDivElement>(null);
+
+  /** Sync header horizontal scroll with body scroll */
+  function handleWrapperScroll() {
+    if (wrapperRef.current && headerColsRef.current) {
+      headerColsRef.current.scrollLeft = wrapperRef.current.scrollLeft;
+    }
+  }
 
   /**
    * Convert a clientY value into minutes-from-grid-start, accounting for:
    *  - the wrapper's scroll position
-   *  - the wrapper's bounding rect top
-   *  - the sticky column header height
+   *  - the wrapper's bounding rect top (body area, no header offset needed
+   *    because the header is now outside the wrapper)
    */
   function clientYToGridMin(clientY: number): number {
     if (!wrapperRef.current) return 0;
     const rect = wrapperRef.current.getBoundingClientRect();
-    const relY = clientY - rect.top + wrapperRef.current.scrollTop - COL_HEADER_PX;
+    const relY = clientY - rect.top + wrapperRef.current.scrollTop;
     const rawMin = relY / PX_PER_MIN;
     return Math.max(0, Math.min(rawMin, TOTAL_HOURS * 60));
   }
@@ -111,10 +124,8 @@ export function TimeGrid({
     if (!taskId) return;
 
     const rawMin = clientYToGridMin(e.clientY);
-    const dropMin = snapMin(rawMin); // minutes from grid start where the user dropped
+    const dropMin = snapMin(rawMin);
 
-    // Check if the drop landed inside an existing block on this date.
-    // Compare purely in grid-minutes so the arithmetic is simple.
     const blocksOnDate = timeblocks.filter((b) => b.startTime.startsWith(isoDate));
     const target = blocksOnDate.find((b) => {
       const { startMin, endMin } = blockToGridMinutes(b);
@@ -122,10 +133,8 @@ export function TimeGrid({
     });
 
     if (target) {
-      // Assign to existing block
       onAssignTask(target.id, taskId);
     } else {
-      // Create a new block; use the task's estimate if available
       const task = tasks.find((t) => t.id === taskId);
       const dur = task?.timeEstimateMinutes ?? 60;
       const endMin = dropMin + dur;
@@ -137,72 +146,88 @@ export function TimeGrid({
   const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => GRID_START_HOUR + i);
 
   return (
-    <div className="time-grid-wrapper" ref={wrapperRef}>
-      {/* Hour labels column */}
-      <div className="time-grid-hours">
-        {/* Spacer that matches the sticky column header so labels align */}
-        <div style={{ height: COL_HEADER_PX, flexShrink: 0 }} />
-        <div className="time-grid-hours-inner" style={{ minHeight: GRID_HEIGHT }}>
-          {hours.map((h) => (
+    <div className="time-grid-outer">
+      {/* ── Fixed header row — outside the scroll wrapper ─────────────────── */}
+      <div className="time-grid-header-row">
+        {/* Spacer that aligns with the hours column */}
+        <div className="time-grid-hours-spacer" />
+        {/* Overflow-hidden container driven by body scrollLeft */}
+        <div className="time-grid-header-cols" ref={headerColsRef}>
+          {dates.map((isoDate) => (
             <div
-              key={h}
-              className="time-grid-hour-label"
-              style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
+              key={isoDate}
+              className={`time-grid-col-header${isoDate === today ? " time-grid-col-header--today" : ""}`}
             >
-              {formatHour(h)}
+              {formatDateHeading(isoDate)}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Columns — one per date */}
-      <div className="time-grid-columns">
-        {dates.map((isoDate) => {
-          const blocksForDate = timeblocks.filter(
-            (b) => b.startTime.startsWith(isoDate)
-          );
-
-          return (
-            <div key={isoDate} className="time-grid-column">
-              {/* Sticky date heading */}
-              <div className={`time-grid-col-header${isoDate === today ? " time-grid-col-header--today" : ""}`}>
-                {formatDateHeading(isoDate)}
-              </div>
-
-              {/* Clickable / droppable body — border is here so it ends at GRID_HEIGHT */}
+      {/* ── Scrollable body ───────────────────────────────────────────────── */}
+      <div
+        className="time-grid-wrapper"
+        ref={wrapperRef}
+        onScroll={handleWrapperScroll}
+      >
+        {/* Hour labels column */}
+        <div className="time-grid-hours">
+          <div className="time-grid-hours-inner" style={{ minHeight: GRID_HEIGHT }}>
+            {hours.map((h) => (
               <div
-                className="time-grid-col-body"
-                style={{ height: GRID_HEIGHT }}
-                onClick={(e) => handleColumnClick(e, isoDate)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, isoDate)}
+                key={h}
+                className="time-grid-hour-label"
+                style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
               >
-                {/* Hour line guides */}
-                {hours.map((h) => (
-                  <div
-                    key={h}
-                    className="time-grid-hour-line"
-                    style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
-                  />
-                ))}
-
-                {/* Timeblock cards */}
-                {blocksForDate.map((block) => (
-                  <TimeblockBlock
-                    key={block.id}
-                    block={block}
-                    tasks={tasks}
-                    pxPerMin={PX_PER_MIN}
-                    gridStartMin={GRID_START_MIN}
-                    onUpdate={onUpdateTimeblock}
-                    onDelete={onDeleteTimeblock}
-                    onRemoveTask={onRemoveTask}
-                  />
-                ))}
+                {formatHour(h)}
               </div>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        </div>
+
+        {/* Columns — one per date, no headers here */}
+        <div className="time-grid-columns">
+          {dates.map((isoDate) => {
+            const blocksForDate = timeblocks.filter(
+              (b) => b.startTime.startsWith(isoDate)
+            );
+
+            return (
+              <div key={isoDate} className="time-grid-column">
+                <div
+                  className="time-grid-col-body"
+                  style={{ height: GRID_HEIGHT }}
+                  onClick={(e) => handleColumnClick(e, isoDate)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, isoDate)}
+                >
+                  {/* Hour line guides */}
+                  {hours.map((h) => (
+                    <div
+                      key={h}
+                      className="time-grid-hour-line"
+                      style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
+                    />
+                  ))}
+
+                  {/* Timeblock cards */}
+                  {blocksForDate.map((block) => (
+                    <TimeblockBlock
+                      key={block.id}
+                      block={block}
+                      tasks={tasks}
+                      pxPerMin={PX_PER_MIN}
+                      gridStartMin={GRID_START_MIN}
+                      onUpdate={onUpdateTimeblock}
+                      onDelete={onDeleteTimeblock}
+                      onRemoveTask={onRemoveTask}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
