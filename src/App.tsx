@@ -159,7 +159,7 @@ function App() {
       visibleColumns,
       settings.printOrientation,
     );
-    
+
     const path = await saveTempPdf(pdfBlob);
     await openFileLink(path);
   }, [store.file.name, rows, visibleColumns, settings.printOrientation]);
@@ -295,13 +295,13 @@ function App() {
 
   useEffect(() => {
     if (!settings.autoSaveEnabled || !store.filePath) return;
-    
+
     const intervalId = setInterval(() => {
       if (dirtyRef.current) {
         handleSaveRef.current();
       }
     }, settings.autoSaveIntervalMinutes * 60 * 1000);
-    
+
     return () => clearInterval(intervalId);
   }, [settings.autoSaveEnabled, settings.autoSaveIntervalMinutes, store.filePath]);
 
@@ -408,7 +408,7 @@ function App() {
   ]);
 
   const doneCount = store.file.tasks.filter((t) => t.done && !t.archived).length;
-  const focusedTask = store.focusTaskId 
+  const focusedTask = store.focusTaskId
     ? store.file.tasks.find(t => t.id === store.focusTaskId)
     : null;
 
@@ -417,59 +417,55 @@ function App() {
       <ThemeApplier />
       <div className="app">
         <header className="app-header">
-          <h1>TODOer</h1>
+          <h1>TODOer{__CALENDAR_ENABLED__ ? "+" : ""}</h1>
           <input
             className="list-name-input"
             value={store.file.name}
             onChange={(e) => store.setListName(e.target.value)}
             aria-label="List name"
           />
+          {__CALENDAR_ENABLED__ && (
+            <button
+              className="view-toggle-btn"
+              onClick={() => setActiveView(v => v === "tasks" ? "calendar" : "tasks")}
+              title={activeView === "tasks" ? "Switch to Calendar" : "Switch to Tasks"}
+            >
+              {activeView === "tasks" ? "📅 Calendar" : "📋 Tasks"}
+            </button>
+          )}
         </header>
 
-        <Toolbar
-          onNewTask={handleNewTask}
-          onNewSubTask={handleNewSubTask}
-          onDelete={handleDelete}
-          onSave={handleSave}
-          onSaveAs={handleSaveAs}
-          onOpen={handleOpen}
-          onNewList={handleNewList}
-          onExportCsv={handleExportCsv}
-          onExportTaskpaper={handleExportTaskpaper}
-          onImportCsv={handleImportCsv}
-          onPrint={handlePrint}
-          onArchive={() => store.archiveCompleted()}
-          hasSelection={!!store.selectedTaskId}
-          dirty={store.dirty}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          isFocused={!!store.focusTaskId}
-          onFocusTask={() => store.setFocusTask(store.selectedTaskId)}
-          onExitFocus={() => store.setFocusTask(null)}
-          isFlatView={store.filter.flatView}
-          onToggleFlatView={store.toggleFlatView}
-        />
+        {activeView === "tasks" && (
+          <>
+            <Toolbar
+              onNewTask={handleNewTask}
+              onNewSubTask={handleNewSubTask}
+              onDelete={handleDelete}
+              onSave={handleSave}
+              onSaveAs={handleSaveAs}
+              onOpen={handleOpen}
+              onNewList={handleNewList}
+              onExportCsv={handleExportCsv}
+              onExportTaskpaper={handleExportTaskpaper}
+              onImportCsv={handleImportCsv}
+              onPrint={handlePrint}
+              onArchive={() => store.archiveCompleted()}
+              hasSelection={!!store.selectedTaskId}
+              dirty={store.dirty}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              isFocused={!!store.focusTaskId}
+              onFocusTask={() => store.setFocusTask(store.selectedTaskId)}
+              onExitFocus={() => store.setFocusTask(null)}
+              isFlatView={store.filter.flatView}
+              onToggleFlatView={store.toggleFlatView}
+            />
 
-        <FilterBar
-          filter={store.filter}
-          onChange={store.setFilter}
-          onClear={store.clearFilter}
-        />
-
-        {__CALENDAR_ENABLED__ && (
-          <div className="view-toggle">
-            <button
-              className={`view-toggle-btn${activeView === "tasks" ? " active" : ""}`}
-              onClick={() => setActiveView("tasks")}
-            >
-              📋 Tasks
-            </button>
-            <button
-              className={`view-toggle-btn${activeView === "calendar" ? " active" : ""}`}
-              onClick={() => setActiveView("calendar")}
-            >
-              📅 Calendar
-            </button>
-          </div>
+            <FilterBar
+              filter={store.filter}
+              onChange={store.setFilter}
+              onClear={store.clearFilter}
+            />
+          </>
         )}
 
         {activeView === "tasks" ? (

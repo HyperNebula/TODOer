@@ -193,16 +193,9 @@ body {
   max-width: 40%;
 }
 
-/* View toggle (TODOer+ calendar) */
-.view-toggle {
-  display: flex;
-  gap: 2px;
-  padding: 4px 8px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
+/* View toggle button (TODOer+ calendar) — sits in the header, right-aligned */
 .view-toggle-btn {
+  margin-left: auto;
   padding: 4px 12px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -215,11 +208,6 @@ body {
 
 .view-toggle-btn:hover {
   background: var(--row-hover);
-}
-
-.view-toggle-btn.active {
-  background: var(--accent);
-  color: #fff;
   border-color: var(--accent);
 }
 
