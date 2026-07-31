@@ -253,6 +253,7 @@
 .time-grid-hours-inner {
   position: relative;
   flex: 1;
+  flex-shrink: 0;
 }
 
 .time-grid-hour-label {
@@ -313,6 +314,7 @@
   cursor: crosshair;
   /* Vertical grid line lives here so it's bounded by GRID_HEIGHT */
   border-right: 1px solid var(--border-light);
+  flex-shrink: 0;
 }
 
 /* ── Hour lines ──────────────────────────────────────────── */
