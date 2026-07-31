@@ -241,7 +241,6 @@
   /* Stretch to fill wrapper height so the border goes all the way down */
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
   /* Stick to the left edge while columns scroll horizontally */
   position: sticky;
   left: 0;
@@ -254,6 +253,7 @@
   position: relative;
   flex: 1;
   flex-shrink: 0;
+  border-right: 1px solid var(--border);
 }
 
 .time-grid-hour-label {
