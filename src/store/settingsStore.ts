@@ -72,6 +72,68 @@ export const defaultDarkTheme: Theme = {
   },
 };
 
+export const nordTheme: Theme = {
+  id: "nord",
+  name: "Nord",
+  colorScheme: "dark",
+  colors: {
+    bg: "#2e3440",
+    surface: "#3b4252",
+    border: "#4c566a",
+    borderLight: "#434c5e",
+    headerBg: "#434c5e",
+    text: "#d8dee9",
+    textMuted: "#e5e9f0",
+    accent: "#88c0d0",
+    accentHover: "#81a1c1",
+    rowHover: "#434c5e",
+    rowSelected: "#4c566a",
+    danger: "#bf616a",
+  },
+};
+
+export const draculaTheme: Theme = {
+  id: "dracula",
+  name: "Dracula",
+  colorScheme: "dark",
+  colors: {
+    bg: "#282a36",
+    surface: "#44475a",
+    border: "#6272a4",
+    borderLight: "#44475a",
+    headerBg: "#44475a",
+    text: "#f8f8f2",
+    textMuted: "#6272a4",
+    accent: "#bd93f9",
+    accentHover: "#ff79c6",
+    rowHover: "#44475a",
+    rowSelected: "#6272a4",
+    danger: "#ff5555",
+  },
+};
+
+export const solarizedLightTheme: Theme = {
+  id: "solarized-light",
+  name: "Solarized Light",
+  colorScheme: "light",
+  colors: {
+    bg: "#fdf6e3",
+    surface: "#eee8d5",
+    border: "#93a1a1",
+    borderLight: "#839496",
+    headerBg: "#eee8d5",
+    text: "#657b83",
+    textMuted: "#586e75",
+    accent: "#268bd2",
+    accentHover: "#2aa198",
+    rowHover: "#eee8d5",
+    rowSelected: "#93a1a1",
+    danger: "#dc322f",
+  },
+};
+
+export const BUILT_IN_THEMES = [defaultLightTheme, defaultDarkTheme, nordTheme, draculaTheme, solarizedLightTheme];
+
 export type Hotkeys = {
   deleteTask: string;
   newTask: string;

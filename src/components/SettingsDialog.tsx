@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
 declare const __APP_VERSION__: string;
-import { useSettingsStore, defaultLightTheme, defaultDarkTheme, Theme } from "../store/settingsStore";
+import { useSettingsStore, BUILT_IN_THEMES, Theme } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -71,8 +71,8 @@ export function SettingsDialog({ onClose }: Props) {
     resetSettings,
   } = useSettingsStore();
 
-  const allThemes = [defaultLightTheme, defaultDarkTheme, ...customThemes];
-  const activeTheme = allThemes.find(t => t.id === activeThemeId) || defaultLightTheme;
+  const allThemes = [...BUILT_IN_THEMES, ...customThemes];
+  const activeTheme = allThemes.find(t => t.id === activeThemeId) || BUILT_IN_THEMES[0];
   
   const [editingTheme, setEditingTheme] = useState<Theme>(activeTheme);
 
@@ -88,7 +88,7 @@ export function SettingsDialog({ onClose }: Props) {
     }));
   };
 
-  const isBuiltIn = editingTheme.id === "default-light" || editingTheme.id === "default-dark";
+  const isBuiltIn = BUILT_IN_THEMES.some(t => t.id === editingTheme.id);
   const hasChanges = JSON.stringify(editingTheme.colors) !== JSON.stringify(activeTheme.colors);
 
   const handleSaveTheme = () => {
@@ -215,8 +215,9 @@ export function SettingsDialog({ onClose }: Props) {
                 <label>Active Theme</label>
                 <select value={activeThemeId} onChange={(e) => setActiveThemeId(e.target.value)}>
                   <optgroup label="Built-in">
-                    <option value="default-light">Light (Default)</option>
-                    <option value="default-dark">Dark (Default)</option>
+                    {BUILT_IN_THEMES.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
                   </optgroup>
                   {customThemes.length > 0 && (
                     <optgroup label="Custom">
