@@ -142,7 +142,7 @@ export function TimeGrid({
       <div className="time-grid-hours">
         {/* Spacer that matches the sticky column header so labels align */}
         <div style={{ height: COL_HEADER_PX, flexShrink: 0 }} />
-        <div className="time-grid-hours-inner">
+        <div className="time-grid-hours-inner" style={{ minHeight: GRID_HEIGHT }}>
           {hours.map((h) => (
             <div
               key={h}
