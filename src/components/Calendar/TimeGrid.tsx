@@ -12,6 +12,8 @@ export const COL_HEADER_PX = 32;    // height of the sticky date heading
 interface TimeGridProps {
   /** ISO date strings for the columns shown (1 = day view, 7 = week view) */
   dates: string[];
+  /** Today's ISO date string (YYYY-MM-DD) for highlighting */
+  today: string;
   timeblocks: Timeblock[];
   tasks: Task[];
   onAddTimeblock: (startTime: string, endTime: string) => string;
@@ -56,6 +58,7 @@ function blockToGridMinutes(block: Timeblock): { startMin: number; endMin: numbe
  */
 export function TimeGrid({
   dates,
+  today,
   timeblocks,
   tasks,
   onAddTimeblock,
@@ -162,9 +165,11 @@ export function TimeGrid({
           return (
             <div key={isoDate} className="time-grid-column">
               {/* Sticky date heading */}
-              <div className="time-grid-col-header">{formatDateHeading(isoDate)}</div>
+              <div className={`time-grid-col-header${isoDate === today ? " time-grid-col-header--today" : ""}`}>
+                {formatDateHeading(isoDate)}
+              </div>
 
-              {/* Clickable / droppable body */}
+              {/* Clickable / droppable body — border is here so it ends at GRID_HEIGHT */}
               <div
                 className="time-grid-col-body"
                 style={{ height: GRID_HEIGHT }}

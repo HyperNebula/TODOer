@@ -42,8 +42,6 @@
   line-height: 1;
 }
 
-.cal-today-btn { min-width: 56px; }
-
 /* ── Date range picker button ─────────────────────────────── */
 .cal-date-picker-wrap {
   position: relative;
@@ -280,9 +278,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-light);
+  /* No border here — border lives on .time-grid-col-body so it stays
+     coextensive with the GRID_HEIGHT area and never overruns it */
   min-width: 120px;
-  /* Stretch to fill so the border reaches the bottom of the scrollable area */
   align-self: stretch;
 }
 
@@ -300,11 +298,21 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  transition: background 0.15s, color 0.15s;
+}
+
+/* Today highlight — accent-coloured pill text */
+.time-grid-col-header--today {
+  color: var(--accent);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
 .time-grid-col-body {
   position: relative;
   cursor: crosshair;
+  /* Vertical grid line lives here so it's bounded by GRID_HEIGHT */
+  border-right: 1px solid var(--border-light);
 }
 
 /* ── Hour lines ──────────────────────────────────────────── */

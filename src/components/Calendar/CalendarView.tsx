@@ -76,10 +76,6 @@ export function CalendarView() {
     setAnchorDate(toIsoDate(d));
   }
 
-  function navigateToday() {
-    setAnchorDate(todayIso());
-  }
-
   function openDatePicker() {
     dateInputRef.current?.showPicker?.();
     dateInputRef.current?.click();
@@ -130,9 +126,6 @@ export function CalendarView() {
             />
           </div>
 
-          <button className="btn cal-today-btn" onClick={navigateToday}>
-            Today
-          </button>
           <button className="btn cal-nav-btn" onClick={navigateNext} title="Next">
             ›
           </button>
@@ -167,6 +160,7 @@ export function CalendarView() {
         <div className="cal-grid-container">
           <TimeGrid
             dates={dates}
+            today={todayIso()}
             timeblocks={timeblocks}
             tasks={tasks}
             onAddTimeblock={store.addTimeblock}
