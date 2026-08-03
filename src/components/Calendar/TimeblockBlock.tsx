@@ -161,9 +161,6 @@ export function TimeblockBlock({
       )}
 
       <div className="tb-tasks">
-        {assignedTasks.length === 0 && (
-          <span className="tb-empty-hint">Drop tasks here</span>
-        )}
         {assignedTasks.map((task) => (
           <div key={task.id} className="tb-chip">
             <span className="tb-chip-label">{task.title || "(untitled)"}</span>
