@@ -111,6 +111,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--surface);
+  color: var(--text);
   font: inherit;
   font-size: calc(13px + var(--font-offset, 0px));
   cursor: pointer;
@@ -145,6 +146,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--surface);
+  color: var(--text);
   font: inherit;
   font-size: calc(12px + var(--font-offset, 0px));
   cursor: pointer;
