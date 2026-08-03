@@ -196,7 +196,6 @@ export function CalendarView({
             onUpdateTimeblock={store.updateTimeblock}
             onDeleteTimeblock={store.deleteTimeblock}
             onAssignTask={store.assignTaskToTimeblock}
-            onRemoveTask={store.removeTaskFromTimeblock}
           />
         </div>
       </div>

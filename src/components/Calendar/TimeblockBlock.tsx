@@ -15,7 +15,6 @@ interface TimeblockBlockProps {
   gridStartMin: number;
   onUpdate: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onDelete: (id: string) => void;
-  onRemoveTask: (blockId: string, taskId: string) => void;
 }
 
 /**
@@ -33,7 +32,6 @@ export function TimeblockBlock({
   gridStartMin,
   onUpdate,
   onDelete,
-  onRemoveTask,
 }: TimeblockBlockProps) {
   const startMin =
     (new Date(block.startTime).getHours() * 60 +
@@ -149,13 +147,6 @@ export function TimeblockBlock({
         {assignedTasks.map((task) => (
           <div key={task.id} className="tb-chip">
             <span className="tb-chip-label">{task.title || "(untitled)"}</span>
-            <button
-              className="tb-chip-remove"
-              onClick={() => onRemoveTask(block.id, task.id)}
-              title="Remove task from block"
-            >
-              ✕
-            </button>
           </div>
         ))}
       </div>

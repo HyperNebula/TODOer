@@ -18,7 +18,6 @@ interface TimeGridProps {
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onDeleteTimeblock: (id: string) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
-  onRemoveTask: (blockId: string, taskId: string) => void;
 }
 
 
@@ -65,7 +64,6 @@ export function TimeGrid({
   onUpdateTimeblock,
   onDeleteTimeblock,
   onAssignTask,
-  onRemoveTask,
 }: TimeGridProps) {
   // The vertically + horizontally scrollable body
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -223,7 +221,6 @@ export function TimeGrid({
                       gridStartMin={gridStartMin}
                       onUpdate={onUpdateTimeblock}
                       onDelete={onDeleteTimeblock}
-                      onRemoveTask={onRemoveTask}
                     />
                   ))}
                 </div>
