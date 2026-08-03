@@ -31,6 +31,7 @@ export function ThemeApplier() {
     root.style.setProperty("--text-muted", colors.textMuted);
     root.style.setProperty("--accent", colors.accent);
     root.style.setProperty("--accent-hover", colors.accentHover);
+    root.style.setProperty("--accent-text", colors.accentText);
     root.style.setProperty("--row-hover", colors.rowHover);
     root.style.setProperty("--row-selected", colors.rowSelected);
     root.style.setProperty("--danger", colors.danger);
