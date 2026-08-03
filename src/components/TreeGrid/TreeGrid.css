@@ -84,11 +84,11 @@
 .tree-grid tbody tr td.priority-10 { background-color: rgba(168, 85, 247, 0.15); color: rgb(168, 85, 247); font-weight: 600; }
 
 .tree-grid tr:hover td {
-  background: var(--row-hover);
+  background-color: var(--row-hover) !important;
 }
 
 .tree-grid tr.row-selected td {
-  background: var(--row-selected);
+  background-color: var(--row-selected) !important;
 }
 
 .tree-grid tr.row-archived td {
