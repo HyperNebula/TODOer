@@ -156,6 +156,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                   min="0.5" max="3" step="0.1" 
                   value={calendarZoom} 
                   onChange={(e) => setCalendarZoom(Number(e.target.value))} 
+                  style={{ width: '100%' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75em', color: 'var(--text-muted)', marginTop: '4px' }}>
                   <span>0.5x</span>
