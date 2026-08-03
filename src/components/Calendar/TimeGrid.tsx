@@ -16,7 +16,6 @@ interface TimeGridProps {
   tasks: Task[];
   onAddTimeblock: (startTime: string, endTime: string, title?: string) => string;
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
-  onDeleteTimeblock: (id: string) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
   onEditTimeblock: (id: string) => void;
   onToggleComplete: (id: string, completed: boolean) => void;
@@ -64,7 +63,6 @@ export function TimeGrid({
   tasks,
   onAddTimeblock,
   onUpdateTimeblock,
-  onDeleteTimeblock,
   onAssignTask,
   onEditTimeblock,
   onToggleComplete,
@@ -225,7 +223,6 @@ export function TimeGrid({
                       pxPerMin={PX_PER_MIN}
                       gridStartMin={gridStartMin}
                       onUpdate={onUpdateTimeblock}
-                      onDelete={onDeleteTimeblock}
                       onEditTimeblock={onEditTimeblock}
                       onToggleComplete={onToggleComplete}
                     />

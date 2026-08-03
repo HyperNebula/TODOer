@@ -384,7 +384,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   // ── Timeblock actions ────────────────────────────────────────────────────
   addTimeblock: (startTime, endTime, title) => {
     const id = crypto.randomUUID();
-    const block: Timeblock = { id, startTime, endTime, taskIds: [], ...(title ? { title } : {}) };
+    const block: Timeblock = { id, startTime, endTime, taskIds: [], title: title || "New Timeblock" };
     set((s) => ({
       file: touch({ ...s.file, timeblocks: [...(s.file.timeblocks ?? []), block] }),
       dirty: true,

@@ -9,9 +9,11 @@ interface Props {
   onClose: () => void;
   onRemoveTask: (blockId: string, taskId: string) => void;
   onComplete: (id: string, completed: boolean) => void;
+  onDelete: (id: string) => void;
+  onAssignTask: (blockId: string, taskId: string) => void;
 }
 
-export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask, onComplete }: Props) {
+export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask, onComplete, onDelete, onAssignTask }: Props) {
   const [title, setTitle] = useState(block.title || "");
   const [notes, setNotes] = useState(block.notes || "");
   
@@ -84,6 +86,18 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
 
           <div className="timeblock-edit-group">
             <label>Assigned Tasks</label>
+            <select 
+              style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '6px', borderRadius: '4px', marginBottom: '8px' }}
+              value=""
+              onChange={(e) => {
+                if (e.target.value) onAssignTask(block.id, e.target.value);
+              }}
+            >
+              <option value="" disabled>Add a task to this block...</option>
+              {tasks.filter(t => !block.taskIds.includes(t.id) && !t.done).map(t => (
+                <option key={t.id} value={t.id}>{t.title || "(untitled)"}</option>
+              ))}
+            </select>
             {assignedTasks.length === 0 ? (
               <div style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>No tasks assigned. Drop tasks onto the block in the calendar.</div>
             ) : (
@@ -113,6 +127,13 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
             onClick={() => { onComplete(block.id, !block.completed); onClose(); }}
           >
             {block.completed ? "Mark Incomplete" : "Mark Complete"}
+          </button>
+          <button 
+            className="btn" 
+            style={{ color: 'var(--error, #e53e3e)' }} 
+            onClick={() => { onDelete(block.id); onClose(); }}
+          >
+            Delete Block
           </button>
           <button className="btn" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave}>Save</button>

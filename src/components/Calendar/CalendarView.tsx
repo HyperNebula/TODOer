@@ -196,7 +196,6 @@ export function CalendarView({
             tasks={tasks}
             onAddTimeblock={store.addTimeblock}
             onUpdateTimeblock={store.updateTimeblock}
-            onDeleteTimeblock={store.deleteTimeblock}
             onAssignTask={store.assignTaskToTimeblock}
             onEditTimeblock={setEditingBlockId}
             onToggleComplete={store.toggleTimeblockComplete}
@@ -212,6 +211,8 @@ export function CalendarView({
           onClose={() => setEditingBlockId(null)}
           onRemoveTask={store.removeTaskFromTimeblock}
           onComplete={store.toggleTimeblockComplete}
+          onDelete={store.deleteTimeblock}
+          onAssignTask={store.assignTaskToTimeblock}
         />
       )}
     </div>

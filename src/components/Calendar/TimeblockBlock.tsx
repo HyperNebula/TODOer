@@ -14,7 +14,6 @@ interface TimeblockBlockProps {
   /** offset in minutes from midnight for the grid's start hour */
   gridStartMin: number;
   onUpdate: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
-  onDelete: (id: string) => void;
   onEditTimeblock: (id: string) => void;
   onToggleComplete: (id: string, completed: boolean) => void;
 }
@@ -33,7 +32,6 @@ export function TimeblockBlock({
   pxPerMin,
   gridStartMin,
   onUpdate,
-  onDelete,
   onEditTimeblock,
   onToggleComplete,
 }: TimeblockBlockProps) {
@@ -47,8 +45,8 @@ export function TimeblockBlock({
     gridStartMin;
   const durationMin = Math.max(endMin - startMin, 15);
 
-  const top = startMin * pxPerMin;
-  const height = durationMin * pxPerMin;
+  const top = startMin * pxPerMin + 2;
+  const height = Math.max(durationMin * pxPerMin - 4, 10);
 
   // ── Resize state ────────────────────────────────────────────────────────────
   const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
@@ -89,7 +87,7 @@ export function TimeblockBlock({
 
   function onBlockMouseDown(e: React.MouseEvent) {
     // Don't initiate move if clicking on a button or the resize handle
-    if ((e.target as HTMLElement).closest(".tb-delete, .tb-edit, .tb-complete-toggle, .tb-chip-remove, .tb-resize-handle")) return;
+    if ((e.target as HTMLElement).closest(".tb-edit, .tb-complete-toggle, .tb-chip-remove, .tb-resize-handle")) return;
     e.preventDefault();
     const duration = new Date(block.endTime).getTime() - new Date(block.startTime).getTime();
     dragRef.current = { startY: e.clientY, origStart: block.startTime, origEnd: block.endTime };
@@ -138,7 +136,7 @@ export function TimeblockBlock({
         className="tb-edit"
         onClick={() => onEditTimeblock(block.id)}
         title="Edit timeblock"
-        style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: '0.9rem', color: 'inherit' }}
+        style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: '0.9rem', color: 'inherit' }}
       >
         ✎
       </button>
@@ -146,19 +144,18 @@ export function TimeblockBlock({
         className="tb-complete-toggle"
         onClick={(e) => { e.stopPropagation(); onToggleComplete(block.id, !block.completed); }}
         title={block.completed ? "Mark Incomplete" : "Mark Complete"}
-        style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: 'inherit', opacity: 0.8 }}
+        style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: 'inherit', opacity: 0.8, borderRadius: '4px' }}
       >
         {block.completed ? "☑" : "☐"}
       </button>
-      <button
-        className="tb-delete"
-        onClick={() => onDelete(block.id)}
-        title="Delete timeblock"
-      >
-        ✕
-      </button>
 
-      {block.title && <div className="tb-title">{block.title}</div>}
+      {block.title && <div className="tb-title" style={{ paddingRight: '20px' }}>{block.title}</div>}
+
+      {block.notes && (
+        <div className="tb-notes" style={{ fontSize: '0.8rem', opacity: 0.8, margin: '2px 8px', whiteSpace: 'pre-wrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {block.notes}
+        </div>
+      )}
 
       <div className="tb-tasks">
         {assignedTasks.length === 0 && (
