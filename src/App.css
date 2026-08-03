@@ -128,7 +128,7 @@ body {
 
 .btn-primary {
   background: var(--accent);
-  color: white;
+  color: var(--text);
   border-color: var(--accent);
 }
 
