@@ -210,12 +210,24 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                 </div>
               )}
               <div className="settings-group">
-                <label>Calendar Start Hour (0-23)</label>
-                <input type="number" min="0" max={calendarEndHour - 1} value={calendarStartHour} onChange={(e) => setCalendarStartHour(Number(e.target.value))} />
+                <label>Calendar Start Hour</label>
+                <select value={calendarStartHour} onChange={(e) => setCalendarStartHour(Number(e.target.value))}>
+                  {Array.from({ length: calendarEndHour }).map((_, i) => (
+                    <option key={i} value={i}>
+                      {i === 0 ? "12 AM" : i === 12 ? "12 PM" : i < 12 ? `${i} AM` : `${i - 12} PM`}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="settings-group">
-                <label>Calendar End Hour (1-24)</label>
-                <input type="number" min={calendarStartHour + 1} max="24" value={calendarEndHour} onChange={(e) => setCalendarEndHour(Number(e.target.value))} />
+                <label>Calendar End Hour</label>
+                <select value={calendarEndHour} onChange={(e) => setCalendarEndHour(Number(e.target.value))}>
+                  {Array.from({ length: 24 - calendarStartHour }).map((_, i) => {
+                    const val = calendarStartHour + i + 1;
+                    const label = val === 12 ? "12 PM" : val === 24 ? "12 AM" : val < 12 ? `${val} AM` : `${val - 12} PM`;
+                    return <option key={val} value={val}>{label}</option>;
+                  })}
+                </select>
               </div>
             </>
           )}
