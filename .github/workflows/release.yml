@@ -125,7 +125,7 @@ jobs:
         run: npm ci
 
       - name: Build website
-        run: npx vite build --base=./
+        run: npx cross-env CALENDAR_ENABLED=true vite build --base=./
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
