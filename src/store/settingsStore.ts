@@ -361,6 +361,8 @@ export const DEFAULT_SETTINGS = {
   projectStyle: "none" as "none" | "bold" | "star",
   projectEmoji: "⭐",
   indentSpacing: 32,
+  calendarStartHour: 6,
+  calendarEndHour: 22,
 };
 
 export interface SettingsState {
@@ -377,6 +379,8 @@ export interface SettingsState {
   projectStyle: "none" | "bold" | "star";
   projectEmoji: string;
   indentSpacing: number;
+  calendarStartHour: number;
+  calendarEndHour: number;
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -393,6 +397,8 @@ export interface SettingsState {
   setProjectStyle: (style: "none" | "bold" | "star") => void;
   setProjectEmoji: (emoji: string) => void;
   setIndentSpacing: (spacing: number) => void;
+  setCalendarStartHour: (hour: number) => void;
+  setCalendarEndHour: (hour: number) => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -426,6 +432,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setProjectStyle: (style) => set({ projectStyle: style }),
   setProjectEmoji: (emoji) => set({ projectEmoji: emoji }),
   setIndentSpacing: (spacing) => set({ indentSpacing: spacing }),
+  setCalendarStartHour: (hour) => set({ calendarStartHour: hour }),
+  setCalendarEndHour: (hour) => set({ calendarEndHour: hour }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -446,6 +454,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         projectStyle?: "none" | "bold" | "star";
         projectEmoji?: string;
         indentSpacing?: number;
+        calendarStartHour?: number;
+        calendarEndHour?: number;
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -465,6 +475,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.projectStyle && { projectStyle: saved.projectStyle }),
           ...(saved.projectEmoji && { projectEmoji: saved.projectEmoji }),
           ...(saved.indentSpacing !== undefined && { indentSpacing: saved.indentSpacing }),
+          ...(saved.calendarStartHour !== undefined && { calendarStartHour: saved.calendarStartHour }),
+          ...(saved.calendarEndHour !== undefined && { calendarEndHour: saved.calendarEndHour }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -491,6 +503,8 @@ useSettingsStore.subscribe((state) => {
     projectStyle: state.projectStyle,
     projectEmoji: state.projectEmoji,
     indentSpacing: state.indentSpacing,
+    calendarStartHour: state.calendarStartHour,
+    calendarEndHour: state.calendarEndHour,
     hotkeys: state.hotkeys,
   };
   try {

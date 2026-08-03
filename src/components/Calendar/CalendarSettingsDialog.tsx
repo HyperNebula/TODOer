@@ -59,6 +59,8 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     fontFamily,
     autoSaveEnabled,
     autoSaveIntervalMinutes,
+    calendarStartHour,
+    calendarEndHour,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -66,6 +68,8 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     setFontFamily,
     setAutoSaveEnabled,
     setAutoSaveIntervalMinutes,
+    setCalendarStartHour,
+    setCalendarEndHour,
   } = useSettingsStore();
 
   const allThemes = [...BUILT_IN_THEMES, ...customThemes];
@@ -205,6 +209,14 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                   <input type="number" min="1" max="60" value={autoSaveIntervalMinutes} onChange={(e) => setAutoSaveIntervalMinutes(Number(e.target.value))} />
                 </div>
               )}
+              <div className="settings-group">
+                <label>Calendar Start Hour (0-23)</label>
+                <input type="number" min="0" max={calendarEndHour - 1} value={calendarStartHour} onChange={(e) => setCalendarStartHour(Number(e.target.value))} />
+              </div>
+              <div className="settings-group">
+                <label>Calendar End Hour (1-24)</label>
+                <input type="number" min={calendarStartHour + 1} max="24" value={calendarEndHour} onChange={(e) => setCalendarEndHour(Number(e.target.value))} />
+              </div>
             </>
           )}
         </div>

@@ -2,11 +2,9 @@ import { useRef } from "react";
 import type { Task, Timeblock } from "../../types/task";
 import { TimeblockBlock } from "./TimeblockBlock";
 
-// Grid constants
-export const GRID_START_HOUR = 6;   // 6 AM
-export const GRID_END_HOUR = 22;    // 10 PM
+import { useSettingsStore } from "../../store/settingsStore";
+
 export const PX_PER_MIN = 1.5;      // pixels per minute
-export const GRID_START_MIN = GRID_START_HOUR * 60;
 export const COL_HEADER_PX = 32;    // height of the sticky date heading
 
 interface TimeGridProps {
@@ -23,8 +21,7 @@ interface TimeGridProps {
   onRemoveTask: (blockId: string, taskId: string) => void;
 }
 
-const TOTAL_HOURS = GRID_END_HOUR - GRID_START_HOUR;
-const GRID_HEIGHT = TOTAL_HOURS * 60 * PX_PER_MIN;
+
 
 function formatHour(h: number) {
   if (h === 0 || h === 24) return "12 AM";
@@ -43,11 +40,11 @@ function snapMin(min: number) {
 }
 
 /** Convert a block's startTime / endTime to minutes-from-grid-start */
-function blockToGridMinutes(block: Timeblock): { startMin: number; endMin: number } {
+function blockToGridMinutes(block: Timeblock, gridStartMin: number): { startMin: number; endMin: number } {
   const s = new Date(block.startTime);
   const e = new Date(block.endTime);
-  const startMin = s.getHours() * 60 + s.getMinutes() - GRID_START_MIN;
-  const endMin   = e.getHours() * 60 + e.getMinutes() - GRID_START_MIN;
+  const startMin = s.getHours() * 60 + s.getMinutes() - gridStartMin;
+  const endMin   = e.getHours() * 60 + e.getMinutes() - gridStartMin;
   return { startMin, endMin };
 }
 
@@ -75,6 +72,11 @@ export function TimeGrid({
   // The header columns scroll container — scrollLeft is driven by the body
   const headerColsRef = useRef<HTMLDivElement>(null);
 
+  const { calendarStartHour, calendarEndHour } = useSettingsStore();
+  const gridStartMin = calendarStartHour * 60;
+  const totalHours = calendarEndHour - calendarStartHour;
+  const gridHeight = totalHours * 60 * PX_PER_MIN;
+
   /** Sync header horizontal scroll with body scroll */
   function handleWrapperScroll() {
     if (wrapperRef.current && headerColsRef.current) {
@@ -93,11 +95,11 @@ export function TimeGrid({
     const rect = wrapperRef.current.getBoundingClientRect();
     const relY = clientY - rect.top + wrapperRef.current.scrollTop;
     const rawMin = relY / PX_PER_MIN;
-    return Math.max(0, Math.min(rawMin, TOTAL_HOURS * 60));
+    return Math.max(0, Math.min(rawMin, totalHours * 60));
   }
 
   function makeIso(isoDate: string, minFromGridStart: number) {
-    const totalMin = GRID_START_MIN + minFromGridStart;
+    const totalMin = gridStartMin + minFromGridStart;
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
     return `${isoDate}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
@@ -128,7 +130,7 @@ export function TimeGrid({
 
     const blocksOnDate = timeblocks.filter((b) => b.startTime.startsWith(isoDate));
     const target = blocksOnDate.find((b) => {
-      const { startMin, endMin } = blockToGridMinutes(b);
+      const { startMin, endMin } = blockToGridMinutes(b, gridStartMin);
       return dropMin >= startMin && dropMin < endMin;
     });
 
@@ -143,7 +145,7 @@ export function TimeGrid({
     }
   }
 
-  const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => GRID_START_HOUR + i);
+  const hours = Array.from({ length: totalHours + 1 }, (_, i) => calendarStartHour + i);
 
   return (
     <div className="time-grid-outer">
@@ -172,12 +174,12 @@ export function TimeGrid({
       >
         {/* Hour labels column */}
         <div className="time-grid-hours">
-          <div className="time-grid-hours-inner" style={{ minHeight: GRID_HEIGHT }}>
+          <div className="time-grid-hours-inner" style={{ minHeight: gridHeight }}>
             {hours.map((h) => (
               <div
                 key={h}
                 className="time-grid-hour-label"
-                style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
+                style={{ top: (h - calendarStartHour) * 60 * PX_PER_MIN }}
               >
                 {formatHour(h)}
               </div>
@@ -196,7 +198,7 @@ export function TimeGrid({
               <div key={isoDate} className="time-grid-column">
                 <div
                   className="time-grid-col-body"
-                  style={{ height: GRID_HEIGHT }}
+                  style={{ height: gridHeight }}
                   onClick={(e) => handleColumnClick(e, isoDate)}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, isoDate)}
@@ -206,7 +208,7 @@ export function TimeGrid({
                     <div
                       key={h}
                       className="time-grid-hour-line"
-                      style={{ top: (h - GRID_START_HOUR) * 60 * PX_PER_MIN }}
+                      style={{ top: (h - calendarStartHour) * 60 * PX_PER_MIN }}
                     />
                   ))}
 
@@ -217,7 +219,7 @@ export function TimeGrid({
                       block={block}
                       tasks={tasks}
                       pxPerMin={PX_PER_MIN}
-                      gridStartMin={GRID_START_MIN}
+                      gridStartMin={gridStartMin}
                       onUpdate={onUpdateTimeblock}
                       onDelete={onDeleteTimeblock}
                       onRemoveTask={onRemoveTask}
