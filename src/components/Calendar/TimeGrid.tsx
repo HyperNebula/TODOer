@@ -140,7 +140,7 @@ export function TimeGrid({
       const task = tasks.find((t) => t.id === taskId);
       const dur = task?.timeEstimateMinutes ?? 60;
       const endMin = dropMin + dur;
-      const newId = onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin));
+      const newId = onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin), task?.title);
       onAssignTask(newId, taskId);
     }
   }
@@ -198,6 +198,7 @@ export function TimeGrid({
               <div key={isoDate} className="time-grid-column">
                 <div
                   className="time-grid-col-body"
+                  data-date={isoDate}
                   style={{ height: gridHeight }}
                   onClick={(e) => handleColumnClick(e, isoDate)}
                   onDragOver={handleDragOver}

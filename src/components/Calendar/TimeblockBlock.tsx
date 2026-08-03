@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
 import type { Task, Timeblock } from "../../types/task";
 
+function toLocalIsoString(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+}
+
 interface TimeblockBlockProps {
   block: Timeblock;
   tasks: Task[];
@@ -62,7 +67,7 @@ export function TimeblockBlock({
       // Don't let the block get shorter than 15 min
       const startMs = new Date(block.startTime).getTime();
       if (newEnd.getTime() - startMs >= 15 * 60_000) {
-        onUpdate(block.id, { endTime: newEnd.toISOString() });
+        onUpdate(block.id, { endTime: toLocalIsoString(newEnd) });
       }
     };
 
@@ -92,8 +97,19 @@ export function TimeblockBlock({
       const deltaY = me.clientY - dragRef.current.startY;
       const deltaMin = Math.round(deltaY / pxPerMin / 5) * 5; // snap to 5 min
       const newStart = new Date(new Date(dragRef.current.origStart).getTime() + deltaMin * 60_000);
-      const newEnd = new Date(newStart.getTime() + duration);
-      onUpdate(block.id, { startTime: newStart.toISOString(), endTime: newEnd.toISOString() });
+      
+      let startStr = toLocalIsoString(newStart);
+
+      const elements = document.elementsFromPoint(me.clientX, me.clientY);
+      const colEl = elements.find(el => el.classList.contains("time-grid-col-body")) as HTMLElement | undefined;
+      if (colEl && colEl.dataset.date) {
+        startStr = `${colEl.dataset.date}T${startStr.split("T")[1]}`;
+      }
+
+      const parsedStart = new Date(startStr);
+      const endStr = toLocalIsoString(new Date(parsedStart.getTime() + duration));
+
+      onUpdate(block.id, { startTime: startStr, endTime: endStr });
     };
 
     const onUp = () => {
