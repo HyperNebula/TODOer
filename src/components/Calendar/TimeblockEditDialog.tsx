@@ -1,0 +1,115 @@
+import { useState } from "react";
+import type { Timeblock, Task } from "../../types/task";
+import "./TimeblockEditDialog.css";
+
+interface Props {
+  block: Timeblock;
+  tasks: Task[];
+  onSave: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
+  onClose: () => void;
+  onRemoveTask: (blockId: string, taskId: string) => void;
+}
+
+export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask }: Props) {
+  const [title, setTitle] = useState(block.title || "");
+  const [notes, setNotes] = useState(block.notes || "");
+  
+  const [startTimeStr, setStartTimeStr] = useState(() => {
+    const d = new Date(block.startTime);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
+  const [endTimeStr, setEndTimeStr] = useState(() => {
+    const d = new Date(block.endTime);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
+  const handleSave = () => {
+    const updates: Partial<Timeblock> = { title, notes };
+    
+    const startD = new Date(block.startTime);
+    const [sh, sm] = startTimeStr.split(":").map(Number);
+    startD.setHours(sh, sm, 0, 0);
+    
+    const endD = new Date(block.endTime);
+    const [eh, em] = endTimeStr.split(":").map(Number);
+    endD.setHours(eh, em, 0, 0);
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
+    updates.startTime = toIso(startD);
+    updates.endTime = toIso(endD);
+
+    onSave(block.id, updates);
+    onClose();
+  };
+
+  const assignedTasks = block.taskIds
+    .map((id) => tasks.find((t) => t.id === id))
+    .filter((t): t is Task => t !== undefined);
+
+  return (
+    <div className="timeblock-edit-overlay" onClick={onClose}>
+      <div className="timeblock-edit-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="timeblock-edit-header">
+          <h2>Edit Timeblock</h2>
+          <button className="timeblock-edit-close" onClick={onClose}>&times;</button>
+        </div>
+        
+        <div className="timeblock-edit-body">
+          <div className="timeblock-edit-group">
+            <label>Title</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="timeblock-edit-group" style={{ flex: 1 }}>
+              <label>Start Time</label>
+              <input type="time" value={startTimeStr} onChange={e => setStartTimeStr(e.target.value)} />
+            </div>
+            <div className="timeblock-edit-group" style={{ flex: 1 }}>
+              <label>End Time</label>
+              <input type="time" value={endTimeStr} onChange={e => setEndTimeStr(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="timeblock-edit-group">
+            <label>Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add any notes here..." />
+          </div>
+
+          <div className="timeblock-edit-group">
+            <label>Assigned Tasks</label>
+            {assignedTasks.length === 0 ? (
+              <div style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>No tasks assigned. Drop tasks onto the block in the calendar.</div>
+            ) : (
+              <div className="tb-tasks" style={{ position: 'relative', background: 'transparent', padding: 0 }}>
+                {assignedTasks.map(t => (
+                  <div key={t.id} className="tb-chip">
+                    <span className="tb-chip-label">{t.title || "(untitled)"}</span>
+                    <button
+                      className="tb-chip-remove"
+                      onClick={() => onRemoveTask(block.id, t.id)}
+                      title="Remove task from block"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.8rem', padding: '0 4px' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="timeblock-edit-footer">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSave}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}

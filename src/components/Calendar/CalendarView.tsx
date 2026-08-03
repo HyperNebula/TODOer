@@ -3,6 +3,7 @@ import { useTaskStore } from "../../store/taskStore";
 import { TaskDrawer } from "./TaskDrawer";
 import { TimeGrid } from "./TimeGrid";
 import { CalendarToolbar } from "./CalendarToolbar";
+import { TimeblockEditDialog } from "./TimeblockEditDialog";
 import "./CalendarView.css";
 
 type CalendarViewMode = "day" | "week";
@@ -75,6 +76,7 @@ export function CalendarView({
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [anchorDate, setAnchorDate] = useState(todayIso);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
 
   // Hidden date input ref for the "jump to date" picker
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -196,9 +198,20 @@ export function CalendarView({
             onUpdateTimeblock={store.updateTimeblock}
             onDeleteTimeblock={store.deleteTimeblock}
             onAssignTask={store.assignTaskToTimeblock}
+            onEditTimeblock={setEditingBlockId}
           />
         </div>
       </div>
+      
+      {editingBlockId && (
+        <TimeblockEditDialog
+          block={timeblocks.find(b => b.id === editingBlockId)!}
+          tasks={tasks}
+          onSave={store.updateTimeblock}
+          onClose={() => setEditingBlockId(null)}
+          onRemoveTask={store.removeTaskFromTimeblock}
+        />
+      )}
     </div>
   );
 }

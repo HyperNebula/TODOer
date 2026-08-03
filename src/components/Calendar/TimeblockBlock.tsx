@@ -15,6 +15,7 @@ interface TimeblockBlockProps {
   gridStartMin: number;
   onUpdate: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onDelete: (id: string) => void;
+  onEditTimeblock: (id: string) => void;
 }
 
 /**
@@ -32,6 +33,7 @@ export function TimeblockBlock({
   gridStartMin,
   onUpdate,
   onDelete,
+  onEditTimeblock,
 }: TimeblockBlockProps) {
   const startMin =
     (new Date(block.startTime).getHours() * 60 +
@@ -85,7 +87,7 @@ export function TimeblockBlock({
 
   function onBlockMouseDown(e: React.MouseEvent) {
     // Don't initiate move if clicking on a button or the resize handle
-    if ((e.target as HTMLElement).closest(".tb-delete, .tb-chip-remove, .tb-resize-handle")) return;
+    if ((e.target as HTMLElement).closest(".tb-delete, .tb-edit, .tb-chip-remove, .tb-resize-handle")) return;
     e.preventDefault();
     const duration = new Date(block.endTime).getTime() - new Date(block.startTime).getTime();
     dragRef.current = { startY: e.clientY, origStart: block.startTime, origEnd: block.endTime };
@@ -130,6 +132,14 @@ export function TimeblockBlock({
       style={{ top, height }}
       onMouseDown={onBlockMouseDown}
     >
+      <button
+        className="tb-edit"
+        onClick={() => onEditTimeblock(block.id)}
+        title="Edit timeblock"
+        style={{ position: 'absolute', top: '4px', right: '24px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: '0.9rem' }}
+      >
+        ✎
+      </button>
       <button
         className="tb-delete"
         onClick={() => onDelete(block.id)}

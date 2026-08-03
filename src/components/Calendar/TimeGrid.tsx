@@ -18,6 +18,7 @@ interface TimeGridProps {
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onDeleteTimeblock: (id: string) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
+  onEditTimeblock: (id: string) => void;
 }
 
 
@@ -64,6 +65,7 @@ export function TimeGrid({
   onUpdateTimeblock,
   onDeleteTimeblock,
   onAssignTask,
+  onEditTimeblock,
 }: TimeGridProps) {
   // The vertically + horizontally scrollable body
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -109,7 +111,8 @@ export function TimeGrid({
     const rawMin = clientYToGridMin(e.clientY);
     const startMin = snapMin(rawMin);
     const endMin = startMin + 60;
-    onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin));
+    const newId = onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin));
+    onEditTimeblock(newId);
   }
 
   // ── Drop tasks from the drawer ─────────────────────────────────────────────
@@ -221,6 +224,7 @@ export function TimeGrid({
                       gridStartMin={gridStartMin}
                       onUpdate={onUpdateTimeblock}
                       onDelete={onDeleteTimeblock}
+                      onEditTimeblock={onEditTimeblock}
                     />
                   ))}
                 </div>

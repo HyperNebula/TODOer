@@ -45,6 +45,7 @@ export interface Timeblock {
   startTime: string; // ISO 8601 timestamp
   endTime: string;   // ISO 8601 timestamp
   taskIds: string[];
+  notes?: string;
 }
 
 export interface TaskListFile {
