@@ -61,6 +61,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     autoSaveIntervalMinutes,
     calendarStartHour,
     calendarEndHour,
+    calendarZoom,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -70,6 +71,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     setAutoSaveIntervalMinutes,
     setCalendarStartHour,
     setCalendarEndHour,
+    setCalendarZoom,
   } = useSettingsStore();
 
   const allThemes = [...BUILT_IN_THEMES, ...customThemes];
@@ -228,6 +230,15 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                     return <option key={val} value={val}>{label}</option>;
                   })}
                 </select>
+              </div>
+              <div className="settings-group">
+                <label>Calendar Zoom</label>
+                <input 
+                  type="range" 
+                  min="0.5" max="3" step="0.1" 
+                  value={calendarZoom} 
+                  onChange={(e) => setCalendarZoom(Number(e.target.value))} 
+                />
               </div>
             </>
           )}

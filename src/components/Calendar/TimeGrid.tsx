@@ -4,7 +4,6 @@ import { TimeblockBlock } from "./TimeblockBlock";
 
 import { useSettingsStore } from "../../store/settingsStore";
 
-export const PX_PER_MIN = 1.5;      // pixels per minute
 export const COL_HEADER_PX = 32;    // height of the sticky date heading
 
 interface TimeGridProps {
@@ -72,10 +71,11 @@ export function TimeGrid({
   // The header columns scroll container — scrollLeft is driven by the body
   const headerColsRef = useRef<HTMLDivElement>(null);
 
-  const { calendarStartHour, calendarEndHour } = useSettingsStore();
+  const { calendarStartHour, calendarEndHour, calendarZoom } = useSettingsStore();
+  const pxPerMin = calendarZoom ?? 1.5;
   const gridStartMin = calendarStartHour * 60;
   const totalHours = calendarEndHour - calendarStartHour;
-  const gridHeight = totalHours * 60 * PX_PER_MIN;
+  const gridHeight = totalHours * 60 * pxPerMin;
 
   /** Sync header horizontal scroll with body scroll */
   function handleWrapperScroll() {
@@ -94,7 +94,7 @@ export function TimeGrid({
     if (!wrapperRef.current) return 0;
     const rect = wrapperRef.current.getBoundingClientRect();
     const relY = clientY - rect.top + wrapperRef.current.scrollTop;
-    const rawMin = relY / PX_PER_MIN;
+    const rawMin = relY / pxPerMin;
     return Math.max(0, Math.min(rawMin, totalHours * 60));
   }
 
@@ -180,7 +180,7 @@ export function TimeGrid({
               <div
                 key={h}
                 className="time-grid-hour-label"
-                style={{ top: (h - calendarStartHour) * 60 * PX_PER_MIN }}
+                style={{ top: (h - calendarStartHour) * 60 * pxPerMin }}
               >
                 {formatHour(h)}
               </div>
@@ -210,7 +210,7 @@ export function TimeGrid({
                     <div
                       key={h}
                       className="time-grid-hour-line"
-                      style={{ top: (h - calendarStartHour) * 60 * PX_PER_MIN }}
+                      style={{ top: (h - calendarStartHour) * 60 * pxPerMin }}
                     />
                   ))}
 
@@ -220,7 +220,7 @@ export function TimeGrid({
                       key={block.id}
                       block={block}
                       tasks={tasks}
-                      pxPerMin={PX_PER_MIN}
+                      pxPerMin={pxPerMin}
                       gridStartMin={gridStartMin}
                       onUpdate={onUpdateTimeblock}
                       onEditTimeblock={onEditTimeblock}

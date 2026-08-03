@@ -51,6 +51,7 @@ export function TimeblockBlock({
   // ── Resize state ────────────────────────────────────────────────────────────
   const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
   const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   function onResizeMouseDown(e: React.MouseEvent) {
     e.preventDefault();
@@ -131,12 +132,14 @@ export function TimeblockBlock({
       className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}`}
       style={{ top, height, ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {}) }}
       onMouseDown={onBlockMouseDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <button
         className="tb-edit"
         onClick={() => onEditTimeblock(block.id)}
         title="Edit timeblock"
-        style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: '0.9rem', color: 'inherit' }}
+        style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: isHovered ? 0.7 : 0, fontSize: '0.9rem', color: 'inherit', transition: 'opacity 0.2s' }}
       >
         ✎
       </button>

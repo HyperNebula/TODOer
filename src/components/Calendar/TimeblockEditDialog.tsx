@@ -109,7 +109,7 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
                       className="tb-chip-remove"
                       onClick={() => onRemoveTask(block.id, t.id)}
                       title="Remove task from block"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.8rem', padding: '0 4px' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.8rem', padding: '0 4px', color: 'inherit' }}
                     >
                       ✕
                     </button>

@@ -363,6 +363,7 @@ export const DEFAULT_SETTINGS = {
   indentSpacing: 32,
   calendarStartHour: 6,
   calendarEndHour: 22,
+  calendarZoom: 1.5,
 };
 
 export interface SettingsState {
@@ -381,6 +382,7 @@ export interface SettingsState {
   indentSpacing: number;
   calendarStartHour: number;
   calendarEndHour: number;
+  calendarZoom: number;
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -399,6 +401,7 @@ export interface SettingsState {
   setIndentSpacing: (spacing: number) => void;
   setCalendarStartHour: (hour: number) => void;
   setCalendarEndHour: (hour: number) => void;
+  setCalendarZoom: (zoom: number) => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -434,6 +437,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setIndentSpacing: (spacing) => set({ indentSpacing: spacing }),
   setCalendarStartHour: (hour) => set({ calendarStartHour: hour }),
   setCalendarEndHour: (hour) => set({ calendarEndHour: hour }),
+  setCalendarZoom: (zoom) => set({ calendarZoom: zoom }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -456,6 +460,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         indentSpacing?: number;
         calendarStartHour?: number;
         calendarEndHour?: number;
+        calendarZoom?: number;
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -477,6 +482,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.indentSpacing !== undefined && { indentSpacing: saved.indentSpacing }),
           ...(saved.calendarStartHour !== undefined && { calendarStartHour: saved.calendarStartHour }),
           ...(saved.calendarEndHour !== undefined && { calendarEndHour: saved.calendarEndHour }),
+          ...(saved.calendarZoom !== undefined && { calendarZoom: saved.calendarZoom }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -505,6 +511,7 @@ useSettingsStore.subscribe((state) => {
     indentSpacing: state.indentSpacing,
     calendarStartHour: state.calendarStartHour,
     calendarEndHour: state.calendarEndHour,
+    calendarZoom: state.calendarZoom,
     hotkeys: state.hotkeys,
   };
   try {
