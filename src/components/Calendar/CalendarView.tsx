@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useTaskStore } from "../../store/taskStore";
 import { TaskDrawer } from "./TaskDrawer";
 import { TimeGrid } from "./TimeGrid";
+import { CalendarToolbar } from "./CalendarToolbar";
 import "./CalendarView.css";
 
 type CalendarViewMode = "day" | "week";
@@ -46,11 +47,27 @@ function formatRangeLabel(dates: string[]): string {
   return `${first.toLocaleDateString(undefined, opts)} – ${last.toLocaleDateString(undefined, { ...opts, year: "numeric" })}`;
 }
 
+interface CalendarViewProps {
+  onSave: () => void;
+  onSaveAs: () => void;
+  onOpen: () => void;
+  onNewList: () => void;
+  dirty: boolean;
+  onOpenSettings: () => void;
+}
+
 /**
  * Top-level calendar view for TODOer+.
  * Gated behind __CALENDAR_ENABLED__ and lazy-loaded in App.tsx.
  */
-export function CalendarView() {
+export function CalendarView({
+  onSave,
+  onSaveAs,
+  onOpen,
+  onNewList,
+  dirty,
+  onOpenSettings,
+}: CalendarViewProps) {
   const store = useTaskStore();
   const tasks = store.file.tasks;
   const timeblocks = store.file.timeblocks ?? [];
@@ -87,6 +104,18 @@ export function CalendarView() {
 
   return (
     <div className="calendar-view">
+      <CalendarToolbar
+        onNewBlock={() => {
+          const dStr = todayIso();
+          store.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block");
+        }}
+        onSave={onSave}
+        onSaveAs={onSaveAs}
+        onOpen={onOpen}
+        onNewList={onNewList}
+        dirty={dirty}
+        onOpenSettings={onOpenSettings}
+      />
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="cal-toolbar">
         <div className="cal-toolbar-left">

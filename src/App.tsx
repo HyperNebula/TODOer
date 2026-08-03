@@ -34,6 +34,10 @@ const CalendarView = __CALENDAR_ENABLED__
   ? React.lazy(() => import("./components/Calendar/CalendarView").then(m => ({ default: m.CalendarView })))
   : null;
 
+const CalendarSettingsDialog = __CALENDAR_ENABLED__
+  ? React.lazy(() => import("./components/Calendar/CalendarSettingsDialog").then(m => ({ default: m.CalendarSettingsDialog })))
+  : null;
+
 type AppView = "tasks" | "calendar";
 
 function App() {
@@ -42,6 +46,7 @@ function App() {
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCalendarSettingsOpen, setIsCalendarSettingsOpen] = useState(false);
   const [newlyCreatedTaskId, setNewlyCreatedTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<AppView>("tasks");
   const [confirmState, setConfirmState] = useState<{
@@ -500,7 +505,14 @@ function App() {
         ) : (
           __CALENDAR_ENABLED__ && CalendarView && (
             <React.Suspense fallback={<div className="calendar-loading">Loading calendar…</div>}>
-              <CalendarView />
+              <CalendarView
+                onSave={handleSave}
+                onSaveAs={handleSaveAs}
+                onOpen={handleOpen}
+                onNewList={handleNewList}
+                dirty={store.dirty}
+                onOpenSettings={() => setIsCalendarSettingsOpen(true)}
+              />
             </React.Suspense>
           )
         )}
@@ -520,6 +532,11 @@ function App() {
           onClose={() => setNotesTask(null)}
         />
         {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
+        {isCalendarSettingsOpen && CalendarSettingsDialog && (
+          <React.Suspense fallback={null}>
+            <CalendarSettingsDialog onClose={() => setIsCalendarSettingsOpen(false)} />
+          </React.Suspense>
+        )}
         {confirmState && (
           <ConfirmDialog
             title={confirmState.title}

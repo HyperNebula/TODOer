@@ -212,6 +212,86 @@ export const ayuTheme: Theme = {
   },
 };
 
+export const desertTheme: Theme = {
+  id: "desert",
+  name: "Desert",
+  colorScheme: "dark",
+  colors: {
+    bg: "#333333",
+    surface: "#444444",
+    border: "#555555",
+    borderLight: "#666666",
+    headerBg: "#444444",
+    text: "#ffffff",
+    textMuted: "#cccccc",
+    accent: "#cd5c5c",
+    accentHover: "#f0e68c",
+    rowHover: "#3a3a3a",
+    rowSelected: "#555555",
+    danger: "#ff0000",
+  },
+};
+
+export const pabloTheme: Theme = {
+  id: "pablo",
+  name: "Pablo",
+  colorScheme: "dark",
+  colors: {
+    bg: "#000000",
+    surface: "#111111",
+    border: "#333333",
+    borderLight: "#444444",
+    headerBg: "#111111",
+    text: "#ffffff",
+    textMuted: "#808080",
+    accent: "#00ffff",
+    accentHover: "#00cccc",
+    rowHover: "#111111",
+    rowSelected: "#333333",
+    danger: "#ff0000",
+  },
+};
+
+export const solarizedDarkTheme: Theme = {
+  id: "solarized-dark",
+  name: "Solarized Dark",
+  colorScheme: "dark",
+  colors: {
+    bg: "#002b36",
+    surface: "#073642",
+    border: "#586e75",
+    borderLight: "#657b83",
+    headerBg: "#073642",
+    text: "#839496",
+    textMuted: "#586e75",
+    accent: "#2aa198",
+    accentHover: "#268bd2",
+    rowHover: "#073642",
+    rowSelected: "#586e75",
+    danger: "#dc322f",
+  },
+};
+
+export const quietTheme: Theme = {
+  id: "quiet",
+  name: "Quiet",
+  colorScheme: "dark",
+  colors: {
+    bg: "#1c1c1c",
+    surface: "#262626",
+    border: "#3a3a3a",
+    borderLight: "#4a4a4a",
+    headerBg: "#262626",
+    text: "#b2b2b2",
+    textMuted: "#767676",
+    accent: "#87af87",
+    accentHover: "#afd7af",
+    rowHover: "#262626",
+    rowSelected: "#3a3a3a",
+    danger: "#d75f5f",
+  },
+};
+
 export const BUILT_IN_THEMES = [
   defaultLightTheme,
   defaultDarkTheme,
@@ -221,7 +301,11 @@ export const BUILT_IN_THEMES = [
   darkblueTheme,
   elflordTheme,
   gruvboxTheme,
-  ayuTheme
+  ayuTheme,
+  desertTheme,
+  pabloTheme,
+  solarizedDarkTheme,
+  quietTheme
 ];
 
 export type Hotkeys = {
