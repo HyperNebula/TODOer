@@ -21,6 +21,7 @@ const COLOR_LABELS: Record<keyof ThemeColors, string> = {
   textMuted: "Muted Text",
   accent: "Accent Color",
   accentHover: "Accent Hover",
+  accentText: "Accent Text",
   rowHover: "Row Hover",
   rowSelected: "Row Selected",
   danger: "Danger Color",
