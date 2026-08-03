@@ -9,8 +9,7 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  gap: 8px;
 }
 
 /* ── Toolbar ──────────────────────────────────────────────── */
@@ -20,7 +19,8 @@
   justify-content: space-between;
   padding: 6px 10px;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px;
   flex-shrink: 0;
   gap: 8px;
 }
@@ -102,6 +102,8 @@
   overflow: hidden;
   min-height: 0;
   position: relative;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
 /* ── Task Drawer ──────────────────────────────────────────── */
