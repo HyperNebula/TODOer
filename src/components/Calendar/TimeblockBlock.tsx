@@ -160,7 +160,7 @@ export function TimeblockBlock({
         </div>
       )}
 
-      <div className="tb-tasks">
+      <div className="tb-tasks" style={{ marginTop: 'auto' }}>
         {assignedTasks.map((task) => (
           <div key={task.id} className="tb-chip">
             <span className="tb-chip-label">{task.title || "(untitled)"}</span>
