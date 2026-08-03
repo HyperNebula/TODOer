@@ -98,7 +98,7 @@ export function TimeblockBlock({
       const deltaY = me.clientY - dragRef.current.startY;
       const deltaMin = Math.round(deltaY / pxPerMin / 5) * 5; // snap to 5 min
       const newStart = new Date(new Date(dragRef.current.origStart).getTime() + deltaMin * 60_000);
-      
+
       let startStr = toLocalIsoString(newStart);
 
       const elements = document.elementsFromPoint(me.clientX, me.clientY);
@@ -130,11 +130,11 @@ export function TimeblockBlock({
   return (
     <div
       className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}`}
-      style={{ 
-        top, 
-        height, 
+      style={{
+        top,
+        height,
         ...(block.color ? { backgroundColor: block.color } : {}),
-        ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {}) 
+        ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {})
       }}
       onMouseDown={onBlockMouseDown}
       onMouseEnter={() => setIsHovered(true)}
@@ -165,7 +165,7 @@ export function TimeblockBlock({
         </div>
       )}
 
-      <div className="tb-tasks" style={{ justifyContent: 'flex-end' }}>
+      <div className="tb-tasks" style={{ justifyContent: 'flex-end', paddingBottom: '8px' }}>
         {assignedTasks.map((task) => (
           <div key={task.id} className="tb-chip">
             <span className="tb-chip-label">{task.title || "(untitled)"}</span>
