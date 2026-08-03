@@ -199,6 +199,7 @@ export function CalendarView({
             onDeleteTimeblock={store.deleteTimeblock}
             onAssignTask={store.assignTaskToTimeblock}
             onEditTimeblock={setEditingBlockId}
+            onToggleComplete={store.toggleTimeblockComplete}
           />
         </div>
       </div>
@@ -210,6 +211,7 @@ export function CalendarView({
           onSave={store.updateTimeblock}
           onClose={() => setEditingBlockId(null)}
           onRemoveTask={store.removeTaskFromTimeblock}
+          onComplete={store.toggleTimeblockComplete}
         />
       )}
     </div>

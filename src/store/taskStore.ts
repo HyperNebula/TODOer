@@ -89,6 +89,7 @@ interface TaskStore {
   deleteTimeblock: (id: string) => void;
   assignTaskToTimeblock: (timeblocId: string, taskId: string) => void;
   removeTaskFromTimeblock: (timeblocId: string, taskId: string) => void;
+  toggleTimeblockComplete: (id: string, completed: boolean) => void;
 }
 
 function touch(file: TaskListFile): TaskListFile {
@@ -436,4 +437,22 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       }),
       dirty: true,
     })),
+
+  toggleTimeblockComplete: (id, completed) =>
+    set((s) => {
+      const block = s.file.timeblocks?.find(b => b.id === id);
+      if (!block) return s;
+      
+      const now = new Date().toISOString();
+      const taskIds = new Set(block.taskIds);
+      
+      return {
+        file: touch({
+          ...s.file,
+          timeblocks: s.file.timeblocks!.map(b => b.id === id ? { ...b, completed } : b),
+          tasks: s.file.tasks.map(t => taskIds.has(t.id) ? { ...t, done: completed, completedAt: completed ? (t.completedAt || now) : null } : t)
+        }),
+        dirty: true,
+      };
+    }),
 }));

@@ -19,6 +19,7 @@ interface TimeGridProps {
   onDeleteTimeblock: (id: string) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
   onEditTimeblock: (id: string) => void;
+  onToggleComplete: (id: string, completed: boolean) => void;
 }
 
 
@@ -66,6 +67,7 @@ export function TimeGrid({
   onDeleteTimeblock,
   onAssignTask,
   onEditTimeblock,
+  onToggleComplete,
 }: TimeGridProps) {
   // The vertically + horizontally scrollable body
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -225,6 +227,7 @@ export function TimeGrid({
                       onUpdate={onUpdateTimeblock}
                       onDelete={onDeleteTimeblock}
                       onEditTimeblock={onEditTimeblock}
+                      onToggleComplete={onToggleComplete}
                     />
                   ))}
                 </div>

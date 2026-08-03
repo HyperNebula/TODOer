@@ -8,9 +8,10 @@ interface Props {
   onSave: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onClose: () => void;
   onRemoveTask: (blockId: string, taskId: string) => void;
+  onComplete: (id: string, completed: boolean) => void;
 }
 
-export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask }: Props) {
+export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask, onComplete }: Props) {
   const [title, setTitle] = useState(block.title || "");
   const [notes, setNotes] = useState(block.notes || "");
   
@@ -106,6 +107,13 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
         </div>
 
         <div className="timeblock-edit-footer">
+          <button 
+            className="btn" 
+            style={{ marginRight: 'auto', color: 'var(--accent)' }} 
+            onClick={() => { onComplete(block.id, !block.completed); onClose(); }}
+          >
+            {block.completed ? "Mark Incomplete" : "Mark Complete"}
+          </button>
           <button className="btn" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave}>Save</button>
         </div>

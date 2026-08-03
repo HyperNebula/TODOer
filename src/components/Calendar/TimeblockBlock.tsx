@@ -16,6 +16,7 @@ interface TimeblockBlockProps {
   onUpdate: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onDelete: (id: string) => void;
   onEditTimeblock: (id: string) => void;
+  onToggleComplete: (id: string, completed: boolean) => void;
 }
 
 /**
@@ -34,6 +35,7 @@ export function TimeblockBlock({
   onUpdate,
   onDelete,
   onEditTimeblock,
+  onToggleComplete,
 }: TimeblockBlockProps) {
   const startMin =
     (new Date(block.startTime).getHours() * 60 +
@@ -87,7 +89,7 @@ export function TimeblockBlock({
 
   function onBlockMouseDown(e: React.MouseEvent) {
     // Don't initiate move if clicking on a button or the resize handle
-    if ((e.target as HTMLElement).closest(".tb-delete, .tb-edit, .tb-chip-remove, .tb-resize-handle")) return;
+    if ((e.target as HTMLElement).closest(".tb-delete, .tb-edit, .tb-complete-toggle, .tb-chip-remove, .tb-resize-handle")) return;
     e.preventDefault();
     const duration = new Date(block.endTime).getTime() - new Date(block.startTime).getTime();
     dragRef.current = { startY: e.clientY, origStart: block.startTime, origEnd: block.endTime };
@@ -128,17 +130,25 @@ export function TimeblockBlock({
 
   return (
     <div
-      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}`}
-      style={{ top, height }}
+      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}`}
+      style={{ top, height, ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {}) }}
       onMouseDown={onBlockMouseDown}
     >
       <button
         className="tb-edit"
         onClick={() => onEditTimeblock(block.id)}
         title="Edit timeblock"
-        style={{ position: 'absolute', top: '4px', right: '24px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: '0.9rem' }}
+        style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.7, fontSize: '0.9rem', color: 'inherit' }}
       >
         ✎
+      </button>
+      <button
+        className="tb-complete-toggle"
+        onClick={(e) => { e.stopPropagation(); onToggleComplete(block.id, !block.completed); }}
+        title={block.completed ? "Mark Incomplete" : "Mark Complete"}
+        style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: 'inherit', opacity: 0.8 }}
+      >
+        {block.completed ? "☑" : "☐"}
       </button>
       <button
         className="tb-delete"
