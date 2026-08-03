@@ -14,7 +14,7 @@ interface TimeGridProps {
   today: string;
   timeblocks: Timeblock[];
   tasks: Task[];
-  onAddTimeblock: (startTime: string, endTime: string) => string;
+  onAddTimeblock: (startTime: string, endTime: string, title?: string) => string;
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onDeleteTimeblock: (id: string) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
