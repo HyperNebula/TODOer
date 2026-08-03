@@ -72,6 +72,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     setCalendarStartHour,
     setCalendarEndHour,
     setCalendarZoom,
+    resetSettings,
   } = useSettingsStore();
 
   const allThemes = [...BUILT_IN_THEMES, ...customThemes];
@@ -256,6 +257,23 @@ export function CalendarSettingsDialog({ onClose }: Props) {
             v{appVersion || "..."}
           </span>
           <div style={{ display: "flex", gap: "8px" }}>
+            <button 
+              className="btn btn-danger" 
+              style={{ opacity: 0.8 }}
+              onClick={() => {
+                setConfirmState({
+                  title: "Reset Settings",
+                  message: "Are you sure you want to reset all settings to their defaults? This will delete any custom themes.",
+                  confirmLabel: "Reset",
+                  onConfirm: () => {
+                    setConfirmState(null);
+                    resetSettings();
+                  }
+                });
+              }}
+            >
+              Reset to Defaults
+            </button>
             <button className="btn" onClick={onClose}>Close</button>
           </div>
         </div>
