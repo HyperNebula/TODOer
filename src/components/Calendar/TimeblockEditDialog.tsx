@@ -71,12 +71,12 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
 
           <div className="timeblock-edit-group">
             <label>Color</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center'}}>
               <input 
                 type="color" 
                 value={color || "#ffffff"} 
                 onChange={e => setColor(e.target.value)} 
-                style={{ padding: 0, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', height: '24px', width: '40px', borderRadius: '4px', overflow: 'hidden' }}
+                style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', height: '24px', width: '40px' }}
               />
               {color && (
                 <button type="button" onClick={() => setColor("")} className="btn" style={{ fontSize: '0.75rem', padding: '2px 8px', minHeight: 0 }}>Reset Default</button>
