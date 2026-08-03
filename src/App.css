@@ -211,13 +211,13 @@ body {
 /* View toggle button (TODOer+ calendar) — sits in the header, right-aligned */
 .view-toggle-btn {
   margin-left: auto;
-  padding: 4px 12px;
+  padding: 8px 16px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.85rem;
-  border-radius: 4px;
+  font-size: 1rem;
+  border-radius: 6px;
   transition: background 0.15s, border-color 0.15s;
 }
 

@@ -80,7 +80,7 @@
 .cal-tasks-btn.active,
 .cal-view-btn.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   border-color: var(--accent);
 }
 
@@ -371,7 +371,7 @@
   left: 4px;
   right: 4px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   border-radius: 6px;
   padding: 4px 6px 14px;
   font-size: 0.75rem;
@@ -397,7 +397,7 @@
   right: 4px;
   background: rgba(255,255,255,0.25);
   border: none;
-  color: #fff;
+  color: var(--accent-text);
   font-size: 0.65rem;
   width: 16px;
   height: 16px;
@@ -466,7 +466,7 @@
   line-height: 1;
 }
 
-.tb-chip-remove:hover { color: #fff; }
+.tb-chip-remove:hover { color: var(--accent-text); }
 
 /* ── Resize handle ────────────────────────────────────────── */
 .tb-resize-handle {
