@@ -130,7 +130,12 @@ export function TimeblockBlock({
   return (
     <div
       className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}`}
-      style={{ top, height, ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {}) }}
+      style={{ 
+        top, 
+        height, 
+        ...(block.color ? { backgroundColor: block.color } : {}),
+        ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {}) 
+      }}
       onMouseDown={onBlockMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

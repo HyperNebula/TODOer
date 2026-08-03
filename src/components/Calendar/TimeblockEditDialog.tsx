@@ -16,6 +16,7 @@ interface Props {
 export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask, onComplete, onDelete, onAssignTask }: Props) {
   const [title, setTitle] = useState(block.title || "");
   const [notes, setNotes] = useState(block.notes || "");
+  const [color, setColor] = useState(block.color || "");
   
   const [startTimeStr, setStartTimeStr] = useState(() => {
     const d = new Date(block.startTime);
@@ -30,7 +31,7 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
   });
 
   const handleSave = () => {
-    const updates: Partial<Timeblock> = { title, notes };
+    const updates: Partial<Timeblock> = { title, notes, color: color || undefined };
     
     const startD = new Date(block.startTime);
     const [sh, sm] = startTimeStr.split(":").map(Number);
@@ -66,6 +67,21 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
           <div className="timeblock-edit-group">
             <label>Title</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+          </div>
+
+          <div className="timeblock-edit-group">
+            <label>Color</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input 
+                type="color" 
+                value={color || "#ffffff"} 
+                onChange={e => setColor(e.target.value)} 
+                style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', height: '24px', width: '40px' }}
+              />
+              {color && (
+                <button type="button" onClick={() => setColor("")} className="btn" style={{ fontSize: '0.75rem', padding: '2px 8px', minHeight: 0 }}>Reset Default</button>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>

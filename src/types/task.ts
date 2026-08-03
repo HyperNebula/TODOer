@@ -47,6 +47,7 @@ export interface Timeblock {
   taskIds: string[];
   notes?: string;
   completed?: boolean;
+  color?: string;
 }
 
 export interface TaskListFile {
