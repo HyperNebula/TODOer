@@ -146,6 +146,22 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                   <option value='Georgia, serif'>Georgia</option>
                 </select>
               </div>
+              <div className="settings-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <label>Calendar Zoom</label>
+                  <span style={{ fontSize: '0.85em', color: 'var(--text-muted)' }}>{calendarZoom.toFixed(1)}x</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0.5" max="3" step="0.1" 
+                  value={calendarZoom} 
+                  onChange={(e) => setCalendarZoom(Number(e.target.value))} 
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75em', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  <span>0.5x</span>
+                  <span>3.0x</span>
+                </div>
+              </div>
             </>
           )}
           {activeTab === "themes" && (
@@ -230,15 +246,6 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                     return <option key={val} value={val}>{label}</option>;
                   })}
                 </select>
-              </div>
-              <div className="settings-group">
-                <label>Calendar Zoom</label>
-                <input 
-                  type="range" 
-                  min="0.5" max="3" step="0.1" 
-                  value={calendarZoom} 
-                  onChange={(e) => setCalendarZoom(Number(e.target.value))} 
-                />
               </div>
             </>
           )}
