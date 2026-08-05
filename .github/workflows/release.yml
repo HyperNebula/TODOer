@@ -51,6 +51,10 @@ jobs:
             src-tauri/target/release/bundle/**/*.tar.gz
             src-tauri/target/release/bundle/**/*.sig
 
+      - name: Clean bundle directory
+        shell: bash
+        run: rm -rf src-tauri/target/release/bundle
+
       # --- TODOer+ (todolist + calendar) ---
       - name: Build TODOer+
         run: npm run tauri:build:plus
