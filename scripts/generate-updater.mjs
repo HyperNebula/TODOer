@@ -13,41 +13,53 @@ function getSignature(filePath) {
     }
 }
 
+function findSigFiles(dir) {
+    let results = [];
+    if (!fs.existsSync(dir)) return results;
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+        file = path.join(dir, file);
+        const stat = fs.statSync(file);
+        if (stat && stat.isDirectory()) {
+            results = results.concat(findSigFiles(file));
+        } else if (file.endsWith('.sig')) {
+            results.push(file);
+        }
+    });
+    return results;
+}
+
 function generateUpdater(isPlus) {
     const prefix = isPlus ? 'todoer-plus' : 'todoer';
     const platforms = {};
     
     // Windows
-    const winDir = `artifacts/${prefix}-windows-latest/src-tauri/target/release/bundle/nsis`;
-    if (fs.existsSync(winDir)) {
-        const files = fs.readdirSync(winDir);
-        const sigFile = files.find(f => f.endsWith('.nsis.zip.sig'));
-        if (sigFile) {
-            const baseFile = sigFile.replace('.sig', '');
-            platforms['windows-x86_64'] = {
-                signature: getSignature(path.join(winDir, sigFile)),
-                url: `https://github.com/${REPO}/releases/download/${TAG_NAME}/${baseFile}`
-            };
-        }
+    const winDir = `artifacts/${prefix}-windows-latest`;
+    const winSigs = findSigFiles(winDir).filter(f => f.endsWith('.nsis.zip.sig'));
+    if (winSigs.length > 0) {
+        const sigFile = winSigs[0];
+        const baseFile = path.basename(sigFile).replace('.sig', '');
+        platforms['windows-x86_64'] = {
+            signature: getSignature(sigFile),
+            url: `https://github.com/${REPO}/releases/download/${TAG_NAME}/${baseFile}`
+        };
     }
     
     // MacOS
-    const macDir = `artifacts/${prefix}-macos-latest/src-tauri/target/release/bundle/macos`;
-    if (fs.existsSync(macDir)) {
-        const files = fs.readdirSync(macDir);
-        const sigFile = files.find(f => f.endsWith('.app.tar.gz.sig'));
-        if (sigFile) {
-            const baseFile = sigFile.replace('.sig', '');
-            const sig = getSignature(path.join(macDir, sigFile));
-            platforms['darwin-x86_64'] = {
-                signature: sig,
-                url: `https://github.com/${REPO}/releases/download/${TAG_NAME}/${baseFile}`
-            };
-            platforms['darwin-aarch64'] = {
-                signature: sig,
-                url: `https://github.com/${REPO}/releases/download/${TAG_NAME}/${baseFile}`
-            };
-        }
+    const macDir = `artifacts/${prefix}-macos-latest`;
+    const macSigs = findSigFiles(macDir).filter(f => f.endsWith('.app.tar.gz.sig'));
+    if (macSigs.length > 0) {
+        const sigFile = macSigs[0];
+        const baseFile = path.basename(sigFile).replace('.sig', '');
+        const sig = getSignature(sigFile);
+        platforms['darwin-x86_64'] = {
+            signature: sig,
+            url: `https://github.com/${REPO}/releases/download/${TAG_NAME}/${baseFile}`
+        };
+        platforms['darwin-aarch64'] = {
+            signature: sig,
+            url: `https://github.com/${REPO}/releases/download/${TAG_NAME}/${baseFile}`
+        };
     }
     
     const updater = {
