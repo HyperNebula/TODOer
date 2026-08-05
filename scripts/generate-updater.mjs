@@ -35,7 +35,7 @@ function generateUpdater(isPlus) {
     
     // Windows
     const winDir = `artifacts/${prefix}-windows-latest`;
-    const winSigs = findSigFiles(winDir).filter(f => f.endsWith('.nsis.zip.sig'));
+    const winSigs = findSigFiles(winDir).filter(f => f.endsWith('.zip.sig'));
     if (winSigs.length > 0) {
         const sigFile = winSigs[0];
         const baseFile = path.basename(sigFile).replace('.sig', '');
@@ -47,7 +47,7 @@ function generateUpdater(isPlus) {
     
     // MacOS
     const macDir = `artifacts/${prefix}-macos-latest`;
-    const macSigs = findSigFiles(macDir).filter(f => f.endsWith('.app.tar.gz.sig'));
+    const macSigs = findSigFiles(macDir).filter(f => f.endsWith('.tar.gz.sig'));
     if (macSigs.length > 0) {
         const sigFile = macSigs[0];
         const baseFile = path.basename(sigFile).replace('.sig', '');
