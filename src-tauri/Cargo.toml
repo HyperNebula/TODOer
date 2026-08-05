@@ -1,6 +1,6 @@
 [package]
 name = "todoer"
-version = "0.9.5"
+version = "0.9.6"
 description = "A Tauri App"
 authors = ["David"]
 edition = "2021"
