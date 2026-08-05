@@ -8,7 +8,7 @@
   --text-muted: #666;
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
-  --row-hover: #f5f7fa;
+  --row-hover: #d1dce8;
   --row-selected: #dbeafe;
   --danger: #dc2626;
   font-family: system-ui, -apple-system, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
@@ -27,7 +27,7 @@
   --text-muted: #8b91a8;
   --accent: #4a8cff;
   --accent-hover: #6ba3ff;
-  --row-hover: #232635;
+  --row-hover: #39425e;
   --row-selected: #1e3a6e;
   --danger: #f87171;
   color-scheme: dark;
