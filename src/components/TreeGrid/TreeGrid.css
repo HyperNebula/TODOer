@@ -47,6 +47,14 @@
   white-space: nowrap;
 }
 
+.tree-grid input[type="checkbox"] {
+  width: 1.15em;
+  height: 1.15em;
+  cursor: pointer;
+  margin: 0;
+  vertical-align: middle;
+}
+
 .tree-grid.tree-grid-vertical-lines th,
 .tree-grid.tree-grid-vertical-lines td {
   border-right: 1px solid var(--border-light);
