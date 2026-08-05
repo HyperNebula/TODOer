@@ -591,7 +591,7 @@ export function TreeGrid({
                   draggable={!isFlatView}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelect(row.task.id);
+                    onSelect(row.task.id === selectedTaskId ? null : row.task.id);
                   }}
                   onDragStart={(e) => handleDragStart(e, row.task.id)}
                   onDragEnd={handleDragEnd}
