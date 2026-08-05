@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "TODOer",
-  "version": "0.9.6",
+  "version": "0.10.0",
   "identifier": "com.david.todoer",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -22,6 +22,14 @@
     ],
     "security": {
       "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMxNTcxNERGMDU1NEEwOEMKUldTTW9GUUYzeFJYTWZON1g4ZkpRYnh3L1Z4VGNkdnZKVmpveXJWM0lPNUh5SUxFREFZeTdEWCsK",
+      "endpoints": [
+        "https://github.com/HyperNebula/TODOer/releases/latest/download/updater.json"
+      ]
     }
   },
   "bundle": {

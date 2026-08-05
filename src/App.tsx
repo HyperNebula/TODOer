@@ -8,6 +8,7 @@ import { StatusBar } from "./components/StatusBar";
 import { ThemeApplier } from "./components/ThemeApplier";
 import { Toolbar } from "./components/Toolbar";
 import { TreeGrid } from "./components/TreeGrid/TreeGrid";
+import { UpdaterStartupCheck } from "./components/Updater";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { tasksToCsv } from "./lib/csvExport";
 import { tasksToTaskpaper } from "./lib/taskpaperExport";
@@ -420,6 +421,7 @@ function App() {
   return (
     <>
       <ThemeApplier />
+      <UpdaterStartupCheck />
       <div className="app">
         <header className="app-header">
           <h1>TODOer{__CALENDAR_ENABLED__ ? "+" : ""}</h1>

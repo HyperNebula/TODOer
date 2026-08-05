@@ -8,6 +8,7 @@ import { ColumnPicker } from "./ColumnPicker";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { PromptDialog } from "./PromptDialog";
 import { getArchiveFilePath, openFileLink } from "../lib/fileApi";
+import { useUpdater } from "./Updater";
 import "./SettingsDialog.css";
 
 interface Props {
@@ -54,6 +55,8 @@ export function SettingsDialog({ onClose }: Props) {
   } | null>(null);
   const store = useTaskStore();
   const visibleColumns = store.getVisibleColumns();
+  
+  const { checkForUpdates, isChecking } = useUpdater();
   
   const {
     activeThemeId,
@@ -496,6 +499,15 @@ export function SettingsDialog({ onClose }: Props) {
           <span style={{ alignSelf: "center", color: "var(--text-muted)", fontSize: "0.9em" }}>
             v{appVersion || "..."}
           </span>
+          <button 
+            className="btn" 
+            onClick={() => checkForUpdates(false)} 
+            disabled={isChecking}
+            style={{ marginLeft: "10px" }}
+          >
+            {isChecking ? "Checking..." : "Check for Updates"}
+          </button>
+          <div style={{ flex: 1 }}></div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button 
               className="btn btn-danger" 
