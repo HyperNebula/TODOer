@@ -8,6 +8,9 @@ const timeblocksSchema = z.object({
   startTime: z.string(),
   endTime: z.string(),
   taskIds: z.array(z.string()),
+  notes: z.string().optional(),
+  completed: z.boolean().optional(),
+  color: z.string().optional(),
 });
 
 const columnIdSchema = z.enum([
