@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
+import { useSettingsStore } from "../store/settingsStore";
 
 export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -201,7 +202,8 @@ export async function saveTaskListDialog(
     if (!chosen) return null;
     path = chosen;
   }
-  await invoke("write_tasklist_file", { path, contents });
+  const maxBackups = useSettingsStore.getState().maxBackups;
+  await invoke("write_tasklist_file", { path, contents, maxBackups });
   await setLastFilePath(path);
   return path;
 }
@@ -256,7 +258,8 @@ export async function saveTaskListAsDialog(
     defaultPath: `${dir}/my-tasks.todoer.json`,
   });
   if (!path) return null;
-  await invoke("write_tasklist_file", { path, contents });
+  const maxBackups = useSettingsStore.getState().maxBackups;
+  await invoke("write_tasklist_file", { path, contents, maxBackups });
   await setLastFilePath(path);
   return path;
 }
@@ -287,7 +290,7 @@ export async function exportTaskpaperDialog(contents: string): Promise<boolean> 
     defaultPath: "tasks-export.taskpaper",
   });
   if (!path) return false;
-  await invoke("write_tasklist_file", { path, contents });
+  await invoke("write_tasklist_file", { path, contents, maxBackups: 0 }); // No backups for exports
   return true;
 }
 
@@ -449,5 +452,6 @@ export async function writeFileFallback(
     return;
   }
 
-  await invoke("write_tasklist_file", { path, contents });
+  const maxBackups = useSettingsStore.getState().maxBackups;
+  await invoke("write_tasklist_file", { path, contents, maxBackups });
 }

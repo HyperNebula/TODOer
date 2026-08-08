@@ -342,6 +342,7 @@ export const DEFAULT_SETTINGS = {
   fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
   autoSaveEnabled: true,
   autoSaveIntervalMinutes: 5,
+  maxBackups: 5,
   printOrientation: "portrait" as const,
   priorityColorStyle: "row" as "none" | "row" | "cell",
   showVerticalBorders: false,
@@ -373,6 +374,7 @@ export interface SettingsState {
   fontFamily: string;
   autoSaveEnabled: boolean;
   autoSaveIntervalMinutes: number;
+  maxBackups: number;
   printOrientation: "portrait" | "landscape";
   priorityColorStyle: "none" | "row" | "cell";
   showVerticalBorders: boolean;
@@ -392,6 +394,7 @@ export interface SettingsState {
   setFontFamily: (font: string) => void;
   setAutoSaveEnabled: (enabled: boolean) => void;
   setAutoSaveIntervalMinutes: (minutes: number) => void;
+  setMaxBackups: (count: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   setPriorityColorStyle: (style: "none" | "row" | "cell") => void;
   setShowVerticalBorders: (show: boolean) => void;
@@ -428,6 +431,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setFontFamily: (font) => set({ fontFamily: font }),
   setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
   setAutoSaveIntervalMinutes: (minutes) => set({ autoSaveIntervalMinutes: minutes }),
+  setMaxBackups: (count) => set({ maxBackups: count }),
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
   setPriorityColorStyle: (style) => set({ priorityColorStyle: style }),
   setShowVerticalBorders: (show) => set({ showVerticalBorders: show }),
@@ -450,6 +454,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         fontFamily?: string;
         autoSaveEnabled?: boolean;
         autoSaveIntervalMinutes?: number;
+        maxBackups?: number;
         printOrientation?: "portrait" | "landscape";
         usePriorityColors?: boolean; // legacy
         priorityColorStyle?: "none" | "row" | "cell";
@@ -472,6 +477,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.fontFamily && { fontFamily: saved.fontFamily }),
           ...(saved.autoSaveEnabled !== undefined && { autoSaveEnabled: saved.autoSaveEnabled }),
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
+          ...(saved.maxBackups !== undefined && { maxBackups: saved.maxBackups }),
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
           ...(saved.usePriorityColors !== undefined && { priorityColorStyle: saved.usePriorityColors ? "row" : "none" }),
           ...(saved.priorityColorStyle && { priorityColorStyle: saved.priorityColorStyle }),
@@ -502,6 +508,7 @@ useSettingsStore.subscribe((state) => {
     fontFamily: state.fontFamily,
     autoSaveEnabled: state.autoSaveEnabled,
     autoSaveIntervalMinutes: state.autoSaveIntervalMinutes,
+    maxBackups: state.maxBackups,
     printOrientation: state.printOrientation,
     priorityColorStyle: state.priorityColorStyle,
     showVerticalBorders: state.showVerticalBorders,

@@ -86,6 +86,8 @@ export function SettingsDialog({ onClose }: Props) {
     setProjectEmoji,
     indentSpacing,
     setIndentSpacing,
+    maxBackups,
+    setMaxBackups,
     setHotkey,
     resetSettings,
   } = useSettingsStore();
@@ -291,6 +293,10 @@ export function SettingsDialog({ onClose }: Props) {
                   <input type="number" min="1" max="60" value={autoSaveIntervalMinutes} onChange={(e) => setAutoSaveIntervalMinutes(Number(e.target.value))} />
                 </div>
               )}
+              <div className="settings-group">
+                <label>Max Backups Per Tasklist (0 to disable)</label>
+                <input type="number" min="0" max="100" value={maxBackups} onChange={(e) => setMaxBackups(Number(e.target.value))} />
+              </div>
               <div className="settings-group">
                 <label>Print Orientation</label>
                 <select

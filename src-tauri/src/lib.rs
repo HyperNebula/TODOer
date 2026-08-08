@@ -21,8 +21,68 @@ fn read_tasklist_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn write_tasklist_file(path: String, contents: String) -> Result<(), String> {
-    atomic_write(Path::new(&path), &contents)
+fn write_tasklist_file(app: tauri::AppHandle, path: String, contents: String, max_backups: usize) -> Result<(), String> {
+    let target_path = Path::new(&path);
+    if target_path.exists() {
+        if let Ok(docs) = app.path().document_dir() {
+            let backups_dir = docs.join("TaskLists").join("backups");
+            let _ = fs::create_dir_all(&backups_dir);
+            
+            if target_path.file_name().is_some() {
+                let extension = target_path.extension().and_then(|e| e.to_str()).unwrap_or("json");
+                let stem = target_path.file_stem().and_then(|s| s.to_str()).unwrap_or("list");
+                
+                let mut existing_backups = Vec::new();
+                if let Ok(entries) = fs::read_dir(&backups_dir) {
+                    for entry in entries.flatten() {
+                        if let Ok(meta) = entry.metadata() {
+                            if let Some(name) = entry.file_name().to_str() {
+                                if name.starts_with(&format!("{}_", stem)) && name.ends_with(extension) {
+                                    if let Ok(modified) = meta.modified() {
+                                        existing_backups.push((entry.path(), modified));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                existing_backups.sort_by(|a, b| b.1.cmp(&a.1));
+                
+                let mut should_backup = true;
+                if let Some((_, last_modified)) = existing_backups.first() {
+                    if let Ok(elapsed) = last_modified.elapsed() {
+                        if elapsed.as_secs() < 3600 {
+                            should_backup = false;
+                        }
+                    }
+                }
+                
+                if should_backup && max_backups > 0 {
+                    let now = chrono::Local::now();
+                    let timestamp = now.format("%Y-%m-%d_%H-%M-%S").to_string();
+                    let backup_filename = format!("{}_{}.{}", stem, timestamp, extension);
+                    let backup_path = backups_dir.join(backup_filename);
+                    if fs::copy(target_path, &backup_path).is_ok() {
+                        existing_backups.insert(0, (backup_path, std::time::SystemTime::now()));
+                    }
+                }
+                
+                if max_backups > 0 {
+                    while existing_backups.len() > max_backups {
+                        if let Some((path, _)) = existing_backups.pop() {
+                            let _ = fs::remove_file(path);
+                        }
+                    }
+                } else if max_backups == 0 {
+                    for (path, _) in existing_backups {
+                        let _ = fs::remove_file(path);
+                    }
+                }
+            }
+        }
+    }
+    atomic_write(target_path, &contents)
 }
 
 #[tauri::command]
