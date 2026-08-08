@@ -84,7 +84,7 @@ interface TaskStore {
   toggleFlatView: () => void;
 
   // Timeblock actions
-  addTimeblock: (startTime: string, endTime: string, title?: string) => string;
+  addTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => string;
   updateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   deleteTimeblock: (id: string) => void;
   assignTaskToTimeblock: (timeblocId: string, taskId: string) => void;
@@ -382,9 +382,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((s) => ({ filter: { ...s.filter, flatView: !s.filter.flatView } })),
 
   // ── Timeblock actions ────────────────────────────────────────────────────
-  addTimeblock: (startTime, endTime, title) => {
+  addTimeblock: (startTime, endTime, title, color) => {
     const id = crypto.randomUUID();
-    const block: Timeblock = { id, startTime, endTime, taskIds: [], title: title || "New Timeblock" };
+    const block: Timeblock = { id, startTime, endTime, taskIds: [], title: title || "New Timeblock", color };
     set((s) => ({
       file: touch({ ...s.file, timeblocks: [...(s.file.timeblocks ?? []), block] }),
       dirty: true,

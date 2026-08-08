@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type { Task, Timeblock } from "../../types/task";
 import { TimeblockBlock } from "./TimeblockBlock";
+import { getRandomColor } from "./colors";
 
 import { useSettingsStore } from "../../store/settingsStore";
 
@@ -13,7 +14,7 @@ interface TimeGridProps {
   today: string;
   timeblocks: Timeblock[];
   tasks: Task[];
-  onAddTimeblock: (startTime: string, endTime: string, title?: string) => string;
+  onAddTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => string;
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
   onEditTimeblock: (id: string) => void;
@@ -111,7 +112,7 @@ export function TimeGrid({
     const rawMin = clientYToGridMin(e.clientY);
     const startMin = snapMin(rawMin);
     const endMin = startMin + 60;
-    const newId = onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin));
+    const newId = onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin), undefined, getRandomColor());
     onEditTimeblock(newId);
   }
 
@@ -141,7 +142,7 @@ export function TimeGrid({
       const task = tasks.find((t) => t.id === taskId);
       const dur = task?.timeEstimateMinutes ?? 60;
       const endMin = dropMin + dur;
-      const newId = onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin), task?.title);
+      const newId = onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin), task?.title, getRandomColor());
       onAssignTask(newId, taskId);
     }
   }

@@ -4,6 +4,7 @@ import { TaskDrawer } from "./TaskDrawer";
 import { TimeGrid } from "./TimeGrid";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { TimeblockEditDialog } from "./TimeblockEditDialog";
+import { getRandomColor } from "./colors";
 import "./CalendarView.css";
 
 type CalendarViewMode = "day" | "week";
@@ -109,7 +110,7 @@ export function CalendarView({
       <CalendarToolbar
         onNewBlock={() => {
           const dStr = todayIso();
-          store.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block");
+          store.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block", getRandomColor());
         }}
         onSave={onSave}
         onSaveAs={onSaveAs}
