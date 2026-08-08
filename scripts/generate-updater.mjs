@@ -35,7 +35,7 @@ function generateUpdater(isPlus) {
     
     // Windows
     const winDir = `artifacts/${prefix}-windows-latest`;
-    const winSigs = findSigFiles(winDir).filter(f => f.endsWith('.zip.sig'));
+    const winSigs = findSigFiles(winDir).filter(f => f.endsWith('.nsis.zip.sig'));
     if (winSigs.length > 0) {
         const sigFile = winSigs[0];
         const baseFile = path.basename(sigFile).replace('.sig', '');

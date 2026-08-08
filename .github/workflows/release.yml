@@ -47,9 +47,10 @@ jobs:
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/**/*.zip
-            src-tauri/target/release/bundle/**/*.tar.gz
-            src-tauri/target/release/bundle/**/*.sig
+            src-tauri/target/release/bundle/nsis/*.nsis.zip
+            src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
+            src-tauri/target/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
 
       - name: Clean bundle directory
         shell: bash
@@ -69,10 +70,10 @@ jobs:
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/**/*.zip
-            src-tauri/target/release/bundle/**/*.tar.gz
-            src-tauri/target/release/bundle/**/*.sig
+            src-tauri/target/release/bundle/nsis/*.nsis.zip
+            src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
+            src-tauri/target/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
 
       - name: Get version
         id: version
@@ -101,8 +102,6 @@ jobs:
         with:
           path: artifacts
 
-      - name: Debug - List artifact contents
-        run: find artifacts -type f | head -200
 
       - name: Generate Updater JSON
         run: node scripts/generate-updater.mjs
@@ -128,10 +127,8 @@ jobs:
           files: |
             artifacts/**/*.dmg
             artifacts/**/*.exe
-            artifacts/**/*.msi
-            artifacts/**/*.zip
-            artifacts/**/*.tar.gz
-            artifacts/**/*.sig
+            artifacts/**/*.nsis.zip
+            artifacts/**/*.app.tar.gz
             updater.json
             updater-plus.json
 
