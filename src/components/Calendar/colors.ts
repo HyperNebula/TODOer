@@ -9,9 +9,12 @@ export const TIMEBLOCK_COLORS = [
   "#FFAAA5", // Pinkish
 ];
 
-export function getRandomColor(): string {
-  const randomIndex = Math.floor(Math.random() * TIMEBLOCK_COLORS.length);
-  return TIMEBLOCK_COLORS[randomIndex];
+let colorIndex = 0;
+
+export function getNextColor(): string {
+  const color = TIMEBLOCK_COLORS[colorIndex];
+  colorIndex = (colorIndex + 1) % TIMEBLOCK_COLORS.length;
+  return color;
 }
 
 export function getPriorityColor(priority: number): string {
@@ -27,5 +30,5 @@ export function getPriorityColor(priority: number): string {
     9: "#3b82f6",
     10: "#a855f7",
   };
-  return colors[priority] || getRandomColor();
+  return colors[priority] || getNextColor();
 }
