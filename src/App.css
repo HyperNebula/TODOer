@@ -258,8 +258,8 @@ input[type="checkbox"]:checked {
 input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  left: 0.3em;
-  top: 0.1em;
+  left: 0.32em;
+  top: 0.03em;
   width: 0.35em;
   height: 0.7em;
   border: solid white;
