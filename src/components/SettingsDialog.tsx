@@ -32,7 +32,7 @@ const COLOR_LABELS: Record<keyof ThemeColors, string> = {
 };
 
 export function SettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys" | "data">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "columns" | "themes" | "behavior" | "hotkeys">("appearance");
   const [appVersion, setAppVersion] = useState<string>("");
   
   useEffect(() => {
@@ -158,7 +158,6 @@ export function SettingsDialog({ onClose }: Props) {
           <button className={`settings-tab ${activeTab === "themes" ? "active" : ""}`} onClick={() => setActiveTab("themes")}>Themes</button>
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
           <button className={`settings-tab ${activeTab === "hotkeys" ? "active" : ""}`} onClick={() => setActiveTab("hotkeys")}>Hotkeys</button>
-          <button className={`settings-tab ${activeTab === "data" ? "active" : ""}`} onClick={() => setActiveTab("data")}>Data</button>
         </div>
         <div className="settings-content">
           {activeTab === "appearance" && (
@@ -306,6 +305,42 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value="portrait">Portrait (default)</option>
                   <option value="landscape">Landscape</option>
                 </select>
+              </div>
+              <div className="settings-group">
+                <label>Task Archive</label>
+                <p style={{ margin: "0 0 10px", fontWeight: "normal", color: "var(--text-muted)", fontSize: "calc(12px + var(--font-offset, 0px))" }}>
+                  All tasks removed via <strong>Archive Completed</strong> are stored in a
+                  global backup file on your computer. You can browse them here at any time.
+                </p>
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginRight: "16px", fontWeight: "normal" }}>
+                    <input
+                      type="radio"
+                      name="archiveFormat"
+                      value="csv"
+                      checked={archiveFormat === "csv"}
+                      onChange={() => setArchiveFormat("csv")}
+                    />
+                    CSV
+                  </label>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
+                    <input
+                      type="radio"
+                      name="archiveFormat"
+                      value="json"
+                      checked={archiveFormat === "json"}
+                      onChange={() => setArchiveFormat("json")}
+                    />
+                    JSON
+                  </label>
+                </div>
+                <button
+                  id="open-archive-viewer-btn"
+                  className="btn"
+                  onClick={handleOpenArchiveFile}
+                >
+                  Open Archive File
+                </button>
               </div>
             </>
           )}
@@ -460,46 +495,7 @@ export function SettingsDialog({ onClose }: Props) {
               </div>
             </>
           )}
-          {activeTab === "data" && (
-            <>
-              <div className="settings-group">
-                <label>Task Archive</label>
-                <p style={{ margin: "0 0 10px", fontWeight: "normal", color: "var(--text-muted)", fontSize: "calc(12px + var(--font-offset, 0px))" }}>
-                  All tasks removed via <strong>Archive Completed</strong> are stored in a
-                  global backup file on your computer. You can browse them here at any time.
-                </p>
-                <div style={{ marginBottom: "12px" }}>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginRight: "16px", fontWeight: "normal" }}>
-                    <input
-                      type="radio"
-                      name="archiveFormat"
-                      value="csv"
-                      checked={archiveFormat === "csv"}
-                      onChange={() => setArchiveFormat("csv")}
-                    />
-                    CSV
-                  </label>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
-                    <input
-                      type="radio"
-                      name="archiveFormat"
-                      value="json"
-                      checked={archiveFormat === "json"}
-                      onChange={() => setArchiveFormat("json")}
-                    />
-                    JSON
-                  </label>
-                </div>
-                <button
-                  id="open-archive-viewer-btn"
-                  className="btn"
-                  onClick={handleOpenArchiveFile}
-                >
-                  Open Archive File
-                </button>
-              </div>
-            </>
-          )}
+
         </div>
         <div className="settings-footer">
           <span style={{ alignSelf: "center", color: "var(--text-muted)", fontSize: "0.9em" }}>
