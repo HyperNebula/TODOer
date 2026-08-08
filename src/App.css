@@ -239,8 +239,9 @@ body {
 input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  font-size: inherit;
+  width: 1.15em;
+  height: 1.15em;
   border: 1px solid var(--border);
   border-radius: 3px;
   background-color: var(--bg);
@@ -257,11 +258,11 @@ input[type="checkbox"]:checked {
 input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 10px;
+  left: 0.3em;
+  top: 0.1em;
+  width: 0.35em;
+  height: 0.7em;
   border: solid white;
-  border-width: 0 2px 2px 0;
+  border-width: 0 0.15em 0.15em 0;
   transform: rotate(45deg);
 }
