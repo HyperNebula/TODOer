@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Task } from "../../types/task";
+import { getPriorityColor } from "./colors";
 
 interface TaskDrawerProps {
   tasks: Task[];
@@ -56,7 +57,10 @@ export function TaskDrawer({ tasks, onClose }: TaskDrawerProps) {
             onDragStart={(e) => handleDragStart(e, task.id)}
             title={task.title}
           >
-            <span className="task-drawer-item-indicator" />
+            <span 
+              className="task-drawer-item-indicator" 
+              style={task.done ? undefined : { backgroundColor: getPriorityColor(task.priority) }}
+            />
             <span className="task-drawer-item-title">{task.title || "(untitled)"}</span>
             {task.timeEstimateMinutes != null && (
               <span className="task-drawer-item-est">
