@@ -48,10 +48,6 @@
 }
 
 .tree-grid input[type="checkbox"] {
-  font-size: inherit;
-  width: 1.15em;
-  height: 1.15em;
-  cursor: pointer;
   margin: 0;
   vertical-align: middle;
   position: relative;
