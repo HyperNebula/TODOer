@@ -365,6 +365,7 @@ export const DEFAULT_SETTINGS = {
   calendarStartHour: 6,
   calendarEndHour: 22,
   calendarZoom: 1.5,
+  compactTimeblockDisplay: "hover" as "hover" | "all" | "notes",
 };
 
 export interface SettingsState {
@@ -385,6 +386,7 @@ export interface SettingsState {
   calendarStartHour: number;
   calendarEndHour: number;
   calendarZoom: number;
+  compactTimeblockDisplay: "hover" | "all" | "notes";
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -405,6 +407,7 @@ export interface SettingsState {
   setCalendarStartHour: (hour: number) => void;
   setCalendarEndHour: (hour: number) => void;
   setCalendarZoom: (zoom: number) => void;
+  setCompactTimeblockDisplay: (display: "hover" | "all" | "notes") => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -442,6 +445,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setCalendarStartHour: (hour) => set({ calendarStartHour: hour }),
   setCalendarEndHour: (hour) => set({ calendarEndHour: hour }),
   setCalendarZoom: (zoom) => set({ calendarZoom: zoom }),
+  setCompactTimeblockDisplay: (display) => set({ compactTimeblockDisplay: display }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -466,6 +470,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         calendarStartHour?: number;
         calendarEndHour?: number;
         calendarZoom?: number;
+        compactTimeblockDisplay?: "hover" | "all" | "notes";
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -489,6 +494,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.calendarStartHour !== undefined && { calendarStartHour: saved.calendarStartHour }),
           ...(saved.calendarEndHour !== undefined && { calendarEndHour: saved.calendarEndHour }),
           ...(saved.calendarZoom !== undefined && { calendarZoom: saved.calendarZoom }),
+          ...(saved.compactTimeblockDisplay && { compactTimeblockDisplay: saved.compactTimeblockDisplay }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -519,6 +525,7 @@ useSettingsStore.subscribe((state) => {
     calendarStartHour: state.calendarStartHour,
     calendarEndHour: state.calendarEndHour,
     calendarZoom: state.calendarZoom,
+    compactTimeblockDisplay: state.compactTimeblockDisplay,
     hotkeys: state.hotkeys,
   };
   try {

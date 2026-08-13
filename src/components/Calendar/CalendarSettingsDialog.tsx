@@ -62,6 +62,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     calendarStartHour,
     calendarEndHour,
     calendarZoom,
+    compactTimeblockDisplay,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -72,6 +73,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     setCalendarStartHour,
     setCalendarEndHour,
     setCalendarZoom,
+    setCompactTimeblockDisplay,
     resetSettings,
   } = useSettingsStore();
 
@@ -247,6 +249,14 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                     const label = val === 12 ? "12 PM" : val === 24 ? "12 AM" : val < 12 ? `${val} AM` : `${val - 12} PM`;
                     return <option key={val} value={val}>{label}</option>;
                   })}
+                </select>
+              </div>
+              <div className="settings-group">
+                <label>Compact Timeblock Display</label>
+                <select value={compactTimeblockDisplay} onChange={(e) => setCompactTimeblockDisplay(e.target.value as any)}>
+                  <option value="hover">Reveal on Hover (Default)</option>
+                  <option value="all">Show All Info Always</option>
+                  <option value="notes">Show Notes Only</option>
                 </select>
               </div>
             </>

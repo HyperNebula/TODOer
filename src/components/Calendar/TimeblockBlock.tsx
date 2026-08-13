@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { Task, Timeblock } from "../../types/task";
+import { useSettingsStore } from "../../store/settingsStore";
 
 function toLocalIsoString(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -39,6 +40,8 @@ export function TimeblockBlock({
   onEditTimeblock,
   onToggleComplete,
 }: TimeblockBlockProps) {
+  const { compactTimeblockDisplay } = useSettingsStore();
+
   // ── Drag & Resize Local State ───────────────────────────────────────────────
   const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
   const [, setDragTick] = useState(0);
@@ -165,7 +168,7 @@ export function TimeblockBlock({
 
   return (
     <div
-      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}${isCompact ? " timeblock-block--compact" : ""}${dragStateRef.current != null ? " timeblock-block--dragging" : ""}`}
+      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}${isCompact ? ` timeblock-block--compact timeblock-block--compact-${compactTimeblockDisplay}` : ""}${dragStateRef.current != null ? " timeblock-block--dragging" : ""}`}
       style={{
         top,
         height,

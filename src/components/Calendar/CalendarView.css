@@ -401,8 +401,12 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
 }
 
-.timeblock-block--compact:not(:hover) .tb-notes,
-.timeblock-block--compact:not(:hover) .tb-tasks {
+.timeblock-block--compact-hover:not(:hover) .tb-notes,
+.timeblock-block--compact-hover:not(:hover) .tb-tasks {
+  display: none;
+}
+
+.timeblock-block--compact-notes:not(:hover) .tb-tasks {
   display: none;
 }
 
