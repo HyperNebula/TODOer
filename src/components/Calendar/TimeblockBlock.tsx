@@ -39,13 +39,20 @@ export function TimeblockBlock({
   onEditTimeblock,
   onToggleComplete,
 }: TimeblockBlockProps) {
+  // ── Drag & Resize Local State ───────────────────────────────────────────────
+  const dragStateRef = useRef<{ startStr?: string; endStr?: string } | null>(null);
+  const [, setDragTick] = useState(0);
+
+  const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
+  const effectiveEnd = dragStateRef.current?.endStr ?? block.endTime;
+
   const startMin =
-    (new Date(block.startTime).getHours() * 60 +
-      new Date(block.startTime).getMinutes()) -
+    (new Date(effectiveStart).getHours() * 60 +
+      new Date(effectiveStart).getMinutes()) -
     gridStartMin;
   const endMin =
-    (new Date(block.endTime).getHours() * 60 +
-      new Date(block.endTime).getMinutes()) -
+    (new Date(effectiveEnd).getHours() * 60 +
+      new Date(effectiveEnd).getMinutes()) -
     gridStartMin;
   const durationMin = Math.max(endMin - startMin, 15);
 
@@ -72,11 +79,16 @@ export function TimeblockBlock({
       // Don't let the block get shorter than 15 min
       const startMs = new Date(block.startTime).getTime();
       if (newEnd.getTime() - startMs >= 15 * 60_000) {
-        onUpdate(block.id, { endTime: toLocalIsoString(newEnd) });
+        dragStateRef.current = { endStr: toLocalIsoString(newEnd) };
+        setDragTick(t => t + 1);
       }
     };
 
     const onUp = () => {
+      if (dragStateRef.current?.endStr) {
+        onUpdate(block.id, { endTime: dragStateRef.current.endStr });
+      }
+      dragStateRef.current = null;
       resizeRef.current = null;
       setIsResizing(false);
       window.removeEventListener("mousemove", onMove);
@@ -114,10 +126,20 @@ export function TimeblockBlock({
       const parsedStart = new Date(startStr);
       const endStr = toLocalIsoString(new Date(parsedStart.getTime() + duration));
 
-      onUpdate(block.id, { startTime: startStr, endTime: endStr });
+      dragStateRef.current = { startStr, endStr };
+      setDragTick(t => t + 1);
     };
 
     const onUp = () => {
+      if (dragStateRef.current) {
+        const updates: Partial<Omit<Timeblock, "id">> = {};
+        if (dragStateRef.current.startStr) updates.startTime = dragStateRef.current.startStr;
+        if (dragStateRef.current.endStr) updates.endTime = dragStateRef.current.endStr;
+        if (Object.keys(updates).length > 0) {
+          onUpdate(block.id, updates);
+        }
+      }
+      dragStateRef.current = null;
       dragRef.current = null;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
