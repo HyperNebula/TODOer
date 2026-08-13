@@ -63,7 +63,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     calendarEndHour,
     calendarZoom,
     compactTimeblockDisplay,
-    doubleClickToEdit,
+    timeblockEditMode,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -75,7 +75,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     setCalendarEndHour,
     setCalendarZoom,
     setCompactTimeblockDisplay,
-    setDoubleClickToEdit,
+    setTimeblockEditMode,
     resetSettings,
   } = useSettingsStore();
 
@@ -262,10 +262,12 @@ export function CalendarSettingsDialog({ onClose }: Props) {
                 </select>
               </div>
               <div className="settings-group">
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
-                  <input type="checkbox" checked={doubleClickToEdit} onChange={(e) => setDoubleClickToEdit(e.target.checked)} />
-                  <strong>Double-click to Edit Timeblocks</strong>
-                </label>
+                <label>Timeblock Edit Mode</label>
+                <select value={timeblockEditMode} onChange={(e) => setTimeblockEditMode(e.target.value as any)}>
+                  <option value="button">Edit Button</option>
+                  <option value="doubleClick">Double-click Block</option>
+                  <option value="singleClick">Single-click Block</option>
+                </select>
               </div>
             </>
           )}

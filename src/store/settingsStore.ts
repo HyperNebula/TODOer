@@ -366,7 +366,7 @@ export const DEFAULT_SETTINGS = {
   calendarEndHour: 22,
   calendarZoom: 1.5,
   compactTimeblockDisplay: "hover" as "hover" | "all" | "notes",
-  doubleClickToEdit: false,
+  timeblockEditMode: "button" as "button" | "doubleClick" | "singleClick",
 };
 
 export interface SettingsState {
@@ -388,7 +388,7 @@ export interface SettingsState {
   calendarEndHour: number;
   calendarZoom: number;
   compactTimeblockDisplay: "hover" | "all" | "notes";
-  doubleClickToEdit: boolean;
+  timeblockEditMode: "button" | "doubleClick" | "singleClick";
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -410,7 +410,7 @@ export interface SettingsState {
   setCalendarEndHour: (hour: number) => void;
   setCalendarZoom: (zoom: number) => void;
   setCompactTimeblockDisplay: (display: "hover" | "all" | "notes") => void;
-  setDoubleClickToEdit: (enabled: boolean) => void;
+  setTimeblockEditMode: (mode: "button" | "doubleClick" | "singleClick") => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -449,7 +449,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setCalendarEndHour: (hour) => set({ calendarEndHour: hour }),
   setCalendarZoom: (zoom) => set({ calendarZoom: zoom }),
   setCompactTimeblockDisplay: (display) => set({ compactTimeblockDisplay: display }),
-  setDoubleClickToEdit: (enabled) => set({ doubleClickToEdit: enabled }),
+  setTimeblockEditMode: (mode) => set({ timeblockEditMode: mode }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -475,7 +475,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         calendarEndHour?: number;
         calendarZoom?: number;
         compactTimeblockDisplay?: "hover" | "all" | "notes";
-        doubleClickToEdit?: boolean;
+        timeblockEditMode?: "button" | "doubleClick" | "singleClick";
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -500,7 +500,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.calendarEndHour !== undefined && { calendarEndHour: saved.calendarEndHour }),
           ...(saved.calendarZoom !== undefined && { calendarZoom: saved.calendarZoom }),
           ...(saved.compactTimeblockDisplay && { compactTimeblockDisplay: saved.compactTimeblockDisplay }),
-          ...(saved.doubleClickToEdit !== undefined && { doubleClickToEdit: saved.doubleClickToEdit }),
+          ...(saved.timeblockEditMode && { timeblockEditMode: saved.timeblockEditMode }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
         });
       }
@@ -532,7 +532,7 @@ useSettingsStore.subscribe((state) => {
     calendarEndHour: state.calendarEndHour,
     calendarZoom: state.calendarZoom,
     compactTimeblockDisplay: state.compactTimeblockDisplay,
-    doubleClickToEdit: state.doubleClickToEdit,
+    timeblockEditMode: state.timeblockEditMode,
     hotkeys: state.hotkeys,
   };
   try {

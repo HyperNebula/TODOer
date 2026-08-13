@@ -40,7 +40,7 @@ export function TimeblockBlock({
   onEditTimeblock,
   onToggleComplete,
 }: TimeblockBlockProps) {
-  const { compactTimeblockDisplay, doubleClickToEdit } = useSettingsStore();
+  const { compactTimeblockDisplay, timeblockEditMode } = useSettingsStore();
 
   // ── Drag & Resize Local State ───────────────────────────────────────────────
   const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
@@ -142,7 +142,9 @@ export function TimeblockBlock({
     };
 
     const onUp = () => {
+      let didMove = false;
       if (dragStateRef.current) {
+        didMove = true;
         const updates: Partial<Omit<Timeblock, "id">> = {};
         if (dragStateRef.current.startStr) updates.startTime = dragStateRef.current.startStr;
         if (dragStateRef.current.endStr) updates.endTime = dragStateRef.current.endStr;
@@ -154,6 +156,10 @@ export function TimeblockBlock({
       dragRef.current = null;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      
+      if (!didMove && timeblockEditMode === "singleClick") {
+        onEditTimeblock(block.id);
+      }
     };
 
     window.addEventListener("mousemove", onMove);
@@ -182,10 +188,10 @@ export function TimeblockBlock({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={() => {
-        if (doubleClickToEdit) onEditTimeblock(block.id);
+        if (timeblockEditMode === "doubleClick") onEditTimeblock(block.id);
       }}
     >
-      {!doubleClickToEdit && (
+      {timeblockEditMode === "button" && (
         <button
           className="tb-edit"
           onClick={() => onEditTimeblock(block.id)}
