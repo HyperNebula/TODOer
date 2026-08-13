@@ -40,7 +40,7 @@ export function TimeblockBlock({
   onEditTimeblock,
   onToggleComplete,
 }: TimeblockBlockProps) {
-  const { compactTimeblockDisplay } = useSettingsStore();
+  const { compactTimeblockDisplay, doubleClickToEdit } = useSettingsStore();
 
   // ── Drag & Resize Local State ───────────────────────────────────────────────
   const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
@@ -181,15 +181,20 @@ export function TimeblockBlock({
       onMouseDown={onBlockMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onDoubleClick={() => {
+        if (doubleClickToEdit) onEditTimeblock(block.id);
+      }}
     >
-      <button
-        className="tb-edit"
-        onClick={() => onEditTimeblock(block.id)}
-        title="Edit timeblock"
-        style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: isHovered ? 0.7 : 0, fontSize: '0.9rem', color: 'inherit', transition: 'opacity 0.2s' }}
-      >
-        ✎
-      </button>
+      {!doubleClickToEdit && (
+        <button
+          className="tb-edit"
+          onClick={() => onEditTimeblock(block.id)}
+          title="Edit timeblock"
+          style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', opacity: isHovered ? 0.7 : 0, fontSize: '0.9rem', color: 'inherit', transition: 'opacity 0.2s' }}
+        >
+          ✎
+        </button>
+      )}
       <button
         className="tb-complete-toggle"
         onClick={(e) => { e.stopPropagation(); onToggleComplete(block.id, !block.completed); }}
