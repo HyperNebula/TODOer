@@ -49,6 +49,69 @@ function blockToGridMinutes(block: Timeblock, gridStartMin: number): { startMin:
 }
 
 /**
+ * Layout overlapping blocks. Returns a map of blockId -> { width, left } (in percentages)
+ */
+function calculateLayout(blocks: Timeblock[]) {
+  const sorted = [...blocks].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  
+  const clusters: Timeblock[][] = [];
+  let currentCluster: Timeblock[] = [];
+  let clusterEnd = 0;
+
+  for (const block of sorted) {
+    const start = new Date(block.startTime).getTime();
+    const end = new Date(block.endTime).getTime();
+    
+    if (currentCluster.length > 0 && start >= clusterEnd) {
+      clusters.push(currentCluster);
+      currentCluster = [];
+    }
+    
+    currentCluster.push(block);
+    clusterEnd = Math.max(clusterEnd, end);
+  }
+  if (currentCluster.length > 0) {
+    clusters.push(currentCluster);
+  }
+
+  const layouts = new Map<string, { width: number; left: number }>();
+  
+  for (const cluster of clusters) {
+    const columns: Timeblock[][] = [];
+    
+    for (const block of cluster) {
+      const start = new Date(block.startTime).getTime();
+      let placed = false;
+      
+      for (const col of columns) {
+        const lastBlock = col[col.length - 1];
+        if (new Date(lastBlock.endTime).getTime() <= start) {
+          col.push(block);
+          placed = true;
+          break;
+        }
+      }
+      
+      if (!placed) {
+        columns.push([block]);
+      }
+    }
+    
+    const numColumns = columns.length;
+    for (let i = 0; i < numColumns; i++) {
+      for (const block of columns[i]) {
+        layouts.set(block.id, {
+          width: 100 / numColumns,
+          left: (i * 100) / numColumns
+        });
+      }
+    }
+  }
+  
+  return layouts;
+}
+
+/**
  * The time grid renders hour lines and all timeblocks for the visible dates.
  *
  * Header row is rendered OUTSIDE the scroll wrapper so it is always visible.
@@ -196,6 +259,8 @@ export function TimeGrid({
             const blocksForDate = timeblocks.filter(
               (b) => b.startTime.startsWith(isoDate)
             );
+            
+            const layouts = calculateLayout(blocksForDate);
 
             return (
               <div key={isoDate} className="time-grid-column">
@@ -217,18 +282,23 @@ export function TimeGrid({
                   ))}
 
                   {/* Timeblock cards */}
-                  {blocksForDate.map((block) => (
-                    <TimeblockBlock
-                      key={block.id}
-                      block={block}
-                      tasks={tasks}
-                      pxPerMin={pxPerMin}
-                      gridStartMin={gridStartMin}
-                      onUpdate={onUpdateTimeblock}
-                      onEditTimeblock={onEditTimeblock}
-                      onToggleComplete={onToggleComplete}
-                    />
-                  ))}
+                  {blocksForDate.map((block) => {
+                    const layout = layouts.get(block.id);
+                    return (
+                      <TimeblockBlock
+                        key={block.id}
+                        block={block}
+                        tasks={tasks}
+                        pxPerMin={pxPerMin}
+                        gridStartMin={gridStartMin}
+                        styleWidth={layout?.width}
+                        styleLeft={layout?.left}
+                        onUpdate={onUpdateTimeblock}
+                        onEditTimeblock={onEditTimeblock}
+                        onToggleComplete={onToggleComplete}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             );

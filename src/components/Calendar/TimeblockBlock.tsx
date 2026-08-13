@@ -13,6 +13,8 @@ interface TimeblockBlockProps {
   pxPerMin: number;
   /** offset in minutes from midnight for the grid's start hour */
   gridStartMin: number;
+  styleWidth?: number;
+  styleLeft?: number;
   onUpdate: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onEditTimeblock: (id: string) => void;
   onToggleComplete: (id: string, completed: boolean) => void;
@@ -31,6 +33,8 @@ export function TimeblockBlock({
   tasks,
   pxPerMin,
   gridStartMin,
+  styleWidth,
+  styleLeft,
   onUpdate,
   onEditTimeblock,
   onToggleComplete,
@@ -127,12 +131,16 @@ export function TimeblockBlock({
     .map((id) => tasks.find((t) => t.id === id))
     .filter((t): t is Task => t !== undefined);
 
+  const isCompact = (styleWidth ?? 100) < 100;
+
   return (
     <div
-      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}`}
+      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}${isCompact ? " timeblock-block--compact" : ""}`}
       style={{
         top,
         height,
+        left: styleLeft !== undefined ? `calc(${styleLeft}% + 4px)` : undefined,
+        width: styleWidth !== undefined ? `calc(${styleWidth}% - 8px)` : undefined,
         ...(block.color ? { backgroundColor: block.color } : {}),
         ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {})
       }}

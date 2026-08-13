@@ -369,7 +369,7 @@
 .timeblock-block {
   position: absolute;
   left: 4px;
-  right: 4px;
+  width: calc(100% - 8px);
   background: var(--accent);
   color: var(--accent-text);
   border-radius: 6px;
@@ -378,7 +378,7 @@
   overflow: hidden;
   cursor: grab;
   box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  transition: box-shadow 0.15s, opacity 0.1s;
+  transition: box-shadow 0.15s, opacity 0.1s, z-index 0s;
   user-select: none;
   z-index: 1;
   display: flex;
@@ -386,8 +386,16 @@
   gap: 3px;
 }
 
-.timeblock-block:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.22); }
+.timeblock-block:hover { 
+  box-shadow: 0 3px 10px rgba(0,0,0,0.22); 
+  z-index: 10;
+}
 .timeblock-block--resizing { opacity: 0.8; cursor: ns-resize; }
+
+.timeblock-block--compact:not(:hover) .tb-notes,
+.timeblock-block--compact:not(:hover) .tb-tasks {
+  display: none;
+}
 
 [data-theme="dark"] .timeblock-block { background: var(--accent); }
 
