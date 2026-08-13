@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
 declare const __APP_VERSION__: string;
+declare const __CALENDAR_ENABLED__: boolean;
 import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";
@@ -71,6 +72,7 @@ export function SettingsDialog({ onClose }: Props) {
     archiveFormat,
     projectStyle,
     projectEmoji,
+    defaultAppView,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -84,6 +86,7 @@ export function SettingsDialog({ onClose }: Props) {
     setArchiveFormat,
     setProjectStyle,
     setProjectEmoji,
+    setDefaultAppView,
     indentSpacing,
     setIndentSpacing,
     maxBackups,
@@ -280,6 +283,16 @@ export function SettingsDialog({ onClose }: Props) {
           )}
           {activeTab === "behavior" && (
             <>
+              {__CALENDAR_ENABLED__ && (
+                <div className="settings-group">
+                  <label>Default Startup View</label>
+                  <select value={defaultAppView} onChange={(e) => setDefaultAppView(e.target.value as any)}>
+                    <option value="tasks">Tasks List</option>
+                    <option value="calendar">Calendar</option>
+                    <option value="lastOpen">Last Open View</option>
+                  </select>
+                </div>
+              )}
               <div className="settings-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
                   <input type="checkbox" checked={autoSaveEnabled} onChange={(e) => setAutoSaveEnabled(e.target.checked)} />

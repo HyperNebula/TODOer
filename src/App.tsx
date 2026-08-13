@@ -62,6 +62,7 @@ function App() {
     onThird?: () => void;
   } | null>(null);
   const settings = useSettingsStore();
+  const [viewInitialized, setViewInitialized] = useState(false);
 
   const handleSave = useCallback(async () => {
     const path = await saveTaskListDialog(
@@ -241,6 +242,23 @@ function App() {
     loadLast();
     return () => { mounted = false; };
   }, []); // Run once on mount
+
+  useEffect(() => {
+    if (__CALENDAR_ENABLED__ && settings.settingsLoaded && !viewInitialized) {
+      setViewInitialized(true);
+      if (settings.defaultAppView === "calendar") {
+        setActiveView("calendar");
+      } else if (settings.defaultAppView === "lastOpen") {
+        setActiveView(settings.lastOpenView);
+      }
+    }
+  }, [settings.settingsLoaded, viewInitialized, settings.defaultAppView, settings.lastOpenView]);
+
+  useEffect(() => {
+    if (__CALENDAR_ENABLED__ && viewInitialized) {
+      settings.setLastOpenView(activeView);
+    }
+  }, [activeView, viewInitialized]);
 
   useEffect(() => {
     const mod = navigator.platform.toLowerCase().includes("mac")

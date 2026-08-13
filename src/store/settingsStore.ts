@@ -367,6 +367,9 @@ export const DEFAULT_SETTINGS = {
   calendarZoom: 1.5,
   compactTimeblockDisplay: "hover" as "hover" | "all" | "notes",
   timeblockEditMode: "button" as "button" | "doubleClick" | "singleClick",
+  defaultAppView: "tasks" as "tasks" | "calendar" | "lastOpen",
+  lastOpenView: "tasks" as "tasks" | "calendar",
+  settingsLoaded: false,
 };
 
 export interface SettingsState {
@@ -389,6 +392,9 @@ export interface SettingsState {
   calendarZoom: number;
   compactTimeblockDisplay: "hover" | "all" | "notes";
   timeblockEditMode: "button" | "doubleClick" | "singleClick";
+  defaultAppView: "tasks" | "calendar" | "lastOpen";
+  lastOpenView: "tasks" | "calendar";
+  settingsLoaded: boolean;
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -411,6 +417,8 @@ export interface SettingsState {
   setCalendarZoom: (zoom: number) => void;
   setCompactTimeblockDisplay: (display: "hover" | "all" | "notes") => void;
   setTimeblockEditMode: (mode: "button" | "doubleClick" | "singleClick") => void;
+  setDefaultAppView: (view: "tasks" | "calendar" | "lastOpen") => void;
+  setLastOpenView: (view: "tasks" | "calendar") => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -450,6 +458,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setCalendarZoom: (zoom) => set({ calendarZoom: zoom }),
   setCompactTimeblockDisplay: (display) => set({ compactTimeblockDisplay: display }),
   setTimeblockEditMode: (mode) => set({ timeblockEditMode: mode }),
+  setDefaultAppView: (view) => set({ defaultAppView: view }),
+  setLastOpenView: (view) => set({ lastOpenView: view }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -476,6 +486,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         calendarZoom?: number;
         compactTimeblockDisplay?: "hover" | "all" | "notes";
         timeblockEditMode?: "button" | "doubleClick" | "singleClick";
+        defaultAppView?: "tasks" | "calendar" | "lastOpen";
+        lastOpenView?: "tasks" | "calendar";
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -501,11 +513,17 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.calendarZoom !== undefined && { calendarZoom: saved.calendarZoom }),
           ...(saved.compactTimeblockDisplay && { compactTimeblockDisplay: saved.compactTimeblockDisplay }),
           ...(saved.timeblockEditMode && { timeblockEditMode: saved.timeblockEditMode }),
+          ...(saved.defaultAppView && { defaultAppView: saved.defaultAppView }),
+          ...(saved.lastOpenView && { lastOpenView: saved.lastOpenView }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
+          settingsLoaded: true,
         });
+      } else {
+        set({ settingsLoaded: true });
       }
     } catch (e) {
-      console.error("Failed to load settings from tauri store", e);
+      console.error("Failed to load settings:", e);
+      set({ settingsLoaded: true });
     }
   },
   resetSettings: () => set({ ...DEFAULT_SETTINGS }),
@@ -533,6 +551,8 @@ useSettingsStore.subscribe((state) => {
     calendarZoom: state.calendarZoom,
     compactTimeblockDisplay: state.compactTimeblockDisplay,
     timeblockEditMode: state.timeblockEditMode,
+    defaultAppView: state.defaultAppView,
+    lastOpenView: state.lastOpenView,
     hotkeys: state.hotkeys,
   };
   try {
