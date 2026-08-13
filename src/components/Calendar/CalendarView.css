@@ -394,6 +394,15 @@
 }
 .timeblock-block--resizing { opacity: 0.8; cursor: ns-resize; }
 
+.timeblock-block--dragging {
+  width: calc(100% - 8px) !important;
+  left: 4px !important;
+  z-index: 50 !important;
+  transition: none !important;
+  cursor: grabbing !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
 .timeblock-block--compact:not(:hover) .tb-notes,
 .timeblock-block--compact:not(:hover) .tb-tasks {
   display: none;

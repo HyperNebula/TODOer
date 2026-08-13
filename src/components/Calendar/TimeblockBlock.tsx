@@ -40,7 +40,7 @@ export function TimeblockBlock({
   onToggleComplete,
 }: TimeblockBlockProps) {
   // ── Drag & Resize Local State ───────────────────────────────────────────────
-  const dragStateRef = useRef<{ startStr?: string; endStr?: string } | null>(null);
+  const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
   const [, setDragTick] = useState(0);
 
   const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
@@ -109,6 +109,8 @@ export function TimeblockBlock({
     const duration = new Date(block.endTime).getTime() - new Date(block.startTime).getTime();
     dragRef.current = { startY: e.clientY, origStart: block.startTime, origEnd: block.endTime };
 
+    const origColEl = (e.target as HTMLElement).closest(".time-grid-col-body") as HTMLElement | null;
+
     const onMove = (me: MouseEvent) => {
       if (!dragRef.current) return;
       const deltaY = me.clientY - dragRef.current.startY;
@@ -116,17 +118,23 @@ export function TimeblockBlock({
       const newStart = new Date(new Date(dragRef.current.origStart).getTime() + deltaMin * 60_000);
 
       let startStr = toLocalIsoString(newStart);
+      let deltaX = 0;
 
       const elements = document.elementsFromPoint(me.clientX, me.clientY);
       const colEl = elements.find(el => el.classList.contains("time-grid-col-body")) as HTMLElement | undefined;
       if (colEl && colEl.dataset.date) {
         startStr = `${colEl.dataset.date}T${startStr.split("T")[1]}`;
+        if (origColEl) {
+          const origRect = origColEl.getBoundingClientRect();
+          const newRect = colEl.getBoundingClientRect();
+          deltaX = newRect.left - origRect.left;
+        }
       }
 
       const parsedStart = new Date(startStr);
       const endStr = toLocalIsoString(new Date(parsedStart.getTime() + duration));
 
-      dragStateRef.current = { startStr, endStr };
+      dragStateRef.current = { startStr, endStr, deltaX };
       setDragTick(t => t + 1);
     };
 
@@ -157,12 +165,13 @@ export function TimeblockBlock({
 
   return (
     <div
-      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}${isCompact ? " timeblock-block--compact" : ""}`}
+      className={`timeblock-block${isResizing ? " timeblock-block--resizing" : ""}${block.completed ? " timeblock-block--completed" : ""}${isCompact ? " timeblock-block--compact" : ""}${dragStateRef.current != null ? " timeblock-block--dragging" : ""}`}
       style={{
         top,
         height,
         left: styleLeft !== undefined ? `calc(${styleLeft}% + 4px)` : undefined,
         width: styleWidth !== undefined ? `calc(${styleWidth}% - 8px)` : undefined,
+        transform: dragStateRef.current?.deltaX ? `translateX(${dragStateRef.current.deltaX}px)` : undefined,
         ...(block.color ? { backgroundColor: block.color } : {}),
         ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {})
       }}
