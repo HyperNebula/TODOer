@@ -134,6 +134,7 @@ export function TimeGrid({
   const wrapperRef = useRef<HTMLDivElement>(null);
   // The header columns scroll container — scrollLeft is driven by the body
   const headerColsRef = useRef<HTMLDivElement>(null);
+  const columnMouseDownRef = useRef<{ y: number; time: number } | null>(null);
 
   const { calendarStartHour, calendarEndHour, calendarZoom } = useSettingsStore();
   const pxPerMin = calendarZoom ?? 1.5;
@@ -268,7 +269,20 @@ export function TimeGrid({
                   className="time-grid-col-body"
                   data-date={isoDate}
                   style={{ height: gridHeight }}
-                  onClick={(e) => handleColumnClick(e, isoDate)}
+                  onMouseDown={(e) => {
+                    if ((e.target as HTMLElement).closest(".timeblock-block")) return;
+                    columnMouseDownRef.current = { y: e.clientY, time: Date.now() };
+                  }}
+                  onMouseUp={(e) => {
+                    if (!columnMouseDownRef.current) return;
+                    const { y } = columnMouseDownRef.current;
+                    columnMouseDownRef.current = null;
+                    if ((e.target as HTMLElement).closest(".timeblock-block")) return;
+                    
+                    if (Math.abs(e.clientY - y) < 5) {
+                      handleColumnClick(e, isoDate);
+                    }
+                  }}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, isoDate)}
                 >
