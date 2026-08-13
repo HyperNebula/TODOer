@@ -17,7 +17,7 @@ interface TimeGridProps {
   onAddTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => string;
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
-  onEditTimeblock: (id: string) => void;
+  onEditTimeblock: (id: string, isNew?: boolean) => void;
   onToggleComplete: (id: string, completed: boolean) => void;
 }
 
@@ -176,7 +176,7 @@ export function TimeGrid({
     const startMin = snapMin(rawMin);
     const endMin = startMin + 60;
     const newId = onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin), undefined, getNextColor());
-    onEditTimeblock(newId);
+    onEditTimeblock(newId, true);
   }
 
   // ── Drop tasks from the drawer ─────────────────────────────────────────────

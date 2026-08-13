@@ -4,6 +4,7 @@ import "./TimeblockEditDialog.css";
 
 interface Props {
   block: Timeblock;
+  isNew?: boolean;
   tasks: Task[];
   onSave: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onClose: () => void;
@@ -13,7 +14,7 @@ interface Props {
   onAssignTask: (blockId: string, taskId: string) => void;
 }
 
-export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTask, onComplete, onDelete, onAssignTask }: Props) {
+export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRemoveTask, onComplete, onDelete, onAssignTask }: Props) {
   const [title, setTitle] = useState(block.title || "");
   const [notes, setNotes] = useState(block.notes || "");
   const [color, setColor] = useState(block.color || "");
@@ -51,16 +52,23 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
     onClose();
   };
 
+  const handleCancel = () => {
+    if (isNew) {
+      onDelete(block.id);
+    }
+    onClose();
+  };
+
   const assignedTasks = block.taskIds
     .map((id) => tasks.find((t) => t.id === id))
     .filter((t): t is Task => t !== undefined);
 
   return (
-    <div className="timeblock-edit-overlay" onClick={onClose}>
+    <div className="timeblock-edit-overlay" onClick={handleCancel}>
       <div className="timeblock-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="timeblock-edit-header">
           <h2>Edit Timeblock</h2>
-          <button className="timeblock-edit-close" onClick={onClose}>&times;</button>
+          <button className="timeblock-edit-close" onClick={handleCancel}>&times;</button>
         </div>
         
         <div className="timeblock-edit-body">
@@ -151,7 +159,7 @@ export function TimeblockEditDialog({ block, tasks, onSave, onClose, onRemoveTas
           >
             Delete Block
           </button>
-          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={handleCancel}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave}>Save</button>
         </div>
       </div>

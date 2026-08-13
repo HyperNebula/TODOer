@@ -77,7 +77,7 @@ export function CalendarView({
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [anchorDate, setAnchorDate] = useState(todayIso);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editingBlock, setEditingBlock] = useState<{ id: string; isNew?: boolean } | null>(null);
 
   // Hidden date input ref for the "jump to date" picker
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -110,7 +110,8 @@ export function CalendarView({
       <CalendarToolbar
         onNewBlock={() => {
           const dStr = todayIso();
-          store.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block", getNextColor());
+          const newId = store.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block", getNextColor());
+          setEditingBlock({ id: newId, isNew: true });
         }}
         onSave={onSave}
         onSaveAs={onSaveAs}
@@ -198,18 +199,19 @@ export function CalendarView({
             onAddTimeblock={store.addTimeblock}
             onUpdateTimeblock={store.updateTimeblock}
             onAssignTask={store.assignTaskToTimeblock}
-            onEditTimeblock={setEditingBlockId}
+            onEditTimeblock={(id, isNew) => setEditingBlock({ id, isNew })}
             onToggleComplete={store.toggleTimeblockComplete}
           />
         </div>
       </div>
       
-      {editingBlockId && (
+      {editingBlock && timeblocks.find(b => b.id === editingBlock.id) && (
         <TimeblockEditDialog
-          block={timeblocks.find(b => b.id === editingBlockId)!}
+          block={timeblocks.find(b => b.id === editingBlock.id)!}
+          isNew={editingBlock.isNew}
           tasks={tasks}
           onSave={store.updateTimeblock}
-          onClose={() => setEditingBlockId(null)}
+          onClose={() => setEditingBlock(null)}
           onRemoveTask={store.removeTaskFromTimeblock}
           onComplete={store.toggleTimeblockComplete}
           onDelete={store.deleteTimeblock}
