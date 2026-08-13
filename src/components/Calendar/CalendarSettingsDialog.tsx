@@ -64,6 +64,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     calendarZoom,
     compactTimeblockDisplay,
     timeblockEditMode,
+    defaultAppView,
     setActiveThemeId,
     saveCustomTheme,
     deleteCustomTheme,
@@ -76,6 +77,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
     setCalendarZoom,
     setCompactTimeblockDisplay,
     setTimeblockEditMode,
+    setDefaultAppView,
     resetSettings,
   } = useSettingsStore();
 
@@ -221,6 +223,14 @@ export function CalendarSettingsDialog({ onClose }: Props) {
           )}
           {activeTab === "behavior" && (
             <>
+              <div className="settings-group">
+                <label>Default Startup View</label>
+                <select value={defaultAppView} onChange={(e) => setDefaultAppView(e.target.value as any)}>
+                  <option value="tasks">Tasks List</option>
+                  <option value="calendar">Calendar</option>
+                  <option value="lastOpen">Last Open View</option>
+                </select>
+              </div>
               <div className="settings-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
                   <input type="checkbox" checked={autoSaveEnabled} onChange={(e) => setAutoSaveEnabled(e.target.checked)} />
