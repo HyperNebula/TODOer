@@ -225,6 +225,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         if (k === "startTime") backendUpdates["start_time"] = v;
         else if (k === "endTime") backendUpdates["end_time"] = v;
         else if (k === "recurrenceRule") backendUpdates["recurrence_rule"] = v === null ? null : v;
+        else if (k === "isDeleted") backendUpdates["is_deleted"] = v;
         else backendUpdates[k] = v;
       }
       await invoke("update_timeblock", { id, updatesJson: JSON.stringify(backendUpdates) });
