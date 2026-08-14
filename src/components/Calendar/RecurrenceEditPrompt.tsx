@@ -17,37 +17,23 @@ export function RecurrenceEditPrompt({ onConfirmInstance, onConfirmSeries, onCan
         </div>
         
         <div className="confirm-message">
-          <p>This is a repeating event. How would you like to apply this change?</p>
+          <p>{action === "edit" ? "Do you want to apply this change to all future events in the series?" : "Do you want to delete all future events in the series?"}</p>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
             <button 
-              className="btn btn-primary" 
+              className="btn" 
               onClick={onConfirmInstance}
-              style={{ textAlign: 'left', padding: '12px' }}
+              style={{ minWidth: '80px' }}
             >
-              <strong>This event only</strong><br/>
-              <span style={{ fontSize: '0.85em', opacity: 0.8, fontWeight: 'normal' }}>
-                Other events in the series will remain unchanged.
-              </span>
+              No
             </button>
 
             <button 
               className="btn btn-primary" 
               onClick={onConfirmSeries}
-              style={{ textAlign: 'left', padding: '12px' }}
+              style={{ minWidth: '80px' }}
             >
-              <strong>This and following events</strong><br/>
-              <span style={{ fontSize: '0.85em', opacity: 0.8, fontWeight: 'normal' }}>
-                Changes apply to this event and all future events.
-              </span>
-            </button>
-
-            <button 
-              className="btn" 
-              onClick={onCancel}
-              style={{ textAlign: 'center', marginTop: '8px' }}
-            >
-              Cancel
+              Yes
             </button>
           </div>
         </div>
