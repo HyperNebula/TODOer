@@ -158,6 +158,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       dirty: false,
       selectedTaskId: null,
       focusTaskId: null,
+      filter: file.settings?.filter 
+        ? { ...DEFAULT_FILTER, ...file.settings.filter } as FilterState
+        : DEFAULT_FILTER,
     });
   },
 
@@ -319,9 +322,27 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   setFilter: (partial) =>
-    set((s) => ({ filter: { ...s.filter, ...partial } })),
+    set((s) => {
+      const newFilter = { ...s.filter, ...partial } as FilterState;
+      return {
+        filter: newFilter,
+        file: touch({
+          ...s.file,
+          settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, filter: newFilter },
+        }),
+        dirty: true,
+      };
+    }),
 
-  clearFilter: () => set({ filter: DEFAULT_FILTER }),
+  clearFilter: () =>
+    set((s) => ({
+      filter: DEFAULT_FILTER,
+      file: touch({
+        ...s.file,
+        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, filter: DEFAULT_FILTER },
+      }),
+      dirty: true,
+    })),
 
   setFocusTask: (id) => set({ focusTaskId: id }),
 

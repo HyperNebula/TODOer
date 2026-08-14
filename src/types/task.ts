@@ -17,6 +17,7 @@ export type ColumnId = (typeof COLUMN_IDS)[number];
 export interface TaskListSettings {
   visibleColumns: ColumnId[];
   columnWidths: Partial<Record<ColumnId, number>>;
+  filter?: Partial<FilterState>;
 }
 
 export interface Task {
@@ -137,6 +138,7 @@ export function createEmptyTaskList(name = "Untitled"): TaskListFile {
     settings: {
       visibleColumns: DEFAULT_VISIBLE_COLUMNS,
       columnWidths: DEFAULT_COLUMN_WIDTHS,
+      filter: DEFAULT_FILTER,
     },
     tasks: [],
     timeblocks: [],

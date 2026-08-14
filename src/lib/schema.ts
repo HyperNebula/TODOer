@@ -47,6 +47,21 @@ const taskSchema = z.object({
   isProject: z.boolean().optional(),
 });
 
+const filterSchema = z.object({
+  priorityMin: z.number().nullable(),
+  priorityMax: z.number().nullable(),
+  category: z.string(),
+  done: z.enum(["all", "done", "not_done"]),
+  titleContains: z.string(),
+  dueBefore: z.string().nullable(),
+  dueAfter: z.string().nullable(),
+  createdBefore: z.string().nullable(),
+  createdAfter: z.string().nullable(),
+  showArchived: z.boolean(),
+  flatView: z.boolean(),
+  projectFilter: z.enum(["all", "projects", "non-projects"]),
+});
+
 const taskListFileSchema = z.object({
   version: z.literal(1),
   name: z.string(),
@@ -55,6 +70,7 @@ const taskListFileSchema = z.object({
     .object({
       visibleColumns: z.array(columnIdSchema),
       columnWidths: z.record(z.string(), z.number()),
+      filter: filterSchema.optional(),
     })
     .optional(),
   tasks: z.array(taskSchema),
@@ -73,6 +89,7 @@ export function parseTaskListFile(json: string): TaskListFile {
         ...DEFAULT_COLUMN_WIDTHS,
         ...result.settings?.columnWidths,
       },
+      filter: result.settings?.filter,
     },
     timeblocks: result.timeblocks ?? [],
   };
