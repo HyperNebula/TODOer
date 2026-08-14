@@ -38,6 +38,13 @@
   text-align: center;
 }
 
+.tree-grid th.col-priority,
+.tree-grid td.col-priority {
+  text-align: center;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
 .tree-grid td {
   border-bottom: 1px solid var(--border-light);
   padding: 4px 8px;

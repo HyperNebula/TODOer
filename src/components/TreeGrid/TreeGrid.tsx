@@ -111,7 +111,7 @@ export function TreeGrid({
   useEffect(() => {
     if (!resizingCol) return;
     const onMouseMove = (e: MouseEvent) => {
-      const newWidth = Math.max(40, resizingCol.startWidth + (e.clientX - resizingCol.startX));
+      const newWidth = Math.max(20, resizingCol.startWidth + (e.clientX - resizingCol.startX));
       onColumnResize(resizingCol.col, newWidth);
     };
     const onMouseUp = () => {
@@ -452,6 +452,7 @@ export function TreeGrid({
           <td
             key={column}
             className={[
+              column === "priority" ? "col-priority" : "",
               doneClass,
               isSelected ? "selected" : "",
               priorityColorStyle === "cell" && column === "priority" ? `priority-${task.priority}` : ""
@@ -556,7 +557,7 @@ export function TreeGrid({
               {visibleColumns.map((col) => (
                 <th
                   key={col}
-                  className={col === "done" ? "col-done" : ""}
+                  className={col === "done" ? "col-done" : col === "priority" ? "col-priority" : ""}
                   onClick={() => col !== "done" && onToggleSort(col)}
                   style={{ width: columnWidths[col] || DEFAULT_COLUMN_WIDTHS[col], position: "relative" }}
                 >

@@ -105,7 +105,7 @@ export const DEFAULT_COLUMN_WIDTHS: Partial<Record<ColumnId, number>> = {
   title: 220,
   createdAt: 110,
   dueDate: 110,
-  priority: 70,
+  priority: 36,
   percentDone: 70,
   timeEstimateMinutes: 90,
   fileLink: 140,
