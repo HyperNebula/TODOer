@@ -30,7 +30,6 @@ import type {
   SortState,
   Task,
   TaskListFile,
-  TaskListFile,
 } from "../types/task";
 import {
   DEFAULT_FILTER,
