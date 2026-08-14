@@ -10,6 +10,8 @@ interface CalendarStore {
   recurringTimeblocks: Timeblock[];
   recurringLoaded: boolean;
   dbReady: boolean;
+  currentRangeStart?: string;
+  currentRangeEnd?: string;
 
   openDb: (listPath: string) => Promise<void>;
   closeDb: () => Promise<void>;
@@ -33,6 +35,8 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   recurringTimeblocks: [],
   recurringLoaded: false,
   dbReady: false,
+  currentRangeStart: undefined,
+  currentRangeEnd: undefined,
 
   openDb: async (listPath: string) => {
     if (!isTauri()) return;
@@ -49,6 +53,8 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   loadRange: async (start: string, end: string) => {
     if (!isTauri()) return;
     
+    set({ currentRangeStart: start, currentRangeEnd: end });
+
     if (!get().recurringLoaded) {
       const recJson = await invoke<string>("get_recurring_timeblocks");
       const recRows = JSON.parse(recJson) as any[];
@@ -159,6 +165,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
 
   addTimeblock: async (startTime: string, endTime: string, title?: string, color?: string, recurrenceRule?: string) => {
     const id = crypto.randomUUID();
+    // We can do an optimistic insert for responsiveness, but then we'll reload.
     const newBlock: Timeblock = {
       id,
       title: title || "New Timeblock",
@@ -172,8 +179,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     };
 
     set((state) => ({ 
-      timeblocks: [...state.timeblocks, newBlock],
-      recurringTimeblocks: recurrenceRule ? [...state.recurringTimeblocks, newBlock] : state.recurringTimeblocks
+      timeblocks: [...state.timeblocks, newBlock]
     }));
 
     if (isTauri()) {
@@ -188,6 +194,11 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         recurrenceId: null,
         originalStart: null,
       });
+      // Force reload to pick up recurring blocks correctly
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
     }
 
     return id;
@@ -205,9 +216,16 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       for (const [k, v] of Object.entries(updates)) {
         if (k === "startTime") backendUpdates["start_time"] = v;
         else if (k === "endTime") backendUpdates["end_time"] = v;
+        else if (k === "recurrenceRule") backendUpdates["recurrence_rule"] = v === null ? null : v;
         else backendUpdates[k] = v;
       }
       await invoke("update_timeblock", { id, updatesJson: JSON.stringify(backendUpdates) });
+      
+      // Reload the backend state to correctly expand virtual blocks
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
     }
   },
 
@@ -218,6 +236,11 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
 
     if (isTauri()) {
       await invoke("delete_timeblock", { id });
+      
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
     }
   },
 
@@ -239,6 +262,11 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         recurrenceId: parentId,
         originalStart: originalStart,
       });
+
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
     }
   },
 
@@ -290,6 +318,11 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         recurrenceId: null,
         originalStart: null,
       });
+
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
     }
   },
 
@@ -323,17 +356,22 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         originalStart: originalStart,
         isDeleted: true,
       });
+
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
     }
   },
 
   deleteSeries: async (parentId: string) => {
-    await get().deleteTimeblock(parentId);
-    // Note: Database ON DELETE CASCADE might remove exceptions if foreign key is set up.
-    // If not, we manually remove them from frontend state:
-    set((state) => ({
-      timeblocks: state.timeblocks.filter(tb => tb.id !== parentId && tb.recurrenceId !== parentId && !tb.id.startsWith(`virtual_${parentId}_`)),
-      recurringTimeblocks: state.recurringTimeblocks.filter(tb => tb.id !== parentId && tb.recurrenceId !== parentId),
-    }));
+    if (isTauri()) {
+      await invoke("delete_timeblock", { id: parentId });
+      set({ recurringLoaded: false });
+      if (get().currentRangeStart && get().currentRangeEnd) {
+        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
+      }
+    }
   },
 
   assignTaskToTimeblock: async (timeblockId: string, taskId: string, parentId?: string, originalStart?: string) => {
