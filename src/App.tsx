@@ -525,6 +525,7 @@ function App() {
             onColumnResize={store.setColumnWidth}
             priorityColorStyle={settings.priorityColorStyle}
             showVerticalBorders={settings.showVerticalBorders}
+            enableRowHover={settings.enableRowHover}
             onNavigateUp={handleNavigateUp}
             onNavigateDown={handleNavigateDown}
             onNavigateLeft={handleNavigateLeft}
