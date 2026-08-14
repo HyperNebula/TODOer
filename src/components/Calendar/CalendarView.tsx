@@ -345,7 +345,16 @@ export function CalendarView({
             const info = getParentInfo(pendingAction.id);
             if (info) {
               if (pendingAction.type === "update") {
-                calendarStore.createException(info.parentId, info.originalStart, { ...info.block, ...pendingAction.updates });
+                const newExId = crypto.randomUUID();
+                const newBlock: Timeblock = {
+                  ...info.block,
+                  id: newExId,
+                  ...pendingAction.updates,
+                  recurrenceRule: undefined,
+                  recurrenceId: info.parentId,
+                  originalStart: info.originalStart,
+                };
+                calendarStore.createException(info.parentId, info.originalStart, newBlock);
               } else {
                 calendarStore.deleteException(info.parentId, info.originalStart);
               }

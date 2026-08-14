@@ -157,8 +157,16 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     });
 
     const combined = [...normalTimeblocks, ...virtualBlocks];
-    // Filter out deleted exceptions
-    const visibleBlocks = combined.filter(b => !b.isDeleted);
+    // Filter out deleted exceptions, and parent blocks that have an exception for their own start time
+    const visibleBlocks = combined.filter(b => {
+      if (b.isDeleted) return false;
+      if (b.recurrenceRule) {
+        const hasEx = allRecurringAndExceptions.some(ex => ex.recurrenceId === b.id && ex.originalStart === b.startTime) ||
+                      normalTimeblocks.some(ex => ex.recurrenceId === b.id && ex.originalStart === b.startTime);
+        if (hasEx) return false;
+      }
+      return true;
+    });
 
     set({ timeblocks: visibleBlocks });
   },
