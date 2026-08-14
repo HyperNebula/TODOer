@@ -30,7 +30,7 @@ import type {
   SortState,
   Task,
   TaskListFile,
-  Timeblock,
+  TaskListFile,
 } from "../types/task";
 import {
   DEFAULT_FILTER,
@@ -84,12 +84,7 @@ interface TaskStore {
   toggleFlatView: () => void;
 
   // Timeblock actions
-  addTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => string;
-  updateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
-  deleteTimeblock: (id: string) => void;
-  assignTaskToTimeblock: (timeblocId: string, taskId: string) => void;
-  removeTaskFromTimeblock: (timeblocId: string, taskId: string) => void;
-  toggleTimeblockComplete: (id: string, completed: boolean) => void;
+  clearTimeblocks: () => void;
 }
 
 function touch(file: TaskListFile): TaskListFile {
@@ -382,77 +377,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((s) => ({ filter: { ...s.filter, flatView: !s.filter.flatView } })),
 
   // ── Timeblock actions ────────────────────────────────────────────────────
-  addTimeblock: (startTime, endTime, title, color) => {
-    const id = crypto.randomUUID();
-    const block: Timeblock = { id, startTime, endTime, taskIds: [], title: title || "New Timeblock", color };
-    set((s) => ({
-      file: touch({ ...s.file, timeblocks: [...(s.file.timeblocks ?? []), block] }),
-      dirty: true,
-    }));
-    return id;
-  },
-
-  updateTimeblock: (id, updates) =>
-    set((s) => ({
-      file: touch({
-        ...s.file,
-        timeblocks: (s.file.timeblocks ?? []).map((b) =>
-          b.id === id ? { ...b, ...updates } : b
-        ),
-      }),
-      dirty: true,
-    })),
-
-  deleteTimeblock: (id) =>
-    set((s) => ({
-      file: touch({
-        ...s.file,
-        timeblocks: (s.file.timeblocks ?? []).filter((b) => b.id !== id),
-      }),
-      dirty: true,
-    })),
-
-  assignTaskToTimeblock: (timeblocId, taskId) =>
-    set((s) => ({
-      file: touch({
-        ...s.file,
-        timeblocks: (s.file.timeblocks ?? []).map((b) =>
-          b.id === timeblocId && !b.taskIds.includes(taskId)
-            ? { ...b, taskIds: [...b.taskIds, taskId] }
-            : b
-        ),
-      }),
-      dirty: true,
-    })),
-
-  removeTaskFromTimeblock: (timeblocId, taskId) =>
-    set((s) => ({
-      file: touch({
-        ...s.file,
-        timeblocks: (s.file.timeblocks ?? []).map((b) =>
-          b.id === timeblocId
-            ? { ...b, taskIds: b.taskIds.filter((id) => id !== taskId) }
-            : b
-        ),
-      }),
-      dirty: true,
-    })),
-
-  toggleTimeblockComplete: (id, completed) =>
-    set((s) => {
-      const block = s.file.timeblocks?.find(b => b.id === id);
-      if (!block) return s;
-      
-      const now = new Date().toISOString();
-      const taskIds = new Set(block.taskIds);
-      
-      return {
-        file: touch({
-          ...s.file,
-          timeblocks: s.file.timeblocks!.map(b => b.id === id ? { ...b, completed } : b),
-          tasks: s.file.tasks.map(t => taskIds.has(t.id) ? { ...t, done: completed, completedAt: completed ? (t.completedAt || now) : null } : t)
-        }),
-        dirty: true,
-      };
-    }),
+  clearTimeblocks: () => set((s) => ({
+    file: touch({ ...s.file, timeblocks: [] }),
+    dirty: true,
+  })),
 }));

@@ -14,7 +14,7 @@ interface TimeGridProps {
   today: string;
   timeblocks: Timeblock[];
   tasks: Task[];
-  onAddTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => string;
+  onAddTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => Promise<string>;
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
   onEditTimeblock: (id: string, isNew?: boolean) => void;
@@ -171,12 +171,12 @@ export function TimeGrid({
   }
 
   // ── Click on empty column area to create a timeblock ──────────────────────
-  function handleColumnClick(e: React.MouseEvent, isoDate: string) {
+  async function handleColumnClick(e: React.MouseEvent, isoDate: string) {
     if ((e.target as HTMLElement).closest(".timeblock-block")) return;
     const rawMin = clientYToGridMin(e.clientY);
     const startMin = snapMin(rawMin);
     const endMin = startMin + 60;
-    const newId = onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin), undefined, getNextColor());
+    const newId = await onAddTimeblock(makeIso(isoDate, startMin), makeIso(isoDate, endMin), undefined, getNextColor());
     onEditTimeblock(newId, true);
   }
 
@@ -186,7 +186,7 @@ export function TimeGrid({
     e.dataTransfer.dropEffect = "copy";
   }
 
-  function handleDrop(e: React.DragEvent, isoDate: string) {
+  async function handleDrop(e: React.DragEvent, isoDate: string) {
     e.preventDefault();
     const taskId = e.dataTransfer.getData("text/plain");
     if (!taskId) return;
@@ -207,7 +207,7 @@ export function TimeGrid({
       const dur = task?.timeEstimateMinutes ?? 60;
       const endMin = dropMin + dur;
       const color = task ? getPriorityColor(task.priority) : getNextColor();
-      const newId = onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin), task?.title, color);
+      const newId = await onAddTimeblock(makeIso(isoDate, dropMin), makeIso(isoDate, endMin), task?.title, color);
       onAssignTask(newId, taskId);
     }
   }

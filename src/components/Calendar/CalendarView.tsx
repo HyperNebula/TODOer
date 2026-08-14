@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useTaskStore } from "../../store/taskStore";
+import { useCalendarStore } from "../../store/calendarStore";
 import { TaskDrawer } from "./TaskDrawer";
 import { TimeGrid } from "./TimeGrid";
 import { CalendarToolbar } from "./CalendarToolbar";
@@ -71,8 +72,10 @@ export function CalendarView({
   onOpenSettings,
 }: CalendarViewProps) {
   const store = useTaskStore();
+  const calendarStore = useCalendarStore();
   const tasks = store.file.tasks;
-  const timeblocks = store.file.timeblocks ?? [];
+  const timeblocks = calendarStore.timeblocks;
+  const filePath = store.filePath;
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [anchorDate, setAnchorDate] = useState(todayIso);
@@ -105,12 +108,50 @@ export function CalendarView({
     if (e.target.value) setAnchorDate(e.target.value);
   }
 
+  // Open DB when file changes
+  useEffect(() => {
+    if (filePath) {
+      calendarStore.openDb(filePath);
+    } else {
+      calendarStore.closeDb();
+    }
+  }, [filePath]);
+
+  // Migration: move timeblocks from JSON to SQLite (one-time)
+  useEffect(() => {
+    if (!calendarStore.dbReady || !filePath) return;
+    const jsonBlocks = store.file.timeblocks;
+    if (jsonBlocks && jsonBlocks.length > 0) {
+      calendarStore.migrateFromJson(jsonBlocks).then(() => {
+        // Clear timeblocks from the task list file so they're not migrated again
+        store.clearTimeblocks();
+        // Reload from SQLite
+        const start = dates[0] + "T00:00:00";
+        const lastDate = new Date(dates[dates.length - 1] + "T00:00:00");
+        lastDate.setDate(lastDate.getDate() + 1);
+        const endStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}T00:00:00`;
+        calendarStore.loadRange(start, endStr);
+      });
+    }
+  }, [calendarStore.dbReady, filePath]);
+
+  // Load timeblocks for visible range when dates change or DB becomes ready
+  useEffect(() => {
+    if (!calendarStore.dbReady || dates.length === 0) return;
+    const start = dates[0] + "T00:00:00";
+    // end is the day AFTER the last date
+    const lastDate = new Date(dates[dates.length - 1] + "T00:00:00");
+    lastDate.setDate(lastDate.getDate() + 1);
+    const endStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}T00:00:00`;
+    calendarStore.loadRange(start, endStr);
+  }, [dates, calendarStore.dbReady]);
+
   return (
     <div className="calendar-view">
       <CalendarToolbar
-        onNewBlock={() => {
+        onNewBlock={async () => {
           const dStr = todayIso();
-          const newId = store.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block", getNextColor());
+          const newId = await calendarStore.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block", getNextColor());
           setEditingBlock({ id: newId, isNew: true });
         }}
         onSave={onSave}
@@ -196,11 +237,11 @@ export function CalendarView({
             today={todayIso()}
             timeblocks={timeblocks}
             tasks={tasks}
-            onAddTimeblock={store.addTimeblock}
-            onUpdateTimeblock={store.updateTimeblock}
-            onAssignTask={store.assignTaskToTimeblock}
+            onAddTimeblock={calendarStore.addTimeblock}
+            onUpdateTimeblock={calendarStore.updateTimeblock}
+            onAssignTask={calendarStore.assignTaskToTimeblock}
             onEditTimeblock={(id, isNew) => setEditingBlock({ id, isNew })}
-            onToggleComplete={store.toggleTimeblockComplete}
+            onToggleComplete={calendarStore.toggleTimeblockComplete}
           />
         </div>
       </div>
@@ -210,12 +251,12 @@ export function CalendarView({
           block={timeblocks.find(b => b.id === editingBlock.id)!}
           isNew={editingBlock.isNew}
           tasks={tasks}
-          onSave={store.updateTimeblock}
+          onSave={calendarStore.updateTimeblock}
           onClose={() => setEditingBlock(null)}
-          onRemoveTask={store.removeTaskFromTimeblock}
-          onComplete={store.toggleTimeblockComplete}
-          onDelete={store.deleteTimeblock}
-          onAssignTask={store.assignTaskToTimeblock}
+          onRemoveTask={calendarStore.removeTaskFromTimeblock}
+          onComplete={calendarStore.toggleTimeblockComplete}
+          onDelete={calendarStore.deleteTimeblock}
+          onAssignTask={calendarStore.assignTaskToTimeblock}
         />
       )}
     </div>

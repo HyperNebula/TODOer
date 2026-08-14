@@ -298,6 +298,12 @@ pub fn run() {
         .setup(|app| {
             let menu = build_menu(app)?;
             app.set_menu(menu)?;
+            
+            #[cfg(feature = "calendar")]
+            {
+                app.manage(calendar::CalendarDb::new());
+            }
+
             Ok(())
         })
         .on_menu_event(|app, event| {
@@ -334,8 +340,15 @@ pub fn run() {
         append_to_archive,
         read_archive,
         get_archive_path,
-        calendar::read_schedule_file,
-        calendar::write_schedule_file
+        calendar::open_calendar_db,
+        calendar::close_calendar_db,
+        calendar::get_timeblocks_for_range,
+        calendar::add_timeblock,
+        calendar::update_timeblock,
+        calendar::delete_timeblock,
+        calendar::assign_task_to_timeblock,
+        calendar::remove_task_from_timeblock,
+        calendar::migrate_timeblocks_from_json
     ]);
 
     builder
