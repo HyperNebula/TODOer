@@ -68,6 +68,10 @@ export function SettingsDialog({ onClose }: Props) {
     autoSaveIntervalMinutes,
     printOrientation,
     priorityColorStyle,
+    priorityColorMode,
+    priorityColorStart,
+    priorityColorEnd,
+    enableRowHover,
     showVerticalBorders,
     archiveFormat,
     projectStyle,
@@ -82,6 +86,10 @@ export function SettingsDialog({ onClose }: Props) {
     setAutoSaveIntervalMinutes,
     setPrintOrientation,
     setPriorityColorStyle,
+    setPriorityColorMode,
+    setPriorityColorStart,
+    setPriorityColorEnd,
+    setEnableRowHover,
     setShowVerticalBorders,
     setArchiveFormat,
     setProjectStyle,
@@ -194,6 +202,38 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value="row">Whole Row</option>
                   <option value="cell">Priority Cell Only</option>
                 </select>
+                
+                {priorityColorStyle !== "none" && (
+                  <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px", marginLeft: "12px", borderLeft: "2px solid var(--border)", paddingLeft: "12px" }}>
+                    <label>Color Palette</label>
+                    <select value={priorityColorMode} onChange={(e) => setPriorityColorMode(e.target.value as any)}>
+                      <option value="default">Default</option>
+                      <option value="gradient">Custom Gradient</option>
+                    </select>
+                    {priorityColorMode === "gradient" && (
+                      <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.9em" }}>Priority 1</span>
+                          <input type="color" value={priorityColorStart} onChange={(e) => setPriorityColorStart(e.target.value)} />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.9em" }}>Priority 10</span>
+                          <input type="color" value={priorityColorEnd} onChange={(e) => setPriorityColorEnd(e.target.value)} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="settings-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={enableRowHover}
+                    onChange={(e) => setEnableRowHover(e.target.checked)}
+                  />
+                  Enable Row Hover Highlighting
+                </label>
               </div>
               <div className="settings-group">
                 <label className="checkbox-label">
@@ -211,9 +251,10 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value="none">None (Default)</option>
                   <option value="bold">Bold Title</option>
                   <option value="star">Emoji</option>
+                  <option value="star-bold">Emoji + Bold</option>
                 </select>
               </div>
-              {projectStyle === "star" && (
+              {(projectStyle === "star" || projectStyle === "star-bold") && (
                 <div className="settings-group">
                   <label>Project Emoji</label>
                   <input
@@ -498,6 +539,48 @@ export function SettingsDialog({ onClose }: Props) {
                         e.preventDefault();
                         if (e.key === "Escape") setHotkey("toggleFoldAll", "");
                         else setHotkey("toggleFoldAll", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Focus Title Filter</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.focusTitleFilter}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("focusTitleFilter", "");
+                        else setHotkey("focusTitleFilter", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Focus Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.focusTask}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("focusTask", "");
+                        else setHotkey("focusTask", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Toggle Flat View</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.toggleFlatView}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("toggleFlatView", "");
+                        else setHotkey("toggleFlatView", e.key.toLowerCase());
                       }}
                       readOnly
                       placeholder="None"

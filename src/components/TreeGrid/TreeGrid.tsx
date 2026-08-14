@@ -12,7 +12,7 @@ const COLUMN_LABELS: Record<ColumnId, string> = {
   title: "Title",
   createdAt: "Created",
   dueDate: "Due",
-  priority: "Pri",
+  priority: "!",
   percentDone: "%",
   timeEstimateMinutes: "Est",
   fileLink: "File",
@@ -46,9 +46,10 @@ interface TreeGridProps {
   isFlatView?: boolean;
   newlyCreatedTaskId?: string | null;
   onEditStarted?: () => void;
-  projectStyle?: "none" | "bold" | "star";
+  projectStyle?: "none" | "bold" | "star" | "star-bold";
   projectEmoji?: string;
   indentSpacing?: number;
+  enableRowHover?: boolean;
 }
 
 interface EditState {
@@ -90,6 +91,7 @@ export function TreeGrid({
   projectStyle = "none",
   projectEmoji = "⭐",
   indentSpacing = 32,
+  enableRowHover = true,
 }: TreeGridProps) {
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
@@ -438,8 +440,8 @@ export function TreeGrid({
                   }}
                 />
               ) : (
-                <span className="title-text" style={{ fontWeight: task.isProject && projectStyle === "bold" ? "bold" : "normal" }}>
-                  {task.isProject && projectStyle === "star" ? `${projectEmoji} ` : ""}{task.title}
+                <span className="title-text" style={{ fontWeight: task.isProject && (projectStyle === "bold" || projectStyle === "star-bold") ? "bold" : "normal" }}>
+                  {task.isProject && (projectStyle === "star" || projectStyle === "star-bold") ? `${projectEmoji} ` : ""}{task.title}
                 </span>
               )}
             </div>
@@ -548,7 +550,7 @@ export function TreeGrid({
   return (
     <>
       <div className="tree-grid-wrap" onClick={() => onSelect(null)}>
-        <table className={`tree-grid ${showVerticalBorders ? "tree-grid-vertical-lines" : ""}`}>
+        <table className={`tree-grid ${showVerticalBorders ? "tree-grid-vertical-lines" : ""} ${!enableRowHover ? "disable-row-hover" : ""}`}>
           <thead>
             <tr>
               {visibleColumns.map((col) => (

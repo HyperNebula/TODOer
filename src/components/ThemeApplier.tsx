@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useSettingsStore, BUILT_IN_THEMES } from "../store/settingsStore";
 
 export function ThemeApplier() {
-  const { activeThemeId, customThemes, fontSizeOffset, fontFamily, loadSettings } = useSettingsStore();
+  const { activeThemeId, customThemes, fontSizeOffset, fontFamily, priorityColorMode, priorityColorStart, priorityColorEnd, loadSettings } = useSettingsStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -40,7 +40,34 @@ export function ThemeApplier() {
     root.style.setProperty("--font-offset", `${fontSizeOffset}px`);
     root.style.setProperty("font-family", fontFamily);
 
-  }, [activeThemeId, customThemes, fontSizeOffset, fontFamily]);
+    // Apply priority colors
+    if (priorityColorMode === "gradient" && priorityColorStart && priorityColorEnd) {
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+      };
+      
+      const startRgb = hexToRgb(priorityColorStart);
+      const endRgb = hexToRgb(priorityColorEnd);
+      
+      for (let i = 1; i <= 10; i++) {
+        const ratio = (i - 1) / 9;
+        const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * ratio);
+        const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * ratio);
+        const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * ratio);
+        root.style.setProperty(`--priority-rgb-${i}`, `${r}, ${g}, ${b}`);
+      }
+    } else {
+      for (let i = 1; i <= 10; i++) {
+        root.style.removeProperty(`--priority-rgb-${i}`);
+      }
+    }
+
+  }, [activeThemeId, customThemes, fontSizeOffset, fontFamily, priorityColorMode, priorityColorStart, priorityColorEnd]);
 
   return null;
 }

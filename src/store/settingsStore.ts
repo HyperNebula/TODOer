@@ -333,6 +333,9 @@ export type Hotkeys = {
   navigateDown: string;
   toggleFoldAll: string;
   duplicateTask: string;
+  focusTitleFilter: string;
+  focusTask: string;
+  toggleFlatView: string;
 };
 
 export const DEFAULT_SETTINGS = {
@@ -345,6 +348,10 @@ export const DEFAULT_SETTINGS = {
   maxBackups: 5,
   printOrientation: "portrait" as const,
   priorityColorStyle: "row" as "none" | "row" | "cell",
+  priorityColorMode: "default" as "default" | "gradient",
+  priorityColorStart: "#10b981",
+  priorityColorEnd: "#ef4444",
+  enableRowHover: true,
   showVerticalBorders: false,
   archiveFormat: "csv" as "csv" | "json",
   hotkeys: {
@@ -358,8 +365,11 @@ export const DEFAULT_SETTINGS = {
     navigateDown: "arrowdown",
     toggleFoldAll: "",
     duplicateTask: "d",
+    focusTitleFilter: "",
+    focusTask: "",
+    toggleFlatView: "",
   } as Hotkeys,
-  projectStyle: "none" as "none" | "bold" | "star",
+  projectStyle: "none" as "none" | "bold" | "star" | "star-bold",
   projectEmoji: "⭐",
   indentSpacing: 32,
   calendarStartHour: 6,
@@ -382,9 +392,13 @@ export interface SettingsState {
   maxBackups: number;
   printOrientation: "portrait" | "landscape";
   priorityColorStyle: "none" | "row" | "cell";
+  priorityColorMode: "default" | "gradient";
+  priorityColorStart: string;
+  priorityColorEnd: string;
+  enableRowHover: boolean;
   showVerticalBorders: boolean;
   archiveFormat: "csv" | "json";
-  projectStyle: "none" | "bold" | "star";
+  projectStyle: "none" | "bold" | "star" | "star-bold";
   projectEmoji: string;
   indentSpacing: number;
   calendarStartHour: number;
@@ -407,9 +421,13 @@ export interface SettingsState {
   setMaxBackups: (count: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   setPriorityColorStyle: (style: "none" | "row" | "cell") => void;
+  setPriorityColorMode: (mode: "default" | "gradient") => void;
+  setPriorityColorStart: (color: string) => void;
+  setPriorityColorEnd: (color: string) => void;
+  setEnableRowHover: (enable: boolean) => void;
   setShowVerticalBorders: (show: boolean) => void;
   setArchiveFormat: (format: "csv" | "json") => void;
-  setProjectStyle: (style: "none" | "bold" | "star") => void;
+  setProjectStyle: (style: "none" | "bold" | "star" | "star-bold") => void;
   setProjectEmoji: (emoji: string) => void;
   setIndentSpacing: (spacing: number) => void;
   setCalendarStartHour: (hour: number) => void;
@@ -448,6 +466,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setMaxBackups: (count) => set({ maxBackups: count }),
   setPrintOrientation: (orientation) => set({ printOrientation: orientation }),
   setPriorityColorStyle: (style) => set({ priorityColorStyle: style }),
+  setPriorityColorMode: (mode) => set({ priorityColorMode: mode }),
+  setPriorityColorStart: (color) => set({ priorityColorStart: color }),
+  setPriorityColorEnd: (color) => set({ priorityColorEnd: color }),
+  setEnableRowHover: (enable) => set({ enableRowHover: enable }),
   setShowVerticalBorders: (show) => set({ showVerticalBorders: show }),
   setArchiveFormat: (format) => set({ archiveFormat: format }),
   setProjectStyle: (style) => set({ projectStyle: style }),
@@ -476,9 +498,13 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         printOrientation?: "portrait" | "landscape";
         usePriorityColors?: boolean; // legacy
         priorityColorStyle?: "none" | "row" | "cell";
+        priorityColorMode?: "default" | "gradient";
+        priorityColorStart?: string;
+        priorityColorEnd?: string;
+        enableRowHover?: boolean;
         showVerticalBorders?: boolean;
         archiveFormat?: "csv" | "json";
-        projectStyle?: "none" | "bold" | "star";
+        projectStyle?: "none" | "bold" | "star" | "star-bold";
         projectEmoji?: string;
         indentSpacing?: number;
         calendarStartHour?: number;
@@ -503,6 +529,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
           ...(saved.usePriorityColors !== undefined && { priorityColorStyle: saved.usePriorityColors ? "row" : "none" }),
           ...(saved.priorityColorStyle && { priorityColorStyle: saved.priorityColorStyle }),
+          ...(saved.priorityColorMode && { priorityColorMode: saved.priorityColorMode }),
+          ...(saved.priorityColorStart && { priorityColorStart: saved.priorityColorStart }),
+          ...(saved.priorityColorEnd && { priorityColorEnd: saved.priorityColorEnd }),
+          ...(saved.enableRowHover !== undefined && { enableRowHover: saved.enableRowHover }),
           ...(saved.showVerticalBorders !== undefined && { showVerticalBorders: saved.showVerticalBorders }),
           ...(saved.archiveFormat && { archiveFormat: saved.archiveFormat }),
           ...(saved.projectStyle && { projectStyle: saved.projectStyle }),
@@ -541,6 +571,10 @@ useSettingsStore.subscribe((state) => {
     maxBackups: state.maxBackups,
     printOrientation: state.printOrientation,
     priorityColorStyle: state.priorityColorStyle,
+    priorityColorMode: state.priorityColorMode,
+    priorityColorStart: state.priorityColorStart,
+    priorityColorEnd: state.priorityColorEnd,
+    enableRowHover: state.enableRowHover,
     showVerticalBorders: state.showVerticalBorders,
     archiveFormat: state.archiveFormat,
     projectStyle: state.projectStyle,

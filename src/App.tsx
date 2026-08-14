@@ -303,6 +303,15 @@ function App() {
         }
       } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
+      } else if (hotkeys.focusTitleFilter && key === hotkeys.focusTitleFilter.toLowerCase()) {
+        e.preventDefault();
+        document.getElementById("title-filter-input")?.focus();
+      } else if (hotkeys.focusTask && key === hotkeys.focusTask.toLowerCase()) {
+        e.preventDefault();
+        if (store.selectedTaskId) store.setFocusTask(store.selectedTaskId);
+      } else if (hotkeys.toggleFlatView && key === hotkeys.toggleFlatView.toLowerCase()) {
+        e.preventDefault();
+        store.toggleFlatView();
       }
     };
 

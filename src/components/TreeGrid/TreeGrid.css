@@ -68,33 +68,33 @@
   background-color: var(--bg);
 }
 
-.tree-grid tbody tr.priority-1 td { background-color: rgba(239, 68, 68, 0.15); }
-.tree-grid tbody tr.priority-2 td { background-color: rgba(249, 115, 22, 0.15); }
-.tree-grid tbody tr.priority-3 td { background-color: rgba(245, 158, 11, 0.15); }
-.tree-grid tbody tr.priority-4 td { background-color: rgba(234, 179, 8, 0.15); }
-.tree-grid tbody tr.priority-5 td { background-color: rgba(132, 204, 22, 0.15); }
-.tree-grid tbody tr.priority-6 td { background-color: rgba(34, 197, 94, 0.15); }
-.tree-grid tbody tr.priority-7 td { background-color: rgba(16, 185, 129, 0.15); }
-.tree-grid tbody tr.priority-8 td { background-color: rgba(6, 182, 212, 0.15); }
-.tree-grid tbody tr.priority-9 td { background-color: rgba(59, 130, 246, 0.15); }
-.tree-grid tbody tr.priority-10 td { background-color: rgba(168, 85, 247, 0.15); }
+.tree-grid tbody tr.priority-1 td { background-color: rgba(var(--priority-rgb-1, 239, 68, 68), 0.15); }
+.tree-grid tbody tr.priority-2 td { background-color: rgba(var(--priority-rgb-2, 249, 115, 22), 0.15); }
+.tree-grid tbody tr.priority-3 td { background-color: rgba(var(--priority-rgb-3, 245, 158, 11), 0.15); }
+.tree-grid tbody tr.priority-4 td { background-color: rgba(var(--priority-rgb-4, 234, 179, 8), 0.15); }
+.tree-grid tbody tr.priority-5 td { background-color: rgba(var(--priority-rgb-5, 132, 204, 22), 0.15); }
+.tree-grid tbody tr.priority-6 td { background-color: rgba(var(--priority-rgb-6, 34, 197, 94), 0.15); }
+.tree-grid tbody tr.priority-7 td { background-color: rgba(var(--priority-rgb-7, 16, 185, 129), 0.15); }
+.tree-grid tbody tr.priority-8 td { background-color: rgba(var(--priority-rgb-8, 6, 182, 212), 0.15); }
+.tree-grid tbody tr.priority-9 td { background-color: rgba(var(--priority-rgb-9, 59, 130, 246), 0.15); }
+.tree-grid tbody tr.priority-10 td { background-color: rgba(var(--priority-rgb-10, 168, 85, 247), 0.15); }
 
-.tree-grid tbody tr td.priority-1 { background-color: rgba(239, 68, 68, 0.15); color: rgb(239, 68, 68); font-weight: 600; }
-.tree-grid tbody tr td.priority-2 { background-color: rgba(249, 115, 22, 0.15); color: rgb(249, 115, 22); font-weight: 600; }
-.tree-grid tbody tr td.priority-3 { background-color: rgba(245, 158, 11, 0.15); color: rgb(245, 158, 11); font-weight: 600; }
-.tree-grid tbody tr td.priority-4 { background-color: rgba(234, 179, 8, 0.15); color: rgb(234, 179, 8); font-weight: 600; }
-.tree-grid tbody tr td.priority-5 { background-color: rgba(132, 204, 22, 0.15); color: rgb(132, 204, 22); font-weight: 600; }
-.tree-grid tbody tr td.priority-6 { background-color: rgba(34, 197, 94, 0.15); color: rgb(34, 197, 94); font-weight: 600; }
-.tree-grid tbody tr td.priority-7 { background-color: rgba(16, 185, 129, 0.15); color: rgb(16, 185, 129); font-weight: 600; }
-.tree-grid tbody tr td.priority-8 { background-color: rgba(6, 182, 212, 0.15); color: rgb(6, 182, 212); font-weight: 600; }
-.tree-grid tbody tr td.priority-9 { background-color: rgba(59, 130, 246, 0.15); color: rgb(59, 130, 246); font-weight: 600; }
-.tree-grid tbody tr td.priority-10 { background-color: rgba(168, 85, 247, 0.15); color: rgb(168, 85, 247); font-weight: 600; }
+.tree-grid tbody tr td.priority-1 { background-color: rgba(var(--priority-rgb-1, 239, 68, 68), 0.15); color: rgb(var(--priority-rgb-1, 239, 68, 68)); font-weight: 600; }
+.tree-grid tbody tr td.priority-2 { background-color: rgba(var(--priority-rgb-2, 249, 115, 22), 0.15); color: rgb(var(--priority-rgb-2, 249, 115, 22)); font-weight: 600; }
+.tree-grid tbody tr td.priority-3 { background-color: rgba(var(--priority-rgb-3, 245, 158, 11), 0.15); color: rgb(var(--priority-rgb-3, 245, 158, 11)); font-weight: 600; }
+.tree-grid tbody tr td.priority-4 { background-color: rgba(var(--priority-rgb-4, 234, 179, 8), 0.15); color: rgb(var(--priority-rgb-4, 234, 179, 8)); font-weight: 600; }
+.tree-grid tbody tr td.priority-5 { background-color: rgba(var(--priority-rgb-5, 132, 204, 22), 0.15); color: rgb(var(--priority-rgb-5, 132, 204, 22)); font-weight: 600; }
+.tree-grid tbody tr td.priority-6 { background-color: rgba(var(--priority-rgb-6, 34, 197, 94), 0.15); color: rgb(var(--priority-rgb-6, 34, 197, 94)); font-weight: 600; }
+.tree-grid tbody tr td.priority-7 { background-color: rgba(var(--priority-rgb-7, 16, 185, 129), 0.15); color: rgb(var(--priority-rgb-7, 16, 185, 129)); font-weight: 600; }
+.tree-grid tbody tr td.priority-8 { background-color: rgba(var(--priority-rgb-8, 6, 182, 212), 0.15); color: rgb(var(--priority-rgb-8, 6, 182, 212)); font-weight: 600; }
+.tree-grid tbody tr td.priority-9 { background-color: rgba(var(--priority-rgb-9, 59, 130, 246), 0.15); color: rgb(var(--priority-rgb-9, 59, 130, 246)); font-weight: 600; }
+.tree-grid tbody tr td.priority-10 { background-color: rgba(var(--priority-rgb-10, 168, 85, 247), 0.15); color: rgb(var(--priority-rgb-10, 168, 85, 247)); font-weight: 600; }
 
-.tree-grid tr:hover td {
+.tree-grid:not(.disable-row-hover) tr:hover td {
   background-color: var(--row-hover) !important;
 }
 
-.tree-grid tr.row-selected td {
+.tree-grid:not(.disable-row-hover) tr.row-selected td {
   background-color: var(--row-selected) !important;
 }
 

@@ -125,11 +125,13 @@ function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   }
   if (filter.done === "done" && !task.done) return false;
   if (filter.done === "not_done" && task.done) return false;
-  if (
-    filter.titleContains &&
-    !task.title.toLowerCase().includes(filter.titleContains.toLowerCase())
-  ) {
-    return false;
+  if (filter.titleContains) {
+    const term = filter.titleContains.toLowerCase();
+    const titleMatch = task.title.toLowerCase().includes(term);
+    const notesMatch = task.notes?.toLowerCase().includes(term);
+    if (!titleMatch && !notesMatch) {
+      return false;
+    }
   }
   if (filter.dueBefore && task.dueDate && task.dueDate > filter.dueBefore) {
     return false;

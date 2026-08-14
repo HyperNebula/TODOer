@@ -86,11 +86,12 @@ export function FilterBar({ filter, onChange, onClear }: FilterBarProps) {
       </label>
 
       <label>
-        Title
+        Title / Notes
         <input
+          id="title-filter-input"
           type="text"
           value={filter.titleContains}
-          placeholder="contains…"
+          placeholder="Search title or notes..."
           onChange={(e) => onChange({ titleContains: e.target.value })}
         />
       </label>
