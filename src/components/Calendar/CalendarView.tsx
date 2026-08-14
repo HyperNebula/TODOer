@@ -185,6 +185,16 @@ export function CalendarView({
     return { parentId, originalStart, block };
   }
 
+  const displayTimeblocks = useMemo(() => {
+    if (pendingAction?.type === "update") {
+      return timeblocks.map(b => b.id === pendingAction.id ? { ...b, ...pendingAction.updates } : b);
+    }
+    if (pendingAction?.type === "delete") {
+      return timeblocks.filter(b => b.id !== pendingAction.id);
+    }
+    return timeblocks;
+  }, [timeblocks, pendingAction]);
+
   return (
     <div className="calendar-view">
       <CalendarToolbar
@@ -274,7 +284,7 @@ export function CalendarView({
           <TimeGrid
             dates={dates}
             today={todayIso()}
-            timeblocks={timeblocks}
+            timeblocks={displayTimeblocks}
             tasks={tasks}
             onAddTimeblock={calendarStore.addTimeblock}
             onUpdateTimeblock={handleUpdateTimeblock}
