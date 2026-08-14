@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import type { Task, Timeblock } from "../../types/task";
 import { useSettingsStore } from "../../store/settingsStore";
-import { useCalendarStore } from "../../store/calendarStore";
 
 function toLocalIsoString(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -46,20 +45,9 @@ export function TimeblockBlock({
   // ── Drag & Resize Local State ───────────────────────────────────────────────
   const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
   const [, setDragTick] = useState(0);
-  const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const dragRef = useRef<{ startY: number; origStart: string; origEnd: string } | null>(null);
 
-  // Subscribe directly to the store for this block's latest data.
-  // This bypasses the prop-drilling delay (CalendarView → TimeGrid → here)
-  // so the optimistic update from calendarStore.set() is visible in the
-  // same render cycle, eliminating the 1-frame snap-back after drags.
-  const storeBlock = useCalendarStore((s) => s.timeblocks.find((tb) => tb.id === block.id));
-  const liveBlock = storeBlock ?? block;
-
-  const effectiveStart = dragStateRef.current?.startStr ?? liveBlock.startTime;
-  const effectiveEnd = dragStateRef.current?.endStr ?? liveBlock.endTime;
+  const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
+  const effectiveEnd = dragStateRef.current?.endStr ?? block.endTime;
 
   const startMin =
     (new Date(effectiveStart).getHours() * 60 +
@@ -73,6 +61,11 @@ export function TimeblockBlock({
 
   const top = startMin * pxPerMin + 2;
   const height = Math.max(durationMin * pxPerMin - 4, 10);
+
+  // ── Resize state ────────────────────────────────────────────────────────────
+  const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   function onResizeMouseDown(e: React.MouseEvent) {
     e.preventDefault();
@@ -110,6 +103,7 @@ export function TimeblockBlock({
   }
 
   // ── Drag-to-move state ──────────────────────────────────────────────────────
+  const dragRef = useRef<{ startY: number; origStart: string; origEnd: string } | null>(null);
 
   function onBlockMouseDown(e: React.MouseEvent) {
     // Don't initiate move if clicking on a button or the resize handle
