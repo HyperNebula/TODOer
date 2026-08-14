@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useTaskStore } from "../../store/taskStore";
 import { useCalendarStore } from "../../store/calendarStore";
 import { TaskDrawer } from "./TaskDrawer";
@@ -85,7 +85,7 @@ export function CalendarView({
   // Hidden date input ref for the "jump to date" picker
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const dates = buildDates(anchorDate, viewMode === "day" ? 1 : 7);
+  const dates = useMemo(() => buildDates(anchorDate, viewMode === "day" ? 1 : 7), [anchorDate, viewMode]);
 
   function navigatePrev() {
     const d = new Date(anchorDate + "T00:00:00");
