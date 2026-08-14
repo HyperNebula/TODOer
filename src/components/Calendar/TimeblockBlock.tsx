@@ -45,6 +45,30 @@ export function TimeblockBlock({
   // ── Drag & Resize Local State ───────────────────────────────────────────────
   const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
   const [, setDragTick] = useState(0);
+  const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const dragRef = useRef<{ startY: number; origStart: string; origEnd: string } | null>(null);
+
+  // Clear the visual drag/resize override once the block's props have caught up.
+  // We keep dragStateRef alive after onUp so that the block doesn't snap back
+  // to its old position for one frame while the store update propagates
+  // through CalendarView → TimeGrid → TimeblockBlock.
+  if (
+    dragStateRef.current &&
+    dragRef.current === null &&
+    resizeRef.current === null
+  ) {
+    const startOk =
+      !dragStateRef.current.startStr ||
+      block.startTime === dragStateRef.current.startStr;
+    const endOk =
+      !dragStateRef.current.endStr ||
+      block.endTime === dragStateRef.current.endStr;
+    if (startOk && endOk) {
+      dragStateRef.current = null;
+    }
+  }
 
   const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
   const effectiveEnd = dragStateRef.current?.endStr ?? block.endTime;
@@ -61,11 +85,6 @@ export function TimeblockBlock({
 
   const top = startMin * pxPerMin + 2;
   const height = Math.max(durationMin * pxPerMin - 4, 10);
-
-  // ── Resize state ────────────────────────────────────────────────────────────
-  const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   function onResizeMouseDown(e: React.MouseEvent) {
     e.preventDefault();
@@ -91,7 +110,8 @@ export function TimeblockBlock({
       if (dragStateRef.current?.endStr) {
         onUpdate(block.id, { endTime: dragStateRef.current.endStr });
       }
-      dragStateRef.current = null;
+      // Don't clear dragStateRef here — it acts as a visual bridge until
+      // the block's props catch up with the new position (cleared at render time).
       resizeRef.current = null;
       setIsResizing(false);
       window.removeEventListener("mousemove", onMove);
@@ -103,7 +123,6 @@ export function TimeblockBlock({
   }
 
   // ── Drag-to-move state ──────────────────────────────────────────────────────
-  const dragRef = useRef<{ startY: number; origStart: string; origEnd: string } | null>(null);
 
   function onBlockMouseDown(e: React.MouseEvent) {
     // Don't initiate move if clicking on a button or the resize handle
@@ -152,7 +171,8 @@ export function TimeblockBlock({
           onUpdate(block.id, updates);
         }
       }
-      dragStateRef.current = null;
+      // Don't clear dragStateRef here — it acts as a visual bridge until
+      // the block's props catch up with the new position (cleared at render time).
       dragRef.current = null;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
