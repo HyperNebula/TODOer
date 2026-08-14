@@ -305,7 +305,7 @@ function App() {
           document.getElementById("title-filter-input")?.focus();
         } else if (hotkeys.focusTask && key === hotkeys.focusTask.toLowerCase()) {
           e.preventDefault();
-          if (store.focusedTaskId) {
+          if (store.focusTaskId) {
             store.setFocusTask(null);
           } else if (store.selectedTaskId) {
             store.setFocusTask(store.selectedTaskId);
