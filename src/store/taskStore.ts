@@ -158,9 +158,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       dirty: false,
       selectedTaskId: null,
       focusTaskId: null,
-      filter: file.settings?.filter 
-        ? { ...DEFAULT_FILTER, ...file.settings.filter } as FilterState
-        : DEFAULT_FILTER,
+      sort: file.settings?.sort ?? null,
+      filter: DEFAULT_FILTER,
     });
   },
 
@@ -308,41 +307,38 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }));
   },
 
-  setSort: (sort) => set({ sort }),
-
-  toggleSort: (column) => {
-    const current = get().sort;
-    if (!current || current.column !== column) {
-      set({ sort: { column, direction: "asc" } });
-    } else if (current.direction === "asc") {
-      set({ sort: { column, direction: "desc" } });
-    } else {
-      set({ sort: null });
-    }
-  },
-
-  setFilter: (partial) =>
-    set((s) => {
-      const newFilter = { ...s.filter, ...partial } as FilterState;
-      return {
-        filter: newFilter,
-        file: touch({
-          ...s.file,
-          settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, filter: newFilter },
-        }),
-        dirty: true,
-      };
-    }),
-
-  clearFilter: () =>
+  setSort: (sort) =>
     set((s) => ({
-      filter: DEFAULT_FILTER,
+      sort,
       file: touch({
         ...s.file,
-        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, filter: DEFAULT_FILTER },
+        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, sort },
       }),
       dirty: true,
     })),
+
+  toggleSort: (column) => {
+    const current = get().sort;
+    let newSort: SortState | null = null;
+    if (!current || current.column !== column) {
+      newSort = { column, direction: "asc" };
+    } else if (current.direction === "asc") {
+      newSort = { column, direction: "desc" };
+    }
+    set((s) => ({
+      sort: newSort,
+      file: touch({
+        ...s.file,
+        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, sort: newSort },
+      }),
+      dirty: true,
+    }));
+  },
+
+  setFilter: (partial) =>
+    set((s) => ({ filter: { ...s.filter, ...partial } })),
+
+  clearFilter: () => set({ filter: DEFAULT_FILTER }),
 
   setFocusTask: (id) => set({ focusTaskId: id }),
 
