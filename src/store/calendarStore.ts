@@ -122,7 +122,10 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
           const duration = new Date(parent.endTime).getTime() - new Date(parent.startTime).getTime();
           const instEnd = new Date(instStart.getTime() + duration);
           
-          const originalStartStr = instStart.toISOString();
+          const pad = (n: number) => String(n).padStart(2, "0");
+          const toLocalIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
+          const originalStartStr = toLocalIso(instStart);
 
           // Check if there is an exception for this occurrence (in normal blocks or recurring exceptions)
           const hasException = allRecurringAndExceptions.some(ex => ex.recurrenceId === parent.id && ex.originalStart === originalStartStr) ||
@@ -136,7 +139,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
               ...parent,
               id: `virtual_${parent.id}_${originalStartStr}`,
               startTime: originalStartStr,
-              endTime: instEnd.toISOString(),
+              endTime: toLocalIso(instEnd),
               taskIds: [], // Virtual instances don't carry tasks initially
               completed: false, // Reset completion for instances
             });
@@ -344,11 +347,14 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       const instStart = new Date(originalStart);
       const instEnd = new Date(instStart.getTime() + duration);
 
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const toLocalIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
       const exBlock: Timeblock = {
         ...parent,
         id: newExId,
         startTime: originalStart,
-        endTime: instEnd.toISOString(),
+        endTime: toLocalIso(instEnd),
         recurrenceRule: undefined,
         recurrenceId: parentId,
         originalStart: originalStart,
