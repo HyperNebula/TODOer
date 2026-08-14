@@ -94,7 +94,7 @@
   background-color: var(--row-hover) !important;
 }
 
-.tree-grid:not(.disable-row-hover) tr.row-selected td {
+.tree-grid tr.row-selected td {
   background-color: var(--row-selected) !important;
 }
 
