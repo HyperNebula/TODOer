@@ -97,8 +97,18 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     parentBlocks.forEach(parent => {
       try {
         // Parse the RRULE. rrule.js requires dates to be handled carefully.
-        // The start of the recurrence is the start time of the parent block.
-        const rule = rrulestr(parent.recurrenceRule!, { dtstart: new Date(parent.startTime) });
+        const origDate = new Date(parent.startTime);
+        let dtstart = new Date(origDate);
+        
+        // If it's a weekly recurrence, snap the dtstart to the Monday of that week
+        // so that earlier days in the current week (like Monday, if created on Wednesday) are generated.
+        if (parent.recurrenceRule!.includes("FREQ=WEEKLY")) {
+          const day = dtstart.getDay();
+          const diffToMon = day === 0 ? -6 : 1 - day;
+          dtstart.setDate(dtstart.getDate() + diffToMon);
+        }
+
+        const rule = rrulestr(parent.recurrenceRule!, { dtstart });
         // Get all occurrences in this range
         const occurrences = rule.between(startDate, endDate, true);
 
