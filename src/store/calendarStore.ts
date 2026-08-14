@@ -238,6 +238,15 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   },
 
   deleteTimeblock: async (id: string) => {
+    const tb = get().timeblocks.find(b => b.id === id);
+    if (tb && tb.recurrenceId) {
+      // If this block is an exception to a recurrence, we shouldn't completely delete it,
+      // otherwise the parent recurrence rule will respawn the virtual block in its place.
+      // Instead, we mark it as deleted.
+      await get().updateTimeblock(id, { isDeleted: true });
+      return;
+    }
+
     set((state) => ({
       timeblocks: state.timeblocks.filter((tb) => tb.id !== id),
     }));
