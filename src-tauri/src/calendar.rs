@@ -22,6 +22,10 @@ pub struct TimeblockRow {
     pub notes: String,
     pub completed: bool,
     pub color: Option<String>,
+    pub recurrence_rule: Option<String>,
+    pub recurrence_id: Option<String>,
+    pub original_start: Option<String>,
+    pub is_deleted: bool,
     pub task_ids: Vec<String>,
 }
 
@@ -45,6 +49,10 @@ pub fn open_calendar_db(state: tauri::State<'_, CalendarDb>, list_path: String) 
             notes       TEXT DEFAULT '',
             completed   INTEGER DEFAULT 0,
             color       TEXT,
+            recurrence_rule TEXT,
+            recurrence_id   TEXT,
+            original_start  TEXT,
+            is_deleted      INTEGER DEFAULT 0,
             created_at  TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
         );
@@ -59,6 +67,12 @@ pub fn open_calendar_db(state: tauri::State<'_, CalendarDb>, list_path: String) 
         CREATE INDEX IF NOT EXISTS idx_timeblocks_start ON timeblocks(start_time);
         CREATE INDEX IF NOT EXISTS idx_timeblocks_end ON timeblocks(end_time);"
     ).map_err(|e| e.to_string())?;
+
+    // Migrations for existing DBs
+    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN recurrence_rule TEXT", []);
+    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN recurrence_id TEXT", []);
+    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN original_start TEXT", []);
+    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN is_deleted INTEGER DEFAULT 0", []);
 
     *state.conn.lock().unwrap() = Some(conn);
     Ok(())
@@ -75,9 +89,10 @@ pub fn get_timeblocks_for_range(state: tauri::State<'_, CalendarDb>, start: Stri
     let lock = state.conn.lock().unwrap();
     let conn = lock.as_ref().ok_or("No calendar database is open")?;
     
-    let mut stmt = conn.prepare("SELECT id, title, start_time, end_time, notes, completed, color FROM timeblocks WHERE start_time < ? AND end_time > ?").map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT id, title, start_time, end_time, notes, completed, color, recurrence_rule, recurrence_id, original_start, is_deleted FROM timeblocks WHERE start_time < ? AND end_time > ? AND is_deleted = 0").map_err(|e| e.to_string())?;
     let block_iter = stmt.query_map([&end, &start], |row| {
         let completed: i32 = row.get(5)?;
+        let is_deleted: i32 = row.get(10).unwrap_or(0);
         Ok(TimeblockRow {
             id: row.get(0)?,
             title: row.get(1)?,
@@ -86,6 +101,10 @@ pub fn get_timeblocks_for_range(state: tauri::State<'_, CalendarDb>, start: Stri
             notes: row.get(4)?,
             completed: completed > 0,
             color: row.get(6)?,
+            recurrence_rule: row.get(7)?,
+            recurrence_id: row.get(8)?,
+            original_start: row.get(9)?,
+            is_deleted: is_deleted > 0,
             task_ids: Vec::new(),
         })
     }).map_err(|e| e.to_string())?;
@@ -110,13 +129,69 @@ pub fn get_timeblocks_for_range(state: tauri::State<'_, CalendarDb>, start: Stri
 }
 
 #[tauri::command]
-pub fn add_timeblock(state: tauri::State<'_, CalendarDb>, id: String, title: String, start_time: String, end_time: String, notes: String, color: Option<String>) -> Result<(), String> {
+pub fn get_recurring_timeblocks(state: tauri::State<'_, CalendarDb>) -> Result<String, String> {
+    let lock = state.conn.lock().unwrap();
+    let conn = lock.as_ref().ok_or("No calendar database is open")?;
+    
+    // Fetch parent recurring blocks and all exceptions
+    let mut stmt = conn.prepare("SELECT id, title, start_time, end_time, notes, completed, color, recurrence_rule, recurrence_id, original_start, is_deleted FROM timeblocks WHERE recurrence_rule IS NOT NULL OR recurrence_id IS NOT NULL").map_err(|e| e.to_string())?;
+    let block_iter = stmt.query_map([], |row| {
+        let completed: i32 = row.get(5)?;
+        let is_deleted: i32 = row.get(10).unwrap_or(0);
+        Ok(TimeblockRow {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            start_time: row.get(2)?,
+            end_time: row.get(3)?,
+            notes: row.get(4)?,
+            completed: completed > 0,
+            color: row.get(6)?,
+            recurrence_rule: row.get(7)?,
+            recurrence_id: row.get(8)?,
+            original_start: row.get(9)?,
+            is_deleted: is_deleted > 0,
+            task_ids: Vec::new(),
+        })
+    }).map_err(|e| e.to_string())?;
+    
+    let mut blocks = Vec::new();
+    for b in block_iter {
+        let mut b = b.map_err(|e| e.to_string())?;
+        
+        let mut task_stmt = conn.prepare("SELECT task_id FROM timeblock_tasks WHERE timeblock_id = ?").map_err(|e| e.to_string())?;
+        let task_iter = task_stmt.query_map([&b.id], |row| {
+            row.get::<_, String>(0)
+        }).map_err(|e| e.to_string())?;
+        
+        for t in task_iter {
+            b.task_ids.push(t.map_err(|e| e.to_string())?);
+        }
+        
+        blocks.push(b);
+    }
+    
+    serde_json::to_string(&blocks).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn add_timeblock(
+    state: tauri::State<'_, CalendarDb>, 
+    id: String, 
+    title: String, 
+    start_time: String, 
+    end_time: String, 
+    notes: String, 
+    color: Option<String>,
+    recurrence_rule: Option<String>,
+    recurrence_id: Option<String>,
+    original_start: Option<String>,
+) -> Result<(), String> {
     let lock = state.conn.lock().unwrap();
     let conn = lock.as_ref().ok_or("No calendar database is open")?;
     
     conn.execute(
-        "INSERT INTO timeblocks (id, title, start_time, end_time, notes, color) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        rusqlite::params![id, title, start_time, end_time, notes, color],
+        "INSERT INTO timeblocks (id, title, start_time, end_time, notes, color, recurrence_rule, recurrence_id, original_start) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        rusqlite::params![id, title, start_time, end_time, notes, color, recurrence_rule, recurrence_id, original_start],
     ).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -173,6 +248,38 @@ pub fn update_timeblock(state: tauri::State<'_, CalendarDb>, id: String, updates
             param_idx += 1;
         }
     }
+    if let Some(rr) = obj.get("recurrence_rule") {
+        if rr.is_null() {
+            sets.push(format!("recurrence_rule = NULL"));
+        } else if let Some(s) = rr.as_str() {
+            sets.push(format!("recurrence_rule = ?{}", param_idx));
+            params.push(Box::new(s.to_string()));
+            param_idx += 1;
+        }
+    }
+    if let Some(rid) = obj.get("recurrence_id") {
+        if rid.is_null() {
+            sets.push(format!("recurrence_id = NULL"));
+        } else if let Some(s) = rid.as_str() {
+            sets.push(format!("recurrence_id = ?{}", param_idx));
+            params.push(Box::new(s.to_string()));
+            param_idx += 1;
+        }
+    }
+    if let Some(ost) = obj.get("original_start") {
+        if ost.is_null() {
+            sets.push(format!("original_start = NULL"));
+        } else if let Some(s) = ost.as_str() {
+            sets.push(format!("original_start = ?{}", param_idx));
+            params.push(Box::new(s.to_string()));
+            param_idx += 1;
+        }
+    }
+    if let Some(del) = obj.get("is_deleted").and_then(|v| v.as_bool()) {
+        sets.push(format!("is_deleted = ?{}", param_idx));
+        params.push(Box::new(if del { 1i32 } else { 0i32 }));
+        param_idx += 1;
+    }
     
     if sets.is_empty() {
         return Ok(());
@@ -225,9 +332,10 @@ pub fn migrate_timeblocks_from_json(state: tauri::State<'_, CalendarDb>, json: S
     
     for b in blocks {
         let comp = if b.completed { 1i32 } else { 0i32 };
+        let del = if b.is_deleted { 1i32 } else { 0i32 };
         tx.execute(
-            "INSERT INTO timeblocks (id, title, start_time, end_time, notes, completed, color) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            rusqlite::params![b.id, b.title, b.start_time, b.end_time, b.notes, comp, b.color],
+            "INSERT INTO timeblocks (id, title, start_time, end_time, notes, completed, color, recurrence_rule, recurrence_id, original_start, is_deleted) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            rusqlite::params![b.id, b.title, b.start_time, b.end_time, b.notes, comp, b.color, b.recurrence_rule, b.recurrence_id, b.original_start, del],
         ).map_err(|e| e.to_string())?;
         
         for t in b.task_ids {

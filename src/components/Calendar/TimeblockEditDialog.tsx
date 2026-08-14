@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Timeblock, Task } from "../../types/task";
+import { RRule, rrulestr } from "rrule";
 import "./TimeblockEditDialog.css";
 
 interface Props {
@@ -31,6 +32,27 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   });
 
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<number>(RRule.DAILY);
+  const [interval, setInterval] = useState<number>(1);
+  const [byweekday, setByweekday] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (block.recurrenceRule) {
+      setIsRecurring(true);
+      try {
+        const rule = rrulestr(block.recurrenceRule);
+        setFrequency(rule.options.freq);
+        setInterval(rule.options.interval || 1);
+        if (rule.options.byweekday) {
+          setByweekday(rule.options.byweekday.map((w: any) => w.weekday));
+        }
+      } catch (e) {
+        console.error("Failed to parse recurrence rule", e);
+      }
+    }
+  }, [block.recurrenceRule]);
+
   const handleSave = () => {
     const updates: Partial<Timeblock> = { title, notes, color: color || undefined };
     
@@ -47,6 +69,26 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
 
     updates.startTime = toIso(startD);
     updates.endTime = toIso(endD);
+
+    if (isRecurring) {
+      try {
+        const options: any = {
+          freq: frequency,
+          interval: interval,
+        };
+        if (frequency === RRule.WEEKLY && byweekday.length > 0) {
+          // RRule weekday constants
+          const weekDaysList = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU];
+          options.byweekday = byweekday.map(d => weekDaysList[d]);
+        }
+        const rule = new RRule(options);
+        updates.recurrenceRule = rule.toString();
+      } catch (e) {
+        console.error("Failed to build recurrence rule", e);
+      }
+    } else {
+      updates.recurrenceRule = null as any; // clear it using null as instructed by backend updates logic
+    }
 
     onSave(block.id, updates);
     onClose();
@@ -101,6 +143,52 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
               <label>End Time</label>
               <input type="time" value={endTimeStr} onChange={e => setEndTimeStr(e.target.value)} />
             </div>
+          </div>
+
+          <div className="timeblock-edit-group" style={{ border: '1px solid var(--border)', padding: '8px', borderRadius: '4px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: isRecurring ? '8px' : '0' }}>
+              <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
+              Repeat
+            </label>
+            {isRecurring && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span>Every</span>
+                  <input type="number" min="1" value={interval} onChange={e => setInterval(Math.max(1, parseInt(e.target.value) || 1))} style={{ width: '60px', padding: '4px' }} />
+                  <select value={frequency} onChange={e => setFrequency(parseInt(e.target.value))} style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '4px' }}>
+                    <option value={RRule.DAILY}>Days</option>
+                    <option value={RRule.WEEKLY}>Weeks</option>
+                    <option value={RRule.MONTHLY}>Months</option>
+                    <option value={RRule.YEARLY}>Years</option>
+                  </select>
+                </div>
+                {frequency === RRule.WEEKLY && (
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[{ label: 'M', value: RRule.MO.weekday }, { label: 'T', value: RRule.TU.weekday }, { label: 'W', value: RRule.WE.weekday }, { label: 'T', value: RRule.TH.weekday }, { label: 'F', value: RRule.FR.weekday }, { label: 'S', value: RRule.SA.weekday }, { label: 'S', value: RRule.SU.weekday }].map(day => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => {
+                          if (byweekday.includes(day.value)) {
+                            setByweekday(byweekday.filter(d => d !== day.value));
+                          } else {
+                            setByweekday([...byweekday, day.value]);
+                          }
+                        }}
+                        style={{
+                          width: '28px', height: '28px', borderRadius: '50%', border: '1px solid var(--border)',
+                          background: byweekday.includes(day.value) ? 'var(--accent)' : 'transparent',
+                          color: byweekday.includes(day.value) ? 'white' : 'var(--text)',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem'
+                        }}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="timeblock-edit-group">

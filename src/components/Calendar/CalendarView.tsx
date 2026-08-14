@@ -5,8 +5,11 @@ import { TaskDrawer } from "./TaskDrawer";
 import { TimeGrid } from "./TimeGrid";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { TimeblockEditDialog } from "./TimeblockEditDialog";
+import { RecurrenceEditPrompt } from "./RecurrenceEditPrompt";
 import { getNextColor } from "./colors";
 import "./CalendarView.css";
+import { rrulestr, RRule } from "rrule";
+import type { Timeblock } from "../../types/task";
 
 type CalendarViewMode = "day" | "week";
 
@@ -82,6 +85,11 @@ export function CalendarView({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<{ id: string; isNew?: boolean } | null>(null);
 
+  type PendingAction = 
+    | { type: "update"; id: string; updates: Partial<Omit<Timeblock, "id">> }
+    | { type: "delete"; id: string };
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
   // Hidden date input ref for the "jump to date" picker
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -145,6 +153,37 @@ export function CalendarView({
     const endStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}T00:00:00`;
     calendarStore.loadRange(start, endStr);
   }, [dates, calendarStore.dbReady]);
+
+  function handleUpdateTimeblock(id: string, updates: Partial<Omit<Timeblock, "id">>) {
+    const block = timeblocks.find(b => b.id === id);
+    if (block && (block.recurrenceRule || id.startsWith("virtual_"))) {
+      setPendingAction({ type: "update", id, updates });
+    } else {
+      calendarStore.updateTimeblock(id, updates);
+    }
+  }
+
+  function handleDeleteTimeblock(id: string) {
+    const block = timeblocks.find(b => b.id === id);
+    if (block && (block.recurrenceRule || id.startsWith("virtual_"))) {
+      setPendingAction({ type: "delete", id });
+    } else {
+      calendarStore.deleteTimeblock(id);
+    }
+  }
+
+  function getParentInfo(blockId: string) {
+    const block = timeblocks.find(b => b.id === blockId);
+    if (!block) return null;
+    let parentId = block.id;
+    let originalStart = block.startTime;
+    if (blockId.startsWith("virtual_")) {
+      const parts = blockId.split("_");
+      parentId = parts[1];
+      originalStart = parts.slice(2).join("_");
+    }
+    return { parentId, originalStart, block };
+  }
 
   return (
     <div className="calendar-view">
@@ -238,10 +277,24 @@ export function CalendarView({
             timeblocks={timeblocks}
             tasks={tasks}
             onAddTimeblock={calendarStore.addTimeblock}
-            onUpdateTimeblock={calendarStore.updateTimeblock}
-            onAssignTask={calendarStore.assignTaskToTimeblock}
+            onUpdateTimeblock={handleUpdateTimeblock}
+            onAssignTask={(blockId, taskId) => {
+              const info = getParentInfo(blockId);
+              if (info && blockId.startsWith("virtual_")) {
+                calendarStore.assignTaskToTimeblock(blockId, taskId, info.parentId, info.originalStart);
+              } else {
+                calendarStore.assignTaskToTimeblock(blockId, taskId);
+              }
+            }}
             onEditTimeblock={(id, isNew) => setEditingBlock({ id, isNew })}
-            onToggleComplete={calendarStore.toggleTimeblockComplete}
+            onToggleComplete={(id, completed) => {
+              const info = getParentInfo(id);
+              if (info && id.startsWith("virtual_")) {
+                calendarStore.createException(info.parentId, info.originalStart, { ...info.block, completed });
+              } else {
+                calendarStore.toggleTimeblockComplete(id, completed);
+              }
+            }}
           />
         </div>
       </div>
@@ -251,12 +304,78 @@ export function CalendarView({
           block={timeblocks.find(b => b.id === editingBlock.id)!}
           isNew={editingBlock.isNew}
           tasks={tasks}
-          onSave={calendarStore.updateTimeblock}
+          onSave={handleUpdateTimeblock}
           onClose={() => setEditingBlock(null)}
           onRemoveTask={calendarStore.removeTaskFromTimeblock}
-          onComplete={calendarStore.toggleTimeblockComplete}
-          onDelete={calendarStore.deleteTimeblock}
-          onAssignTask={calendarStore.assignTaskToTimeblock}
+          onComplete={(id, completed) => {
+            const info = getParentInfo(id);
+            if (info && id.startsWith("virtual_")) {
+              calendarStore.createException(info.parentId, info.originalStart, { ...info.block, completed });
+            } else {
+              calendarStore.toggleTimeblockComplete(id, completed);
+            }
+          }}
+          onDelete={handleDeleteTimeblock}
+          onAssignTask={(blockId, taskId) => {
+            const info = getParentInfo(blockId);
+            if (info && blockId.startsWith("virtual_")) {
+              calendarStore.assignTaskToTimeblock(blockId, taskId, info.parentId, info.originalStart);
+            } else {
+              calendarStore.assignTaskToTimeblock(blockId, taskId);
+            }
+          }}
+        />
+      )}
+
+      {pendingAction && (
+        <RecurrenceEditPrompt
+          action={pendingAction.type === "update" ? "edit" : "delete"}
+          onCancel={() => setPendingAction(null)}
+          onConfirmInstance={() => {
+            const info = getParentInfo(pendingAction.id);
+            if (info) {
+              if (pendingAction.type === "update") {
+                calendarStore.createException(info.parentId, info.originalStart, { ...info.block, ...pendingAction.updates });
+              } else {
+                calendarStore.deleteException(info.parentId, info.originalStart);
+              }
+            }
+            setPendingAction(null);
+          }}
+          onConfirmSeries={() => {
+            const info = getParentInfo(pendingAction.id);
+            if (info) {
+              if (pendingAction.type === "update") {
+                if (pendingAction.id.startsWith("virtual_")) {
+                  calendarStore.splitSeries(info.parentId, info.originalStart, { ...info.block, ...pendingAction.updates });
+                } else {
+                  calendarStore.updateTimeblock(info.parentId, pendingAction.updates);
+                }
+              } else {
+                if (pendingAction.id.startsWith("virtual_")) {
+                  // End series before this occurrence
+                  const parent = timeblocks.find(b => b.id === info.parentId);
+                  if (parent && parent.recurrenceRule) {
+                    try {
+                      const rule = rrulestr(parent.recurrenceRule);
+                      const opt = rule.options;
+                      const untilDate = new Date(info.originalStart);
+                      untilDate.setSeconds(untilDate.getSeconds() - 1);
+                      opt.until = untilDate;
+                      calendarStore.updateTimeblock(info.parentId, { recurrenceRule: new RRule(opt).toString() });
+                    } catch (e) {
+                      calendarStore.deleteSeries(info.parentId);
+                    }
+                  } else {
+                    calendarStore.deleteSeries(info.parentId);
+                  }
+                } else {
+                  calendarStore.deleteSeries(info.parentId);
+                }
+              }
+            }
+            setPendingAction(null);
+          }}
         />
       )}
     </div>

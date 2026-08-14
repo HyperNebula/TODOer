@@ -343,6 +343,7 @@ pub fn run() {
         calendar::open_calendar_db,
         calendar::close_calendar_db,
         calendar::get_timeblocks_for_range,
+        calendar::get_recurring_timeblocks,
         calendar::add_timeblock,
         calendar::update_timeblock,
         calendar::delete_timeblock,

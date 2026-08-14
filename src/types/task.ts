@@ -48,6 +48,10 @@ export interface Timeblock {
   notes?: string;
   completed?: boolean;
   color?: string;
+  recurrenceRule?: string;
+  recurrenceId?: string;
+  originalStart?: string;
+  isDeleted?: boolean;
 }
 
 export interface TaskListFile {

@@ -3,19 +3,26 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Timeblock } from "../types/task";
 import { useTaskStore } from "./taskStore";
 import { isTauri } from "../lib/fileApi";
+import { rrulestr, RRule } from "rrule";
 
 interface CalendarStore {
   timeblocks: Timeblock[];
+  recurringTimeblocks: Timeblock[];
+  recurringLoaded: boolean;
   dbReady: boolean;
 
   openDb: (listPath: string) => Promise<void>;
   closeDb: () => Promise<void>;
   loadRange: (start: string, end: string) => Promise<void>;
 
-  addTimeblock: (startTime: string, endTime: string, title?: string, color?: string) => Promise<string>;
+  addTimeblock: (startTime: string, endTime: string, title?: string, color?: string, recurrenceRule?: string) => Promise<string>;
   updateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => Promise<void>;
   deleteTimeblock: (id: string) => Promise<void>;
-  assignTaskToTimeblock: (timeblockId: string, taskId: string) => Promise<void>;
+  createException: (parentId: string, originalStart: string, newBlockData: Timeblock) => Promise<void>;
+  splitSeries: (parentId: string, originalStart: string, newBlockData: Timeblock) => Promise<void>;
+  deleteException: (parentId: string, originalStart: string) => Promise<void>;
+  deleteSeries: (parentId: string) => Promise<void>;
+  assignTaskToTimeblock: (timeblockId: string, taskId: string, parentId?: string, originalStart?: string) => Promise<void>;
   removeTaskFromTimeblock: (timeblockId: string, taskId: string) => Promise<void>;
   toggleTimeblockComplete: (id: string, completed: boolean) => Promise<void>;
   migrateFromJson: (timeblocks: Timeblock[]) => Promise<void>;
@@ -23,6 +30,8 @@ interface CalendarStore {
 
 export const useCalendarStore = create<CalendarStore>((set, get) => ({
   timeblocks: [],
+  recurringTimeblocks: [],
+  recurringLoaded: false,
   dbReady: false,
 
   openDb: async (listPath: string) => {
@@ -34,14 +43,35 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   closeDb: async () => {
     if (!isTauri()) return;
     await invoke("close_calendar_db");
-    set({ timeblocks: [], dbReady: false });
+    set({ timeblocks: [], recurringTimeblocks: [], recurringLoaded: false, dbReady: false });
   },
 
   loadRange: async (start: string, end: string) => {
     if (!isTauri()) return;
+    
+    if (!get().recurringLoaded) {
+      const recJson = await invoke<string>("get_recurring_timeblocks");
+      const recRows = JSON.parse(recJson) as any[];
+      const recurringTimeblocks: Timeblock[] = recRows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        notes: row.notes,
+        completed: row.completed,
+        color: row.color,
+        taskIds: row.task_ids,
+        recurrenceRule: row.recurrence_rule,
+        recurrenceId: row.recurrence_id,
+        originalStart: row.original_start,
+        isDeleted: row.is_deleted,
+      }));
+      set({ recurringTimeblocks, recurringLoaded: true });
+    }
+
     const jsonStr = await invoke<string>("get_timeblocks_for_range", { start, end });
     const rows = JSON.parse(jsonStr) as any[];
-    const timeblocks: Timeblock[] = rows.map((row) => ({
+    const normalTimeblocks: Timeblock[] = rows.map((row) => ({
       id: row.id,
       title: row.title,
       startTime: row.start_time,
@@ -50,11 +80,71 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       completed: row.completed,
       color: row.color,
       taskIds: row.task_ids,
+      recurrenceRule: row.recurrence_rule,
+      recurrenceId: row.recurrence_id,
+      originalStart: row.original_start,
+      isDeleted: row.is_deleted,
     }));
-    set({ timeblocks });
+
+    // Merge normal blocks, exceptions, and virtual instances
+    const allRecurringAndExceptions = get().recurringTimeblocks;
+    const parentBlocks = allRecurringAndExceptions.filter(tb => tb.recurrenceRule != null);
+    
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const virtualBlocks: Timeblock[] = [];
+
+    parentBlocks.forEach(parent => {
+      try {
+        // Parse the RRULE. rrule.js requires dates to be handled carefully.
+        // The start of the recurrence is the start time of the parent block.
+        const rule = rrulestr(parent.recurrenceRule!, { dtstart: new Date(parent.startTime) });
+        // Get all occurrences in this range
+        const occurrences = rule.between(startDate, endDate, true);
+
+        occurrences.forEach(occ => {
+          // Time might be shifted due to UTC logic in rrule, but usually we just keep the time of day the same.
+          // rrule.js output uses the same local time but wrapped in UTC Date object. We need to format back.
+          const origDate = new Date(parent.startTime);
+          const instStart = new Date(occ);
+          instStart.setHours(origDate.getHours(), origDate.getMinutes(), origDate.getSeconds());
+          
+          const duration = new Date(parent.endTime).getTime() - new Date(parent.startTime).getTime();
+          const instEnd = new Date(instStart.getTime() + duration);
+          
+          const originalStartStr = instStart.toISOString();
+
+          // Check if there is an exception for this occurrence (in normal blocks or recurring exceptions)
+          const hasException = allRecurringAndExceptions.some(ex => ex.recurrenceId === parent.id && ex.originalStart === originalStartStr) ||
+                               normalTimeblocks.some(ex => ex.recurrenceId === parent.id && ex.originalStart === originalStartStr);
+          
+          // Check if this is the original parent block itself
+          const isOriginal = parent.startTime === originalStartStr;
+
+          if (!hasException && !isOriginal) {
+            virtualBlocks.push({
+              ...parent,
+              id: `virtual_${parent.id}_${originalStartStr}`,
+              startTime: originalStartStr,
+              endTime: instEnd.toISOString(),
+              taskIds: [], // Virtual instances don't carry tasks initially
+              completed: false, // Reset completion for instances
+            });
+          }
+        });
+      } catch (e) {
+        console.error("Failed to parse RRULE", parent.recurrenceRule, e);
+      }
+    });
+
+    const combined = [...normalTimeblocks, ...virtualBlocks];
+    // Filter out deleted exceptions
+    const visibleBlocks = combined.filter(b => !b.isDeleted);
+
+    set({ timeblocks: visibleBlocks });
   },
 
-  addTimeblock: async (startTime: string, endTime: string, title?: string, color?: string) => {
+  addTimeblock: async (startTime: string, endTime: string, title?: string, color?: string, recurrenceRule?: string) => {
     const id = crypto.randomUUID();
     const newBlock: Timeblock = {
       id,
@@ -65,9 +155,13 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       completed: false,
       color: color || undefined,
       taskIds: [],
+      recurrenceRule,
     };
 
-    set((state) => ({ timeblocks: [...state.timeblocks, newBlock] }));
+    set((state) => ({ 
+      timeblocks: [...state.timeblocks, newBlock],
+      recurringTimeblocks: recurrenceRule ? [...state.recurringTimeblocks, newBlock] : state.recurringTimeblocks
+    }));
 
     if (isTauri()) {
       await invoke("add_timeblock", {
@@ -77,6 +171,9 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         endTime,
         notes: "",
         color: color || null,
+        recurrenceRule: recurrenceRule || null,
+        recurrenceId: null,
+        originalStart: null,
       });
     }
 
@@ -111,7 +208,152 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     }
   },
 
-  assignTaskToTimeblock: async (timeblockId: string, taskId: string) => {
+  createException: async (parentId: string, originalStart: string, newBlockData: Timeblock) => {
+    set((state) => ({
+      timeblocks: [...state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${originalStart}`), newBlockData],
+      recurringTimeblocks: [...state.recurringTimeblocks, newBlockData],
+    }));
+
+    if (isTauri()) {
+      await invoke("add_timeblock", {
+        id: newBlockData.id,
+        title: newBlockData.title,
+        startTime: newBlockData.startTime,
+        endTime: newBlockData.endTime,
+        notes: newBlockData.notes || "",
+        color: newBlockData.color || null,
+        recurrenceRule: null,
+        recurrenceId: parentId,
+        originalStart: originalStart,
+      });
+    }
+  },
+
+  splitSeries: async (parentId: string, originalStart: string, newBlockData: Timeblock) => {
+    // End the old series before the originalStart date
+    const oldParent = get().recurringTimeblocks.find(tb => tb.id === parentId);
+    if (!oldParent) return;
+
+    // For simplicity, we can update the UNTIL of the old rule.
+    let oldRuleStr = oldParent.recurrenceRule!;
+    try {
+      const rule = rrulestr(oldRuleStr);
+      const opt = rule.options;
+      const untilDate = new Date(originalStart);
+      untilDate.setSeconds(untilDate.getSeconds() - 1); // just before this occurrence
+      opt.until = untilDate;
+      const newRule = new RRule(opt);
+      oldRuleStr = newRule.toString();
+    } catch (e) {
+      console.error(e);
+    }
+
+    await get().updateTimeblock(parentId, { recurrenceRule: oldRuleStr });
+
+    // The new block is a new series starting from this occurrence
+    const newId = crypto.randomUUID();
+    const splitBlock = {
+      ...newBlockData,
+      id: newId,
+      recurrenceRule: oldParent.recurrenceRule, // keeping original rule pattern, but start time is new
+      recurrenceId: undefined,
+      originalStart: undefined,
+    };
+
+    set((state) => ({
+      timeblocks: [...state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${originalStart}`), splitBlock],
+      recurringTimeblocks: [...state.recurringTimeblocks, splitBlock],
+    }));
+
+    if (isTauri()) {
+      await invoke("add_timeblock", {
+        id: splitBlock.id,
+        title: splitBlock.title,
+        startTime: splitBlock.startTime,
+        endTime: splitBlock.endTime,
+        notes: splitBlock.notes || "",
+        color: splitBlock.color || null,
+        recurrenceRule: splitBlock.recurrenceRule || null,
+        recurrenceId: null,
+        originalStart: null,
+      });
+    }
+  },
+
+  deleteException: async (parentId: string, originalStart: string) => {
+    const exId = crypto.randomUUID();
+    const delEx: Timeblock = {
+      id: exId,
+      startTime: originalStart,
+      endTime: originalStart, // dummy
+      taskIds: [],
+      recurrenceId: parentId,
+      originalStart: originalStart,
+      isDeleted: true,
+    };
+    
+    set((state) => ({
+      timeblocks: state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${originalStart}`),
+      recurringTimeblocks: [...state.recurringTimeblocks, delEx],
+    }));
+
+    if (isTauri()) {
+      await invoke("add_timeblock", {
+        id: exId,
+        title: "Deleted Exception",
+        startTime: originalStart,
+        endTime: originalStart,
+        notes: "",
+        color: null,
+        recurrenceRule: null,
+        recurrenceId: parentId,
+        originalStart: originalStart,
+        isDeleted: true,
+      });
+    }
+  },
+
+  deleteSeries: async (parentId: string) => {
+    await get().deleteTimeblock(parentId);
+    // Note: Database ON DELETE CASCADE might remove exceptions if foreign key is set up.
+    // If not, we manually remove them from frontend state:
+    set((state) => ({
+      timeblocks: state.timeblocks.filter(tb => tb.id !== parentId && tb.recurrenceId !== parentId && !tb.id.startsWith(`virtual_${parentId}_`)),
+      recurringTimeblocks: state.recurringTimeblocks.filter(tb => tb.id !== parentId && tb.recurrenceId !== parentId),
+    }));
+  },
+
+  assignTaskToTimeblock: async (timeblockId: string, taskId: string, parentId?: string, originalStart?: string) => {
+    if (timeblockId.startsWith("virtual_") && parentId && originalStart) {
+      // Create an exception first
+      const parent = get().recurringTimeblocks.find(tb => tb.id === parentId);
+      if (!parent) return;
+      
+      const newExId = crypto.randomUUID();
+      const duration = new Date(parent.endTime).getTime() - new Date(parent.startTime).getTime();
+      const instStart = new Date(originalStart);
+      const instEnd = new Date(instStart.getTime() + duration);
+
+      const exBlock: Timeblock = {
+        ...parent,
+        id: newExId,
+        startTime: originalStart,
+        endTime: instEnd.toISOString(),
+        recurrenceRule: undefined,
+        recurrenceId: parentId,
+        originalStart: originalStart,
+        taskIds: [taskId],
+        completed: false,
+      };
+
+      await get().createException(parentId, originalStart, exBlock);
+      
+      if (isTauri()) {
+        await invoke("assign_task_to_timeblock", { timeblockId: newExId, taskId });
+      }
+      return;
+    }
+
     set((state) => ({
       timeblocks: state.timeblocks.map((tb) =>
         tb.id === timeblockId && !tb.taskIds.includes(taskId)
