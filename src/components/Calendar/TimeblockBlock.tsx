@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { Task, Timeblock } from "../../types/task";
 import { useSettingsStore } from "../../store/settingsStore";
+import { useCalendarStore } from "../../store/calendarStore";
 
 function toLocalIsoString(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -50,28 +51,15 @@ export function TimeblockBlock({
   const [isHovered, setIsHovered] = useState(false);
   const dragRef = useRef<{ startY: number; origStart: string; origEnd: string } | null>(null);
 
-  // Clear the visual drag/resize override once the block's props have caught up.
-  // We keep dragStateRef alive after onUp so that the block doesn't snap back
-  // to its old position for one frame while the store update propagates
-  // through CalendarView → TimeGrid → TimeblockBlock.
-  if (
-    dragStateRef.current &&
-    dragRef.current === null &&
-    resizeRef.current === null
-  ) {
-    const startOk =
-      !dragStateRef.current.startStr ||
-      block.startTime === dragStateRef.current.startStr;
-    const endOk =
-      !dragStateRef.current.endStr ||
-      block.endTime === dragStateRef.current.endStr;
-    if (startOk && endOk) {
-      dragStateRef.current = null;
-    }
-  }
+  // Subscribe directly to the store for this block's latest data.
+  // This bypasses the prop-drilling delay (CalendarView → TimeGrid → here)
+  // so the optimistic update from calendarStore.set() is visible in the
+  // same render cycle, eliminating the 1-frame snap-back after drags.
+  const storeBlock = useCalendarStore((s) => s.timeblocks.find((tb) => tb.id === block.id));
+  const liveBlock = storeBlock ?? block;
 
-  const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
-  const effectiveEnd = dragStateRef.current?.endStr ?? block.endTime;
+  const effectiveStart = dragStateRef.current?.startStr ?? liveBlock.startTime;
+  const effectiveEnd = dragStateRef.current?.endStr ?? liveBlock.endTime;
 
   const startMin =
     (new Date(effectiveStart).getHours() * 60 +
@@ -110,8 +98,7 @@ export function TimeblockBlock({
       if (dragStateRef.current?.endStr) {
         onUpdate(block.id, { endTime: dragStateRef.current.endStr });
       }
-      // Don't clear dragStateRef here — it acts as a visual bridge until
-      // the block's props catch up with the new position (cleared at render time).
+      dragStateRef.current = null;
       resizeRef.current = null;
       setIsResizing(false);
       window.removeEventListener("mousemove", onMove);
@@ -171,8 +158,7 @@ export function TimeblockBlock({
           onUpdate(block.id, updates);
         }
       }
-      // Don't clear dragStateRef here — it acts as a visual bridge until
-      // the block's props catch up with the new position (cleared at render time).
+      dragStateRef.current = null;
       dragRef.current = null;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
