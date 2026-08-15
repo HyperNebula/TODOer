@@ -48,10 +48,20 @@ export function ThemeApplier() {
         "#0891b2", "#06b6d4", "#0ea5e9", "#0284c7", "#3b82f6", 
         "#2563eb", "#6366f1", "#4f46e5", "#8b5cf6", "#7c3aed"
       ];
-    } else if (priorityColorMode === "neon") {
+    } else if (priorityColorMode === "sunset") {
       presetColors = [
-        "#ff003c", "#00f0ff", "#ffee00", "#00ff41", "#b900ff",
-        "#ff7300", "#00ffe1", "#ff00a0", "#a2ff00", "#4d00ff"
+        "#e11d48", "#f43f5e", "#ef4444", "#dc2626", "#ea580c",
+        "#f97316", "#d97706", "#f59e0b", "#ca8a04", "#eab308"
+      ];
+    } else if (priorityColorMode === "forest") {
+      presetColors = [
+        "#65a30d", "#84cc16", "#22c55e", "#16a34a", "#10b981",
+        "#059669", "#14b8a6", "#0d9488", "#06b6d4", "#0891b2"
+      ];
+    } else if (priorityColorMode === "lavender") {
+      presetColors = [
+        "#c026d3", "#d946ef", "#a855f7", "#9333ea", "#7c3aed",
+        "#8b5cf6", "#6366f1", "#4f46e5", "#3b82f6", "#2563eb"
       ];
     } else if (priorityColorMode === "inverse") {
       presetColors = [
@@ -59,21 +69,6 @@ export function ThemeApplier() {
         "rgb(16, 185, 129)", "rgb(34, 197, 94)", "rgb(132, 204, 22)", 
         "rgb(234, 179, 8)", "rgb(245, 158, 11)", "rgb(249, 115, 22)", 
         "rgb(239, 68, 68)"
-      ];
-    } else if (priorityColorMode === "forest") {
-      presetColors = [
-        "#65a30d", "#84cc16", "#22c55e", "#16a34a", "#10b981",
-        "#059669", "#14b8a6", "#0d9488", "#06b6d4", "#0891b2"
-      ];
-    } else if (priorityColorMode === "sunset") {
-      presetColors = [
-        "#e11d48", "#f43f5e", "#ef4444", "#dc2626", "#ea580c",
-        "#f97316", "#d97706", "#f59e0b", "#ca8a04", "#eab308"
-      ];
-    } else if (priorityColorMode === "lavender") {
-      presetColors = [
-        "#c026d3", "#d946ef", "#a855f7", "#9333ea", "#7c3aed",
-        "#8b5cf6", "#6366f1", "#4f46e5", "#3b82f6", "#2563eb"
       ];
     }
 
