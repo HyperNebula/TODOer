@@ -81,7 +81,7 @@ export function ColumnPicker({ visible, onChange }: ColumnPickerProps) {
         <h4 className="column-section-title">Active Columns</h4>
         <div className="column-list active-list">
           {activeCols.map((col) => {
-            const isDraggable = col !== "title";
+            const isDraggable = true;
             return (
               <div 
                 key={col} 
