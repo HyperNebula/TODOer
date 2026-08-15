@@ -8,7 +8,7 @@ const LABELS: Record<ColumnId, string> = {
   title: "Title",
   createdAt: "Created",
   dueDate: "Due",
-  priority: "!",
+  priority: "Priority",
   percentDone: "% Done",
   timeEstimateMinutes: "Estimate",
   fileLink: "File Link",
