@@ -258,7 +258,7 @@ pub fn update_timeblock(
     }
     if let Some(col) = obj.get("color") {
         if col.is_null() {
-            sets.push(format!("color = NULL"));
+            sets.push("color = NULL".to_string());
         } else if let Some(s) = col.as_str() {
             sets.push(format!("color = ?{}", param_idx));
             params.push(Box::new(s.to_string()));
@@ -267,7 +267,7 @@ pub fn update_timeblock(
     }
     if let Some(rr) = obj.get("recurrence_rule") {
         if rr.is_null() {
-            sets.push(format!("recurrence_rule = NULL"));
+            sets.push("recurrence_rule = NULL".to_string());
         } else if let Some(s) = rr.as_str() {
             sets.push(format!("recurrence_rule = ?{}", param_idx));
             params.push(Box::new(s.to_string()));
@@ -276,7 +276,7 @@ pub fn update_timeblock(
     }
     if let Some(rid) = obj.get("recurrence_id") {
         if rid.is_null() {
-            sets.push(format!("recurrence_id = NULL"));
+            sets.push("recurrence_id = NULL".to_string());
         } else if let Some(s) = rid.as_str() {
             sets.push(format!("recurrence_id = ?{}", param_idx));
             params.push(Box::new(s.to_string()));
@@ -285,7 +285,7 @@ pub fn update_timeblock(
     }
     if let Some(ost) = obj.get("original_start") {
         if ost.is_null() {
-            sets.push(format!("original_start = NULL"));
+            sets.push("original_start = NULL".to_string());
         } else if let Some(s) = ost.as_str() {
             sets.push(format!("original_start = ?{}", param_idx));
             params.push(Box::new(s.to_string()));
@@ -302,7 +302,7 @@ pub fn update_timeblock(
         return Ok(());
     }
 
-    sets.push(format!("updated_at = datetime('now')"));
+    sets.push("updated_at = datetime('now')".to_string());
 
     query.push_str(&sets.join(", "));
     query.push_str(&format!(" WHERE id = ?{}", param_idx));

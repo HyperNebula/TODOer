@@ -60,7 +60,7 @@ fn write_tasklist_file(
                     }
                 }
 
-                existing_backups.sort_by(|a, b| b.1.cmp(&a.1));
+                existing_backups.sort_by_key(|b| std::cmp::Reverse(b.1));
 
                 let mut should_backup = true;
                 if let Some((_, last_modified)) = existing_backups.first() {
