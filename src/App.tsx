@@ -24,11 +24,13 @@ import {
   readFileFallback,
   saveTempPdf,
   openFileLink,
+  isTauri,
 } from "./lib/fileApi";
 import { generatePdfBlob } from "./lib/printPdf";
 import { useSettingsStore } from "./store/settingsStore";
 import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
+import { startNotificationService, stopNotificationService } from "./lib/notificationService";
 import "./App.css";
 
 // Calendar component — lazy-loaded and tree-shaken when __CALENDAR_ENABLED__ is false
@@ -228,6 +230,35 @@ function App() {
     }
   }, [store]);
 
+  const handleOpenPomodoro = useCallback(async () => {
+    if (isTauri()) {
+      try {
+        const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+        const pomodoro = new WebviewWindow("pomodoro", {
+          url: "/?pomodoro=1",
+          title: "Pomodoro Timer",
+          width: 320,
+          height: 380,
+          resizable: false,
+          alwaysOnTop: true,
+          focus: true,
+        });
+        
+        pomodoro.once('tauri://error', function () {
+          // Window might already exist, so we just focus it
+          import("@tauri-apps/api/window").then(({ Window }) => {
+            const existing = new Window("pomodoro");
+            existing.setFocus();
+          });
+        });
+      } catch (e) {
+        console.error("Failed to create Pomodoro window", e);
+      }
+    } else {
+      window.open("/?pomodoro=1", "pomodoro", "width=320,height=380");
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     const loadLast = async () => {
@@ -242,7 +273,17 @@ function App() {
       }
     };
     loadLast();
-    return () => { mounted = false; };
+    
+    if (__CALENDAR_ENABLED__) {
+      startNotificationService();
+    }
+
+    return () => { 
+      mounted = false; 
+      if (__CALENDAR_ENABLED__) {
+        stopNotificationService();
+      }
+    };
   }, []); // Run once on mount
 
   useEffect(() => {
@@ -501,6 +542,7 @@ function App() {
               onExitFocus={() => store.setFocusTask(null)}
               isFlatView={store.filter.flatView}
               onToggleFlatView={store.toggleFlatView}
+              onOpenPomodoro={handleOpenPomodoro}
             />
 
             <FilterBar

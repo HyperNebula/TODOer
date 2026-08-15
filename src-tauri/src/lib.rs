@@ -1,7 +1,7 @@
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{Emitter, Manager};
 use std::fs;
 use std::path::Path;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::{Emitter, Manager};
 
 #[cfg(feature = "calendar")]
 mod calendar;
@@ -21,23 +21,36 @@ fn read_tasklist_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn write_tasklist_file(app: tauri::AppHandle, path: String, contents: String, max_backups: usize) -> Result<(), String> {
+fn write_tasklist_file(
+    app: tauri::AppHandle,
+    path: String,
+    contents: String,
+    max_backups: usize,
+) -> Result<(), String> {
     let target_path = Path::new(&path);
     if target_path.exists() {
         if let Ok(docs) = app.path().document_dir() {
             let backups_dir = docs.join("TaskLists").join("backups");
             let _ = fs::create_dir_all(&backups_dir);
-            
+
             if target_path.file_name().is_some() {
-                let extension = target_path.extension().and_then(|e| e.to_str()).unwrap_or("json");
-                let stem = target_path.file_stem().and_then(|s| s.to_str()).unwrap_or("list");
-                
+                let extension = target_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("json");
+                let stem = target_path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("list");
+
                 let mut existing_backups = Vec::new();
                 if let Ok(entries) = fs::read_dir(&backups_dir) {
                     for entry in entries.flatten() {
                         if let Ok(meta) = entry.metadata() {
                             if let Some(name) = entry.file_name().to_str() {
-                                if name.starts_with(&format!("{}_", stem)) && name.ends_with(extension) {
+                                if name.starts_with(&format!("{}_", stem))
+                                    && name.ends_with(extension)
+                                {
                                     if let Ok(modified) = meta.modified() {
                                         existing_backups.push((entry.path(), modified));
                                     }
@@ -46,9 +59,9 @@ fn write_tasklist_file(app: tauri::AppHandle, path: String, contents: String, ma
                         }
                     }
                 }
-                
+
                 existing_backups.sort_by(|a, b| b.1.cmp(&a.1));
-                
+
                 let mut should_backup = true;
                 if let Some((_, last_modified)) = existing_backups.first() {
                     if let Ok(elapsed) = last_modified.elapsed() {
@@ -57,7 +70,7 @@ fn write_tasklist_file(app: tauri::AppHandle, path: String, contents: String, ma
                         }
                     }
                 }
-                
+
                 if should_backup && max_backups > 0 {
                     let now = chrono::Local::now();
                     let timestamp = now.format("%Y-%m-%d_%H-%M-%S").to_string();
@@ -67,7 +80,7 @@ fn write_tasklist_file(app: tauri::AppHandle, path: String, contents: String, ma
                         existing_backups.insert(0, (backup_path, std::time::SystemTime::now()));
                     }
                 }
-                
+
                 if max_backups > 0 {
                     while existing_backups.len() > max_backups {
                         if let Some((path, _)) = existing_backups.pop() {
@@ -121,7 +134,13 @@ fn set_last_file_path(app: tauri::AppHandle, path: String) -> Result<(), String>
 #[tauri::command]
 fn write_temp_html(contents: String) -> Result<String, String> {
     let temp_dir = std::env::temp_dir();
-    let temp_file = temp_dir.join(format!("todoer-print-{}.html", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+    let temp_file = temp_dir.join(format!(
+        "todoer-print-{}.html",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+    ));
     fs::write(&temp_file, contents).map_err(|e| e.to_string())?;
     Ok(temp_file.to_string_lossy().to_string())
 }
@@ -129,7 +148,13 @@ fn write_temp_html(contents: String) -> Result<String, String> {
 #[tauri::command]
 fn write_temp_pdf(contents: Vec<u8>) -> Result<String, String> {
     let temp_dir = std::env::temp_dir();
-    let temp_file = temp_dir.join(format!("todoer-print-{}.pdf", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+    let temp_file = temp_dir.join(format!(
+        "todoer-print-{}.pdf",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+    ));
     fs::write(&temp_file, contents).map_err(|e| e.to_string())?;
     Ok(temp_file.to_string_lossy().to_string())
 }
@@ -146,7 +171,7 @@ fn append_to_archive(app: tauri::AppHandle, data: String, format: String) -> Res
         } else {
             String::new()
         };
-        
+
         if existing.is_empty() {
             existing = data;
         } else {
@@ -169,9 +194,7 @@ fn append_to_archive(app: tauri::AppHandle, data: String, format: String) -> Res
         let archive_path = data_dir.join("global_archive.json");
         let new_tasks: serde_json::Value =
             serde_json::from_str(&data).map_err(|e| e.to_string())?;
-        let new_arr = new_tasks
-            .as_array()
-            .ok_or("data must be a JSON array")?;
+        let new_arr = new_tasks.as_array().ok_or("data must be a JSON array")?;
 
         let mut existing: Vec<serde_json::Value> = if archive_path.exists() {
             let raw = fs::read_to_string(&archive_path).map_err(|e| e.to_string())?;
@@ -190,10 +213,18 @@ fn append_to_archive(app: tauri::AppHandle, data: String, format: String) -> Res
 #[tauri::command]
 fn read_archive(app: tauri::AppHandle, format: String) -> Result<String, String> {
     let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-    let file_name = if format == "csv" { "global_archive.csv" } else { "global_archive.json" };
+    let file_name = if format == "csv" {
+        "global_archive.csv"
+    } else {
+        "global_archive.json"
+    };
     let archive_path = data_dir.join(file_name);
     if !archive_path.exists() {
-        return Ok(if format == "csv" { String::new() } else { "[]".to_string() });
+        return Ok(if format == "csv" {
+            String::new()
+        } else {
+            "[]".to_string()
+        });
     }
     fs::read_to_string(archive_path).map_err(|e| e.to_string())
 }
@@ -201,7 +232,11 @@ fn read_archive(app: tauri::AppHandle, format: String) -> Result<String, String>
 #[tauri::command]
 fn get_archive_path(app: tauri::AppHandle, format: String) -> Result<String, String> {
     let data_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-    let file_name = if format == "csv" { "global_archive.csv" } else { "global_archive.json" };
+    let file_name = if format == "csv" {
+        "global_archive.csv"
+    } else {
+        "global_archive.json"
+    };
     let archive_path = data_dir.join(file_name);
     Ok(archive_path.to_string_lossy().to_string())
 }
@@ -212,7 +247,13 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
     let save = MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?;
     let save_as = MenuItem::with_id(app, "save_as", "Save As…", true, None::<&str>)?;
     let export_csv = MenuItem::with_id(app, "export_csv", "Export CSV…", true, None::<&str>)?;
-    let export_taskpaper = MenuItem::with_id(app, "export_taskpaper", "Export Taskpaper…", true, None::<&str>)?;
+    let export_taskpaper = MenuItem::with_id(
+        app,
+        "export_taskpaper",
+        "Export Taskpaper…",
+        true,
+        None::<&str>,
+    )?;
     let import_csv = MenuItem::with_id(app, "import_csv", "Import CSV…", true, None::<&str>)?;
     let print = MenuItem::with_id(app, "print", "Print…", true, None::<&str>)?;
 
@@ -276,13 +317,14 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         ],
     )?;
 
-    let open_settings = MenuItem::with_id(app, "open_settings", "Open Settings", true, Some("CmdOrCtrl+,"))?;
-    let settings_menu = Submenu::with_items(
+    let open_settings = MenuItem::with_id(
         app,
-        "Settings",
+        "open_settings",
+        "Open Settings",
         true,
-        &[&open_settings],
+        Some("CmdOrCtrl+,"),
     )?;
+    let settings_menu = Submenu::with_items(app, "Settings", true, &[&open_settings])?;
 
     Menu::with_items(app, &[&file_menu, &edit_menu, &task_menu, &settings_menu])
 }
@@ -290,6 +332,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -298,7 +341,7 @@ pub fn run() {
         .setup(|app| {
             let menu = build_menu(app)?;
             app.set_menu(menu)?;
-            
+
             #[cfg(feature = "calendar")]
             {
                 app.manage(calendar::CalendarDb::new());

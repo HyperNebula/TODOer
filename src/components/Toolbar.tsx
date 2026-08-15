@@ -19,6 +19,7 @@ interface ToolbarProps {
   onExitFocus: () => void;
   isFlatView: boolean;
   onToggleFlatView: () => void;
+  onOpenPomodoro?: () => void;
 }
 
 export function Toolbar({
@@ -42,6 +43,7 @@ export function Toolbar({
   onExitFocus,
   isFlatView,
   onToggleFlatView,
+  onOpenPomodoro,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
@@ -129,6 +131,15 @@ export function Toolbar({
       </button>
       <button type="button" className="btn" onClick={onArchive}>
         Archive Completed
+      </button>
+      <span className="toolbar-sep" />
+      <button 
+        type="button" 
+        className="btn btn-primary" 
+        onClick={onOpenPomodoro}
+        title="Open Pomodoro Timer"
+      >
+        🍅 Pomodoro
       </button>
       <span style={{ marginLeft: "auto" }} />
       <div style={{ display: "flex", alignItems: "center", gap: "8px", borderLeft: "1px solid var(--border)", paddingLeft: "12px", marginLeft: "4px" }}>
