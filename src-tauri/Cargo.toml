@@ -16,7 +16,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
 default = []
-calendar = ["rusqlite"]
+calendar = ["rusqlite", "tauri-plugin-notification"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -32,4 +32,4 @@ tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 chrono = "0.4"
 rusqlite = { version = "0.34", features = ["bundled"], optional = true }
-tauri-plugin-notification = "2"
+tauri-plugin-notification = { version = "2", optional = true }

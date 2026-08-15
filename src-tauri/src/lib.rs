@@ -331,8 +331,14 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_notification::init())
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(feature = "calendar")]
+    {
+        builder = builder.plugin(tauri_plugin_notification::init());
+    }
+
+    builder = builder
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())

@@ -231,6 +231,7 @@ function App() {
   }, [store]);
 
   const handleOpenPomodoro = useCallback(async () => {
+    if (!__CALENDAR_ENABLED__) return;
     if (isTauri()) {
       try {
         const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");

@@ -60,6 +60,7 @@ interface CalendarViewProps {
   onNewList: () => void;
   dirty: boolean;
   onOpenSettings: () => void;
+  onOpenPomodoro?: () => void;
 }
 
 /**
@@ -73,6 +74,7 @@ export function CalendarView({
   onNewList,
   dirty,
   onOpenSettings,
+  onOpenPomodoro,
 }: CalendarViewProps) {
   const store = useTaskStore();
   const calendarStore = useCalendarStore();
@@ -209,6 +211,7 @@ export function CalendarView({
         onNewList={onNewList}
         dirty={dirty}
         onOpenSettings={onOpenSettings}
+        onOpenPomodoro={onOpenPomodoro}
       />
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="cal-toolbar">
