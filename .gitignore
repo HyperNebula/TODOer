@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 .agents/AGENTS.md
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+src-tauri/my-tasks.todolist.calendar.db-shm

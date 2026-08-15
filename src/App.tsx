@@ -234,8 +234,17 @@ function App() {
     if (!__CALENDAR_ENABLED__) return;
     if (isTauri()) {
       try {
+        const { getAllWindows } = await import("@tauri-apps/api/window");
+        const windows = await getAllWindows();
+        const existing = windows.find(w => w.label === "pomodoro");
+        if (existing) {
+          await existing.unminimize();
+          await existing.setFocus();
+          return;
+        }
+
         const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
-        const pomodoro = new WebviewWindow("pomodoro", {
+        new WebviewWindow("pomodoro", {
           url: "/?pomodoro=1",
           title: "Pomodoro Timer",
           width: 320,
@@ -244,16 +253,9 @@ function App() {
           alwaysOnTop: true,
           focus: true,
         });
-        
-        pomodoro.once('tauri://error', function () {
-          // Window might already exist, so we just focus it
-          import("@tauri-apps/api/window").then(({ Window }) => {
-            const existing = new Window("pomodoro");
-            existing.setFocus();
-          });
-        });
       } catch (e) {
         console.error("Failed to create Pomodoro window", e);
+        window.alert(`Pomodoro error: ${e}`);
       }
     } else {
       window.open("/?pomodoro=1", "pomodoro", "width=320,height=380");
@@ -594,6 +596,7 @@ function App() {
                 onNewList={handleNewList}
                 dirty={store.dirty}
                 onOpenSettings={() => setIsCalendarSettingsOpen(true)}
+                onOpenPomodoro={handleOpenPomodoro}
               />
             </React.Suspense>
           )
