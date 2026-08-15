@@ -1,0 +1,94 @@
+.pomodoro-settings {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: var(--surface);
+  color: var(--text-main);
+  animation: fade-in 0.2s ease-out;
+}
+
+.settings-header {
+  margin-bottom: 20px;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 8px; /* for scrollbar */
+}
+
+/* Custom scrollbar for settings */
+.settings-body::-webkit-scrollbar {
+  width: 6px;
+}
+.settings-body::-webkit-scrollbar-thumb {
+  background-color: var(--border-active);
+  border-radius: 4px;
+}
+
+.settings-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.settings-group input[type="number"] {
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+.settings-group input[type="number"]:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.settings-group.checkbox label {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--text-main);
+  user-select: none;
+}
+
+.settings-group.checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

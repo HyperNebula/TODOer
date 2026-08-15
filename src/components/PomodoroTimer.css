@@ -43,23 +43,36 @@
   font-weight: normal;
 }
 
+.pomodoro-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .pin-btn {
   background: none;
   border: none;
+  color: var(--text-dim);
   cursor: pointer;
-  font-size: 16px;
-  opacity: 0.4;
+  font-size: 1.1rem;
   padding: 4px;
   border-radius: 4px;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  opacity: 0.5;
 }
 
 .pin-btn:hover {
-  background-color: var(--row-hover);
+  background-color: var(--surface-hover);
+  opacity: 0.8;
 }
 
 .pin-btn.active {
   opacity: 1;
+  background-color: var(--surface-active);
+}
+
+.settings-btn {
+  font-size: 1.1rem;
 }
 
 .pomodoro-time {

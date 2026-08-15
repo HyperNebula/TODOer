@@ -17,18 +17,23 @@ export interface PomodoroState {
   workDurationMs: number;
   shortBreakDurationMs: number;
   longBreakDurationMs: number;
+  longBreakInterval: number;
+  autoStartBreaks: boolean;
+  autoStartWork: boolean;
 
   start: () => void;
   pause: () => void;
   reset: () => void;
   setMode: (mode: PomodoroMode) => void;
   handleTimerEnd: () => void;
+  updateSettings: (settings: Partial<PomodoroState>) => void;
   receiveSync: (state: any) => void;
 }
 
 const DEFAULT_WORK_MS = 25 * 60 * 1000;
 const DEFAULT_SHORT_BREAK_MS = 5 * 60 * 1000;
 const DEFAULT_LONG_BREAK_MS = 15 * 60 * 1000;
+const DEFAULT_LONG_BREAK_INTERVAL = 4;
 
 let syncTimeout: number | null = null;
 const broadcast = (state: PomodoroState) => {
@@ -38,6 +43,12 @@ const broadcast = (state: PomodoroState) => {
     sprintsCompleted: state.sprintsCompleted,
     targetEndTime: state.targetEndTime,
     pausedTimeLeft: state.pausedTimeLeft,
+    workDurationMs: state.workDurationMs,
+    shortBreakDurationMs: state.shortBreakDurationMs,
+    longBreakDurationMs: state.longBreakDurationMs,
+    longBreakInterval: state.longBreakInterval,
+    autoStartBreaks: state.autoStartBreaks,
+    autoStartWork: state.autoStartWork,
   };
   
   if (isTauri()) {
@@ -58,11 +69,34 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => {
     mode: initial.mode || "work",
     sprintsCompleted: initial.sprintsCompleted || 0,
     targetEndTime: initial.targetEndTime || null,
-    pausedTimeLeft: initial.pausedTimeLeft !== undefined ? initial.pausedTimeLeft : DEFAULT_WORK_MS,
     
-    workDurationMs: DEFAULT_WORK_MS,
-    shortBreakDurationMs: DEFAULT_SHORT_BREAK_MS,
-    longBreakDurationMs: DEFAULT_LONG_BREAK_MS,
+    workDurationMs: initial.workDurationMs ?? DEFAULT_WORK_MS,
+    shortBreakDurationMs: initial.shortBreakDurationMs ?? DEFAULT_SHORT_BREAK_MS,
+    longBreakDurationMs: initial.longBreakDurationMs ?? DEFAULT_LONG_BREAK_MS,
+    longBreakInterval: initial.longBreakInterval ?? DEFAULT_LONG_BREAK_INTERVAL,
+    autoStartBreaks: initial.autoStartBreaks ?? false,
+    autoStartWork: initial.autoStartWork ?? false,
+    
+    pausedTimeLeft: initial.pausedTimeLeft !== undefined ? initial.pausedTimeLeft : (initial.workDurationMs ?? DEFAULT_WORK_MS),
+
+    updateSettings: (settings) => {
+      set((state) => {
+        const next = { ...state, ...settings };
+        // If we are currently paused and NOT running, we should adjust the pausedTimeLeft if the duration for the current mode changed.
+        // Easiest approach: just let the user reset to apply new times if they are in the middle of a timer, 
+        // but if it's currently at the full duration (i.e. just started/reset), update it automatically.
+        const currentDuration = state.mode === "work" ? state.workDurationMs : state.mode === "shortBreak" ? state.shortBreakDurationMs : state.longBreakDurationMs;
+        const newDuration = next.mode === "work" ? next.workDurationMs : next.mode === "shortBreak" ? next.shortBreakDurationMs : next.longBreakDurationMs;
+        
+        if (!state.isRunning && state.pausedTimeLeft === currentDuration) {
+           next.pausedTimeLeft = newDuration;
+        }
+
+        // We delay the broadcast slightly so it captures the new state
+        setTimeout(() => broadcast(usePomodoroStore.getState()), 0);
+        return next;
+      });
+    },
 
     start: () => {
       const state = get();
@@ -119,7 +153,7 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => {
 
       if (state.mode === "work") {
         nextCompleted += 1;
-        nextMode = nextCompleted % 4 === 0 ? "longBreak" : "shortBreak";
+        nextMode = nextCompleted % state.longBreakInterval === 0 ? "longBreak" : "shortBreak";
         if (isTauri()) sendNotification({ title: "Pomodoro Complete!", body: "Time for a break." });
       } else {
         nextMode = "work";
@@ -128,10 +162,12 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => {
 
       const duration = nextMode === "work" ? state.workDurationMs : nextMode === "shortBreak" ? state.shortBreakDurationMs : state.longBreakDurationMs;
       
+      const shouldAutoStart = (nextMode === "work" && state.autoStartWork) || (nextMode !== "work" && state.autoStartBreaks);
+
       set({
-        isRunning: false,
+        isRunning: shouldAutoStart,
         mode: nextMode,
-        targetEndTime: null,
+        targetEndTime: shouldAutoStart ? Date.now() + duration : null,
         pausedTimeLeft: duration,
         sprintsCompleted: nextCompleted
       });
@@ -146,6 +182,12 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => {
         sprintsCompleted: newState.sprintsCompleted,
         targetEndTime: newState.targetEndTime,
         pausedTimeLeft: newState.pausedTimeLeft,
+        workDurationMs: newState.workDurationMs !== undefined ? newState.workDurationMs : state.workDurationMs,
+        shortBreakDurationMs: newState.shortBreakDurationMs !== undefined ? newState.shortBreakDurationMs : state.shortBreakDurationMs,
+        longBreakDurationMs: newState.longBreakDurationMs !== undefined ? newState.longBreakDurationMs : state.longBreakDurationMs,
+        longBreakInterval: newState.longBreakInterval !== undefined ? newState.longBreakInterval : state.longBreakInterval,
+        autoStartBreaks: newState.autoStartBreaks !== undefined ? newState.autoStartBreaks : state.autoStartBreaks,
+        autoStartWork: newState.autoStartWork !== undefined ? newState.autoStartWork : state.autoStartWork,
       }));
     },
   };

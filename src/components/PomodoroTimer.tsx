@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { usePomodoroStore, PomodoroMode } from "../store/pomodoroStore";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { PomodoroSettings } from "./PomodoroSettings";
 import "./PomodoroTimer.css";
 
 export function PomodoroTimer() {
   const store = usePomodoroStore();
   const [displayTime, setDisplayTime] = useState(store.pausedTimeLeft);
   const [isPinned, setIsPinned] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     let intervalId: number;
@@ -56,6 +58,10 @@ export function PomodoroTimer() {
     }
   };
 
+  if (showSettings) {
+    return <PomodoroSettings onClose={() => setShowSettings(false)} />;
+  }
+
   return (
     <div className={`pomodoro-container mode-${store.mode}`}>
       <div className="pomodoro-header">
@@ -63,6 +69,14 @@ export function PomodoroTimer() {
           <span className="pomodoro-mode">{getModeLabel(store.mode)}</span>
           <span className="pomodoro-sprints"> (Sprint {store.sprintsCompleted + 1})</span>
         </div>
+        <div className="pomodoro-header-actions">
+          <button 
+            className="pin-btn settings-btn" 
+            onClick={() => setShowSettings(true)}
+            title="Settings"
+          >
+            ⚙️
+          </button>
         <button 
           className={`pin-btn ${isPinned ? "active" : ""}`} 
           onClick={togglePin}
@@ -70,6 +84,7 @@ export function PomodoroTimer() {
         >
           📌
         </button>
+        </div>
       </div>
       
       <div className="pomodoro-time">
