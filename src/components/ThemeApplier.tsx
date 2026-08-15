@@ -41,30 +41,41 @@ export function ThemeApplier() {
     root.style.setProperty("font-family", fontFamily);
 
     // Apply priority colors
-    let startColor = priorityColorStart;
-    let endColor = priorityColorEnd;
+    let presetColors: string[] | null = null;
 
     if (priorityColorMode === "ocean") {
-      startColor = "#bae6fd";
-      endColor = "#0284c7";
+      presetColors = [
+        "#0891b2", "#06b6d4", "#0ea5e9", "#0284c7", "#3b82f6", 
+        "#2563eb", "#6366f1", "#4f46e5", "#8b5cf6", "#7c3aed"
+      ];
     } else if (priorityColorMode === "sunset") {
-      startColor = "#fde047";
-      endColor = "#be123c";
+      presetColors = [
+        "#e11d48", "#f43f5e", "#ef4444", "#dc2626", "#ea580c",
+        "#f97316", "#d97706", "#f59e0b", "#ca8a04", "#eab308"
+      ];
     } else if (priorityColorMode === "forest") {
-      startColor = "#a7f3d0";
-      endColor = "#047857";
+      presetColors = [
+        "#65a30d", "#84cc16", "#22c55e", "#16a34a", "#10b981",
+        "#059669", "#14b8a6", "#0d9488", "#06b6d4", "#0891b2"
+      ];
     } else if (priorityColorMode === "lavender") {
-      startColor = "#ddd6fe";
-      endColor = "#6d28d9";
+      presetColors = [
+        "#c026d3", "#d946ef", "#a855f7", "#9333ea", "#7c3aed",
+        "#8b5cf6", "#6366f1", "#4f46e5", "#3b82f6", "#2563eb"
+      ];
     }
 
-    if (priorityColorMode !== "default" && startColor && endColor) {
+    if (presetColors) {
+      for (let i = 1; i <= 10; i++) {
+        root.style.setProperty(`--priority-color-${i}`, presetColors[i - 1]);
+      }
+    } else if (priorityColorMode === "gradient" && priorityColorStart && priorityColorEnd) {
       for (let i = 1; i <= 10; i++) {
         const ratio = ((i - 1) / 9) * 100;
         // The browser will interpolate beautifully in OKLCH
         root.style.setProperty(
           `--priority-color-${i}`, 
-          `color-mix(in oklch, ${endColor} ${ratio}%, ${startColor})`
+          `color-mix(in oklch, ${priorityColorEnd} ${ratio}%, ${priorityColorStart})`
         );
       }
     } else {
