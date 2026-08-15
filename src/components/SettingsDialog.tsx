@@ -448,6 +448,20 @@ export function SettingsDialog({ onClose }: Props) {
                     />
                   </label>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Quick Add Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.quickAdd}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("quickAdd", "");
+                        else setHotkey("quickAdd", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <span>New Sub Task</span>
                     <input
                       value={useSettingsStore.getState().hotkeys.newSubTask}
