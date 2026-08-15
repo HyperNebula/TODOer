@@ -18,21 +18,7 @@ export function useUpdater() {
         });
         
         if (yes) {
-          let downloaded = 0;
-          let contentLength = 0;
-          
-          await update.downloadAndInstall((event) => {
-            switch (event.event) {
-              case "Started":
-                contentLength = event.data.contentLength || 0;
-                break;
-              case "Progress":
-                downloaded += event.data.chunkLength;
-                break;
-              case "Finished":
-                break;
-            }
-          });
+          await update.downloadAndInstall();
           
           await relaunch();
         }

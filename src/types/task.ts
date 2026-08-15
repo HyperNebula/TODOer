@@ -140,7 +140,6 @@ export function createEmptyTaskList(name = "Untitled"): TaskListFile {
       sort: null,
     },
     tasks: [],
-    timeblocks: [],
   };
 }
 
