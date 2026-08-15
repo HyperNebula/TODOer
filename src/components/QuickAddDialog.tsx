@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTaskStore } from "../store/taskStore";
 import "./ConfirmDialog.css"; // Reuse confirm dialog styles
 
@@ -9,6 +9,7 @@ interface QuickAddDialogProps {
 export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
   const store = useTaskStore();
   const [title, setTitle] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
   
   // Get all tasks that are marked as projects
   const projects = useMemo(() => {
@@ -26,11 +27,31 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === "Tab" && dialogRef.current) {
+      const focusableElements = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusableElements.length === 0) return;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (!e.shiftKey && document.activeElement === lastElement) {
+        firstElement.focus();
+        e.preventDefault();
+      } else if (e.shiftKey && document.activeElement === firstElement) {
+        lastElement.focus();
+        e.preventDefault();
+      }
+    }
+  };
+
   return (
-    <div className="confirm-overlay" onMouseDown={(e) => {
+    <div className="confirm-overlay" onKeyDown={handleKeyDown} onMouseDown={(e) => {
       if (e.target === e.currentTarget) onClose();
     }} onClick={(e) => e.stopPropagation()}>
-      <div className="confirm-dialog" style={{ width: "400px" }}>
+      <div className="confirm-dialog" ref={dialogRef} style={{ width: "400px" }}>
         <h2 className="confirm-title">Quick Add Task</h2>
         
         <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -58,6 +79,13 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleConfirm();
+                } else if (e.key === "Escape") {
+                  onClose();
+                }
+              }}
               style={{ padding: "8px", boxSizing: "border-box", width: "100%", borderRadius: "4px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}
             >
               {projects.length === 0 ? (
@@ -69,6 +97,10 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
               )}
             </select>
           </label>
+        </div>
+
+        <div style={{ fontSize: "12px", color: "var(--text)", opacity: 0.6, marginTop: "16px", textAlign: "center" }}>
+          Press <strong>Tab</strong> to navigate, <strong>Enter</strong> to save, or <strong>Esc</strong> to cancel
         </div>
 
         <div className="confirm-actions" style={{ marginTop: "24px" }}>
