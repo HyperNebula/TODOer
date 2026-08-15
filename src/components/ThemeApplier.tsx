@@ -41,13 +41,30 @@ export function ThemeApplier() {
     root.style.setProperty("font-family", fontFamily);
 
     // Apply priority colors
-    if (priorityColorMode === "gradient" && priorityColorStart && priorityColorEnd) {
+    let startColor = priorityColorStart;
+    let endColor = priorityColorEnd;
+
+    if (priorityColorMode === "ocean") {
+      startColor = "#bae6fd";
+      endColor = "#0284c7";
+    } else if (priorityColorMode === "sunset") {
+      startColor = "#fde047";
+      endColor = "#be123c";
+    } else if (priorityColorMode === "forest") {
+      startColor = "#a7f3d0";
+      endColor = "#047857";
+    } else if (priorityColorMode === "lavender") {
+      startColor = "#ddd6fe";
+      endColor = "#6d28d9";
+    }
+
+    if (priorityColorMode !== "default" && startColor && endColor) {
       for (let i = 1; i <= 10; i++) {
         const ratio = ((i - 1) / 9) * 100;
         // The browser will interpolate beautifully in OKLCH
         root.style.setProperty(
           `--priority-color-${i}`, 
-          `color-mix(in oklch, ${priorityColorEnd} ${ratio}%, ${priorityColorStart})`
+          `color-mix(in oklch, ${endColor} ${ratio}%, ${startColor})`
         );
       }
     } else {

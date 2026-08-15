@@ -209,6 +209,10 @@ export function SettingsDialog({ onClose }: Props) {
                     <select value={priorityColorMode} onChange={(e) => setPriorityColorMode(e.target.value as any)}>
                       <option value="default">Default</option>
                       <option value="gradient">Custom Gradient</option>
+                      <option value="ocean">Ocean Gradient</option>
+                      <option value="sunset">Sunset Gradient</option>
+                      <option value="forest">Forest Gradient</option>
+                      <option value="lavender">Lavender Gradient</option>
                     </select>
                     {priorityColorMode === "gradient" && (
                       <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>

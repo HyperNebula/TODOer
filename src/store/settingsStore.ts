@@ -349,7 +349,7 @@ export const DEFAULT_SETTINGS = {
   maxBackups: 5,
   printOrientation: "portrait" as const,
   priorityColorStyle: "row" as "none" | "row" | "cell",
-  priorityColorMode: "default" as "default" | "gradient",
+  priorityColorMode: "default" as "default" | "gradient" | "ocean" | "sunset" | "forest" | "lavender",
   priorityColorStart: "#10b981",
   priorityColorEnd: "#ef4444",
   enableRowHover: true,
@@ -394,7 +394,7 @@ export interface SettingsState {
   maxBackups: number;
   printOrientation: "portrait" | "landscape";
   priorityColorStyle: "none" | "row" | "cell";
-  priorityColorMode: "default" | "gradient";
+  priorityColorMode: "default" | "gradient" | "ocean" | "sunset" | "forest" | "lavender";
   priorityColorStart: string;
   priorityColorEnd: string;
   enableRowHover: boolean;
@@ -423,7 +423,7 @@ export interface SettingsState {
   setMaxBackups: (count: number) => void;
   setPrintOrientation: (orientation: "portrait" | "landscape") => void;
   setPriorityColorStyle: (style: "none" | "row" | "cell") => void;
-  setPriorityColorMode: (mode: "default" | "gradient") => void;
+  setPriorityColorMode: (mode: "default" | "gradient" | "ocean" | "sunset" | "forest" | "lavender") => void;
   setPriorityColorStart: (color: string) => void;
   setPriorityColorEnd: (color: string) => void;
   setEnableRowHover: (enable: boolean) => void;
@@ -500,7 +500,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         printOrientation?: "portrait" | "landscape";
         usePriorityColors?: boolean; // legacy
         priorityColorStyle?: "none" | "row" | "cell";
-        priorityColorMode?: "default" | "gradient";
+        priorityColorMode?: "default" | "gradient" | "ocean" | "sunset" | "forest" | "lavender";
         priorityColorStart?: string;
         priorityColorEnd?: string;
         enableRowHover?: boolean;
