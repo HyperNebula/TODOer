@@ -336,6 +336,7 @@ export type Hotkeys = {
   focusTitleFilter: string;
   focusTask: string;
   toggleFlatView: string;
+  quickAdd: string;
 };
 
 export const DEFAULT_SETTINGS = {
@@ -368,6 +369,7 @@ export const DEFAULT_SETTINGS = {
     focusTitleFilter: "",
     focusTask: "",
     toggleFlatView: "",
+    quickAdd: "q",
   } as Hotkeys,
   projectStyle: "none" as "none" | "bold" | "star" | "star-bold",
   projectEmoji: "⭐",

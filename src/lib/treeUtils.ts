@@ -98,6 +98,29 @@ export function addTask(
   return { tasks: [...updated, newTask], newTaskId: newTask.id };
 }
 
+export function addQuickTask(
+  tasks: Task[],
+  title: string,
+  parentId: string | null,
+): { tasks: Task[]; newTaskId: string } {
+  const order = nextSiblingOrder(tasks, parentId);
+  const newTask = createTask({
+    title,
+    parentId,
+    order,
+  });
+
+  let updated = tasks;
+  // If parent exists and is collapsed, we probably want to expand it, just like addSubTask
+  if (parentId) {
+    updated = tasks.map((t) =>
+      t.id === parentId ? { ...t, collapsed: false } : t,
+    );
+  }
+
+  return { tasks: [...updated, newTask], newTaskId: newTask.id };
+}
+
 export function addSubTask(
   tasks: Task[],
   parentId: string,

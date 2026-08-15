@@ -10,6 +10,7 @@ import { Toolbar } from "./components/Toolbar";
 import { TreeGrid } from "./components/TreeGrid/TreeGrid";
 import { UpdaterStartupCheck } from "./components/Updater";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import { QuickAddDialog } from "./components/QuickAddDialog";
 import { tasksToCsv } from "./lib/csvExport";
 import { tasksToTaskpaper } from "./lib/taskpaperExport";
 import {
@@ -47,6 +48,7 @@ function App() {
   const visibleColumns = store.getVisibleColumns();
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isCalendarSettingsOpen, setIsCalendarSettingsOpen] = useState(false);
   const [newlyCreatedTaskId, setNewlyCreatedTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<AppView>("tasks");
@@ -313,6 +315,9 @@ function App() {
         } else if (hotkeys.toggleFlatView && key === hotkeys.toggleFlatView.toLowerCase()) {
           e.preventDefault();
           store.toggleFlatView();
+        } else if (hotkeys.quickAdd && key === hotkeys.quickAdd.toLowerCase()) {
+          e.preventDefault();
+          setIsQuickAddOpen(true);
         }
       } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();
@@ -584,6 +589,9 @@ function App() {
             onCancel={() => setConfirmState(null)}
             onThird={confirmState.onThird}
           />
+        )}
+        {isQuickAddOpen && (
+          <QuickAddDialog onClose={() => setIsQuickAddOpen(false)} />
         )}
       </div>
     </>
