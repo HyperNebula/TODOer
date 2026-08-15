@@ -1,4 +1,4 @@
-export const TIMEBLOCK_COLORS = [
+const TIMEBLOCK_COLORS = [
   "#FF6B6B", // Red
   "#4ECDC4", // Teal
   "#45B7D1", // Blue

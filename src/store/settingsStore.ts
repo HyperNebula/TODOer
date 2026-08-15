@@ -33,7 +33,7 @@ export type Theme = {
   colors: ThemeColors;
 };
 
-export const defaultLightTheme: Theme = {
+const defaultLightTheme: Theme = {
   id: "default-light",
   name: "Light (Default)",
   colorScheme: "light",
@@ -54,7 +54,7 @@ export const defaultLightTheme: Theme = {
   },
 };
 
-export const defaultDarkTheme: Theme = {
+const defaultDarkTheme: Theme = {
   id: "default-dark",
   name: "Dark (Default)",
   colorScheme: "dark",
@@ -75,7 +75,7 @@ export const defaultDarkTheme: Theme = {
   },
 };
 
-export const nordTheme: Theme = {
+const nordTheme: Theme = {
   id: "nord",
   name: "Nord",
   colorScheme: "dark",
@@ -96,7 +96,7 @@ export const nordTheme: Theme = {
   },
 };
 
-export const draculaTheme: Theme = {
+const draculaTheme: Theme = {
   id: "dracula",
   name: "Dracula",
   colorScheme: "dark",
@@ -117,7 +117,7 @@ export const draculaTheme: Theme = {
   },
 };
 
-export const solarizedLightTheme: Theme = {
+const solarizedLightTheme: Theme = {
   id: "solarized-light",
   name: "Solarized Light",
   colorScheme: "light",
@@ -138,7 +138,7 @@ export const solarizedLightTheme: Theme = {
   },
 };
 
-export const darkblueTheme: Theme = {
+const darkblueTheme: Theme = {
   id: "darkblue",
   name: "Darkblue",
   colorScheme: "dark",
@@ -159,7 +159,7 @@ export const darkblueTheme: Theme = {
   },
 };
 
-export const elflordTheme: Theme = {
+const elflordTheme: Theme = {
   id: "elflord",
   name: "Elflord",
   colorScheme: "dark",
@@ -180,7 +180,7 @@ export const elflordTheme: Theme = {
   },
 };
 
-export const gruvboxTheme: Theme = {
+const gruvboxTheme: Theme = {
   id: "gruvbox",
   name: "Gruvbox",
   colorScheme: "dark",
@@ -201,7 +201,7 @@ export const gruvboxTheme: Theme = {
   },
 };
 
-export const ayuTheme: Theme = {
+const ayuTheme: Theme = {
   id: "ayu",
   name: "Ayu Dark",
   colorScheme: "dark",
@@ -222,7 +222,7 @@ export const ayuTheme: Theme = {
   },
 };
 
-export const desertTheme: Theme = {
+const desertTheme: Theme = {
   id: "desert",
   name: "Desert",
   colorScheme: "dark",
@@ -243,7 +243,7 @@ export const desertTheme: Theme = {
   },
 };
 
-export const pabloTheme: Theme = {
+const pabloTheme: Theme = {
   id: "pablo",
   name: "Pablo",
   colorScheme: "dark",
@@ -264,7 +264,7 @@ export const pabloTheme: Theme = {
   },
 };
 
-export const solarizedDarkTheme: Theme = {
+const solarizedDarkTheme: Theme = {
   id: "solarized-dark",
   name: "Solarized Dark",
   colorScheme: "dark",
@@ -285,7 +285,7 @@ export const solarizedDarkTheme: Theme = {
   },
 };
 
-export const quietTheme: Theme = {
+const quietTheme: Theme = {
   id: "quiet",
   name: "Quiet",
   colorScheme: "dark",
@@ -339,7 +339,7 @@ export type Hotkeys = {
   quickAdd: string;
 };
 
-export const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = {
   activeThemeId: "default-light",
   customThemes: [] as Theme[],
   fontSizeOffset: 0,

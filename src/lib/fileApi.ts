@@ -128,7 +128,7 @@ async function webSaveFile(
 
 // --- API Functions ---
 
-export async function getTasklistsDir(): Promise<string> {
+async function getTasklistsDir(): Promise<string> {
   if (!isTauri()) return "/";
   try {
     return await invoke<string>("get_tasklists_dir");
@@ -146,7 +146,7 @@ export async function getLastFilePath(): Promise<string | null> {
   }
 }
 
-export async function setLastFilePath(path: string): Promise<void> {
+async function setLastFilePath(path: string): Promise<void> {
   if (!isTauri()) {
     localStorage.setItem("lastFilePath", path);
     return;
@@ -344,32 +344,6 @@ export async function appendToArchive(data: string, format: "csv" | "json"): Pro
   }
 }
 
-export async function loadArchive(format: "csv" | "json"): Promise<unknown[]> {
-  if (!isTauri()) {
-    try {
-      const key = `archive_${format}`;
-      const raw = localStorage.getItem(key) || (format === "json" ? "[]" : "");
-      if (format === "csv") {
-        return [raw];
-      }
-      return JSON.parse(raw) as unknown[];
-    } catch (err) {
-      console.error("Failed to read web archive:", err);
-      return [];
-    }
-  }
-
-  try {
-    const raw = await invoke<string>("read_archive", { format });
-    if (format === "csv") {
-        return [raw]; // Or properly parse CSV if needed
-    }
-    return JSON.parse(raw) as unknown[];
-  } catch (err) {
-    console.error("Failed to read global archive:", err);
-    return [];
-  }
-}
 
 export async function getArchiveFilePath(format: "csv" | "json"): Promise<string> {
   if (!isTauri()) {
@@ -378,22 +352,6 @@ export async function getArchiveFilePath(format: "csv" | "json"): Promise<string
   return await invoke<string>("get_archive_path", { format });
 }
 
-export async function openHtmlForPrint(html: string): Promise<void> {
-  if (!isTauri()) {
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      // wait a bit for styles to load (if any)
-      setTimeout(() => win.print(), 500);
-    }
-    return;
-  }
-
-  const path = await invoke<string>("write_temp_html", { contents: html });
-  await openFileLink(path);
-}
 
 export async function saveTempPdf(pdfData: Uint8Array): Promise<string> {
   if (!isTauri()) {
@@ -431,27 +389,3 @@ export async function readFileFallback(path: string): Promise<string> {
   return invoke<string>("read_tasklist_file", { path });
 }
 
-export async function writeFileFallback(
-  path: string,
-  contents: string,
-): Promise<void> {
-  if (!isTauri()) {
-    const handle = webFileHandles.get(path);
-    if (handle && "createWritable" in handle) {
-      try {
-        const writable = await handle.createWritable();
-        await writable.write(contents);
-        await writable.close();
-        return;
-      } catch (err) {
-        console.error("Failed to write to cached handle:", err);
-      }
-    }
-    // If not cached, fallback to downloading
-    await webSaveFile(contents, path, TASKLIST_FILTER.extensions);
-    return;
-  }
-
-  const maxBackups = useSettingsStore.getState().maxBackups;
-  await invoke("write_tasklist_file", { path, contents, maxBackups });
-}

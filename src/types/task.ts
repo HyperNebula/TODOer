@@ -14,7 +14,7 @@ export const COLUMN_IDS = [
 
 export type ColumnId = (typeof COLUMN_IDS)[number];
 
-export interface TaskListSettings {
+interface TaskListSettings {
   visibleColumns: ColumnId[];
   columnWidths: Partial<Record<ColumnId, number>>;
   sort?: SortState | null;
@@ -82,7 +82,7 @@ export interface SortState {
   direction: SortDirection;
 }
 
-export type DoneFilter = "all" | "done" | "not_done";
+type DoneFilter = "all" | "done" | "not_done";
 
 export interface FilterState {
   priorityMin: number | null;

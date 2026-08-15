@@ -5,7 +5,7 @@ import { getNextColor, getPriorityColor } from "./colors";
 
 import { useSettingsStore } from "../../store/settingsStore";
 
-export const COL_HEADER_PX = 32;    // height of the sticky date heading
+
 
 interface TimeGridProps {
   /** ISO date strings for the columns shown (1 = day view, 7 = week view) */

@@ -221,17 +221,4 @@ export function filterTasksTreeAware(
     });
 }
 
-export function isFilterActive(filter: FilterState): boolean {
-  return (
-    filter.priorityMin !== null ||
-    filter.priorityMax !== null ||
-    filter.category !== "" ||
-    filter.done !== "all" ||
-    filter.titleContains !== "" ||
-    filter.dueBefore !== null ||
-    filter.dueAfter !== null ||
-    filter.createdBefore !== null ||
-    filter.createdAfter !== null ||
-    filter.projectFilter !== "all"
-  );
-}
+

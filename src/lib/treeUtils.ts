@@ -57,7 +57,7 @@ export function getDescendantIds(tasks: Task[], rootId: string): Set<string> {
   return ids;
 }
 
-export function getTaskById(tasks: Task[], id: string): Task | undefined {
+function getTaskById(tasks: Task[], id: string): Task | undefined {
   return tasks.find((t) => t.id === id);
 }
 
