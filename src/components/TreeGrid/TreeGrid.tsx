@@ -35,7 +35,6 @@ interface TreeGridProps {
   onToggleSort: (column: ColumnId) => void;
   onEditNotes: (task: Task) => void;
   onColumnResize: (column: ColumnId, width: number) => void;
-  onRequestEditMenu?: (task: Task) => void;
   priorityColorStyle?: "none" | "row" | "cell";
   showVerticalBorders?: boolean;
   onNavigateUp?: () => void;

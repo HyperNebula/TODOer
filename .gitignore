@@ -28,4 +28,9 @@ dist-ssr
 *.db
 *.db-shm
 *.db-wal
-src-tauri/my-tasks.todolist.calendar.db-shm
+
+# Task lists
+*.todolist.json
+
+# Test coverage
+coverage/

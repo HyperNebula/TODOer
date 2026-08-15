@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
-declare const __APP_VERSION__: string;
-declare const __CALENDAR_ENABLED__: boolean;
 import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../store/settingsStore";
 import { useTaskStore } from "../store/taskStore";
 import { ColumnPicker } from "./ColumnPicker";

@@ -107,9 +107,6 @@ export function sortTasksFlat(
 
 function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   if (!filter.showArchived && task.archived) return false;
-  if (filter.showArchived && !task.archived) {
-    // when viewing archived only context - still show non-archived as context in tree
-  }
 
   if (filter.priorityMin !== null && task.priority < filter.priorityMin) {
     return false;
@@ -145,7 +142,6 @@ function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   if (filter.createdAfter && task.createdAt < filter.createdAfter) {
     return false;
   }
-  if (!filter.showArchived && task.archived) return false;
 
   if (filter.projectFilter === "projects" && !task.isProject) return false;
   if (filter.projectFilter === "non-projects" && task.isProject) return false;

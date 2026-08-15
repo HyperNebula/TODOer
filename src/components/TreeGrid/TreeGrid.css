@@ -154,14 +154,6 @@
   background: var(--surface);
 }
 
-.sort-indicator {
-  margin-left: 4px;
-  font-size: calc(11px + var(--font-offset, 0px));
-  color: var(--accent);
-  border-radius: 2px;
-  background: var(--surface);
-}
-
 .empty-row {
   text-align: center;
   color: var(--text-muted);

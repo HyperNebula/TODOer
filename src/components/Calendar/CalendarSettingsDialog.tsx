@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
-declare const __APP_VERSION__: string;
 import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../../store/settingsStore";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { PromptDialog } from "../PromptDialog";

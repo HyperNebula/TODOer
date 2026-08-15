@@ -57,7 +57,7 @@ html, body {
 .pin-btn {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 1.1rem;
   padding: 4px;

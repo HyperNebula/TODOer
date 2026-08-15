@@ -25,14 +25,11 @@ export function useUpdater() {
             switch (event.event) {
               case "Started":
                 contentLength = event.data.contentLength || 0;
-                console.log(`Started downloading ${event.data.contentLength} bytes`);
                 break;
               case "Progress":
                 downloaded += event.data.chunkLength;
-                console.log(`Downloaded ${downloaded} from ${contentLength}`);
                 break;
               case "Finished":
-                console.log("Download finished");
                 break;
             }
           });
