@@ -54,6 +54,9 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
       <div className="confirm-dialog" ref={dialogRef} style={{ width: "400px" }}>
         <h2 className="confirm-title">Quick Add Task</h2>
         
+        <div style={{ fontSize: "12px", color: "var(--text)", opacity: 0.6, marginTop: "8px", textAlign: "center" }}>
+          Press <strong>Tab</strong> to navigate, <strong>Enter</strong> to save, or <strong>Esc</strong> to cancel
+        </div>
         <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <span style={{ fontSize: "14px", fontWeight: 500 }}>Task Title</span>
@@ -97,10 +100,6 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
               )}
             </select>
           </label>
-        </div>
-
-        <div style={{ fontSize: "12px", color: "var(--text)", opacity: 0.6, marginTop: "16px", textAlign: "center" }}>
-          Press <strong>Tab</strong> to navigate, <strong>Enter</strong> to save, or <strong>Esc</strong> to cancel
         </div>
 
         <div className="confirm-actions" style={{ marginTop: "24px" }}>
