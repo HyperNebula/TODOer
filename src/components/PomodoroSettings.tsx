@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { usePomodoroStore } from "../store/pomodoroStore";
 import "./PomodoroSettings.css";
 

@@ -23,6 +23,7 @@
     "security": {
       "csp": null,
       "capabilities": [
+        "default",
         {
           "identifier": "plus-features",
           "description": "Capabilities for the Plus version",
