@@ -21,7 +21,15 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "plus-features",
+          "description": "Capabilities for the Plus version",
+          "windows": ["main", "pomodoro"],
+          "permissions": ["notification:default"]
+        }
+      ]
     }
   },
   "plugins": {
