@@ -2,17 +2,6 @@ import { z } from "zod";
 import type { TaskListFile } from "../types/task";
 import { DEFAULT_VISIBLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../types/task";
 
-const timeblocksSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().optional(),
-  startTime: z.string(),
-  endTime: z.string(),
-  taskIds: z.array(z.string()),
-  notes: z.string().optional(),
-  completed: z.boolean().optional(),
-  color: z.string().optional(),
-});
-
 const columnIdSchema = z.enum([
   "done",
   "title",
@@ -64,7 +53,6 @@ const taskListFileSchema = z.object({
     })
     .optional(),
   tasks: z.array(taskSchema),
-  timeblocks: z.array(timeblocksSchema).optional(),
 });
 
 export function parseTaskListFile(json: string): TaskListFile {
@@ -81,7 +69,6 @@ export function parseTaskListFile(json: string): TaskListFile {
       },
       sort: result.settings?.sort ?? null,
     },
-    timeblocks: result.timeblocks ?? [],
   };
 }
 

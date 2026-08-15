@@ -61,7 +61,6 @@ export interface TaskListFile {
   modifiedAt: string;
   settings?: TaskListSettings;
   tasks: Task[];
-  timeblocks?: Timeblock[];
 }
 
 export interface TreeNode {

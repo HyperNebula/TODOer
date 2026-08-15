@@ -397,8 +397,7 @@ pub fn run() {
         calendar::update_timeblock,
         calendar::delete_timeblock,
         calendar::assign_task_to_timeblock,
-        calendar::remove_task_from_timeblock,
-        calendar::migrate_timeblocks_from_json
+        calendar::remove_task_from_timeblock
     ]);
 
     builder

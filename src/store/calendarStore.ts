@@ -27,7 +27,6 @@ interface CalendarStore {
   assignTaskToTimeblock: (timeblockId: string, taskId: string, parentId?: string, originalStart?: string) => Promise<void>;
   removeTaskFromTimeblock: (timeblockId: string, taskId: string) => Promise<void>;
   toggleTimeblockComplete: (id: string, completed: boolean) => Promise<void>;
-  migrateFromJson: (timeblocks: Timeblock[]) => Promise<void>;
 }
 
 export const useCalendarStore = create<CalendarStore>((set, get) => ({
@@ -467,23 +466,5 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         });
       }
     }
-  },
-
-  migrateFromJson: async (timeblocks: Timeblock[]) => {
-    if (!isTauri()) return;
-    
-    const converted = timeblocks.map((tb) => ({
-      id: tb.id,
-      title: tb.title,
-      start_time: tb.startTime,
-      end_time: tb.endTime,
-      notes: tb.notes || "",
-      completed: tb.completed || false,
-      color: tb.color || null,
-      task_ids: tb.taskIds || [],
-    }));
-
-    await invoke("migrate_timeblocks_from_json", { json: JSON.stringify(converted) });
-    set({ timeblocks });
   },
 }));

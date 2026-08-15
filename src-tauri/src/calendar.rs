@@ -74,15 +74,6 @@ pub fn open_calendar_db(
     )
     .map_err(|e| e.to_string())?;
 
-    // Migrations for existing DBs
-    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN recurrence_rule TEXT", []);
-    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN recurrence_id TEXT", []);
-    let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN original_start TEXT", []);
-    let _ = conn.execute(
-        "ALTER TABLE timeblocks ADD COLUMN is_deleted INTEGER DEFAULT 0",
-        [],
-    );
-
     *state.conn.lock().unwrap() = Some(conn);
     Ok(())
 }
@@ -365,35 +356,4 @@ pub fn remove_task_from_timeblock(
     Ok(())
 }
 
-#[tauri::command]
-pub fn migrate_timeblocks_from_json(
-    state: tauri::State<'_, CalendarDb>,
-    json: String,
-) -> Result<(), String> {
-    let mut lock = state.conn.lock().unwrap();
-    let conn = lock.as_mut().ok_or("No calendar database is open")?;
 
-    let blocks: Vec<TimeblockRow> = serde_json::from_str(&json).map_err(|e| e.to_string())?;
-
-    let tx = conn.transaction().map_err(|e| e.to_string())?;
-
-    for b in blocks {
-        let comp = if b.completed { 1i32 } else { 0i32 };
-        let del = if b.is_deleted { 1i32 } else { 0i32 };
-        tx.execute(
-            "INSERT INTO timeblocks (id, title, start_time, end_time, notes, completed, color, recurrence_rule, recurrence_id, original_start, is_deleted) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-            rusqlite::params![b.id, b.title, b.start_time, b.end_time, b.notes, comp, b.color, b.recurrence_rule, b.recurrence_id, b.original_start, del],
-        ).map_err(|e| e.to_string())?;
-
-        for t in b.task_ids {
-            tx.execute(
-                "INSERT OR IGNORE INTO timeblock_tasks (timeblock_id, task_id) VALUES (?1, ?2)",
-                rusqlite::params![b.id, t],
-            )
-            .map_err(|e| e.to_string())?;
-        }
-    }
-
-    tx.commit().map_err(|e| e.to_string())?;
-    Ok(())
-}

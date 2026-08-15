@@ -498,7 +498,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         autoSaveIntervalMinutes?: number;
         maxBackups?: number;
         printOrientation?: "portrait" | "landscape";
-        usePriorityColors?: boolean; // legacy
         priorityColorStyle?: "none" | "row" | "cell";
         priorityColorMode?: "default" | "gradient" | "ocean" | "sunset" | "forest" | "lavender" | "inverse";
         priorityColorStart?: string;
@@ -529,7 +528,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.autoSaveIntervalMinutes !== undefined && { autoSaveIntervalMinutes: saved.autoSaveIntervalMinutes }),
           ...(saved.maxBackups !== undefined && { maxBackups: saved.maxBackups }),
           ...(saved.printOrientation && { printOrientation: saved.printOrientation }),
-          ...(saved.usePriorityColors !== undefined && { priorityColorStyle: saved.usePriorityColors ? "row" : "none" }),
           ...(saved.priorityColorStyle && { priorityColorStyle: saved.priorityColorStyle }),
           ...(saved.priorityColorMode && { priorityColorMode: saved.priorityColorMode }),
           ...(saved.priorityColorStart && { priorityColorStart: saved.priorityColorStart }),

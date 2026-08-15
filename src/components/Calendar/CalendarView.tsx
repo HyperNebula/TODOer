@@ -127,24 +127,6 @@ export function CalendarView({
     }
   }, [filePath]);
 
-  // Migration: move timeblocks from JSON to SQLite (one-time)
-  useEffect(() => {
-    if (!calendarStore.dbReady || !filePath) return;
-    const jsonBlocks = store.file.timeblocks;
-    if (jsonBlocks && jsonBlocks.length > 0) {
-      calendarStore.migrateFromJson(jsonBlocks).then(() => {
-        // Clear timeblocks from the task list file so they're not migrated again
-        store.clearTimeblocks();
-        // Reload from SQLite
-        const start = dates[0] + "T00:00:00";
-        const lastDate = new Date(dates[dates.length - 1] + "T00:00:00");
-        lastDate.setDate(lastDate.getDate() + 1);
-        const endStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}T00:00:00`;
-        calendarStore.loadRange(start, endStr);
-      });
-    }
-  }, [calendarStore.dbReady, filePath]);
-
   // Load timeblocks for visible range when dates change or DB becomes ready
   useEffect(() => {
     if (!calendarStore.dbReady || dates.length === 0) return;

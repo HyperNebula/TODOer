@@ -83,9 +83,6 @@ interface TaskStore {
   resetVisibleColumns: () => void;
   setColumnWidth: (column: ColumnId, width: number) => void;
   toggleFlatView: () => void;
-
-  // Timeblock actions
-  clearTimeblocks: () => void;
 }
 
 function touch(file: TaskListFile): TaskListFile {
@@ -403,10 +400,4 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   toggleFlatView: () =>
     set((s) => ({ filter: { ...s.filter, flatView: !s.filter.flatView } })),
-
-  // ── Timeblock actions ────────────────────────────────────────────────────
-  clearTimeblocks: () => set((s) => ({
-    file: touch({ ...s.file, timeblocks: [] }),
-    dirty: true,
-  })),
 }));
