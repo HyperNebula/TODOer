@@ -1,3 +1,8 @@
+html, body {
+  margin: 0;
+  overscroll-behavior: none;
+}
+
 .pomodoro-container {
   display: flex;
   flex-direction: column;
