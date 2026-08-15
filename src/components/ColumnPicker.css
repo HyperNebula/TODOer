@@ -48,35 +48,35 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.column-order-buttons {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    margin-right: 16px;
-}
-
-.order-btn {
-    background: transparent;
-    border: none;
+.drag-handle {
+    cursor: grab;
     color: var(--text-muted);
-    cursor: pointer;
-    font-size: 18px;
-    padding: 8px 12px;
-    line-height: 1;
-    border-radius: 4px;
+    font-size: 16px;
+    padding: 8px;
+    margin-right: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    opacity: 0.5;
+    transition: opacity 0.2s;
 }
 
-.order-btn:hover:not(:disabled) {
-    background: var(--border-light);
-    color: var(--text);
+.drag-handle:hover {
+    opacity: 1;
 }
 
-.order-btn:disabled {
-    opacity: 0.3;
-    cursor: default;
+.column-list-item.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+}
+
+.column-list-item.drag-over {
+    border-color: var(--accent);
+    transform: scale(1.02);
+}
+
+.column-list-item[draggable="true"] .drag-handle:active {
+    cursor: grabbing;
 }
 
 .drag-handle-placeholder {
