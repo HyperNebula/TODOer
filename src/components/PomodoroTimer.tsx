@@ -6,7 +6,7 @@ import "./PomodoroTimer.css";
 export function PomodoroTimer() {
   const store = usePomodoroStore();
   const [displayTime, setDisplayTime] = useState(store.pausedTimeLeft);
-  const [isPinned, setIsPinned] = useState(true);
+  const [isPinned, setIsPinned] = useState(false);
 
   useEffect(() => {
     let intervalId: number;

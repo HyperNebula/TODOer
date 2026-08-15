@@ -250,7 +250,7 @@ function App() {
           width: 320,
           height: 380,
           resizable: false,
-          alwaysOnTop: true,
+          alwaysOnTop: false,
           focus: true,
         });
       } catch (e) {
@@ -400,6 +400,22 @@ function App() {
           // Always take manual control — registering this listener means
           // Tauri will no longer close the window automatically.
           event.preventDefault();
+
+          const closeApp = async () => {
+            if (__CALENDAR_ENABLED__) {
+              try {
+                const { getAllWindows } = await import("@tauri-apps/api/window");
+                const windows = await getAllWindows();
+                for (const w of windows) {
+                  if (w.label !== win.label) {
+                    await w.destroy();
+                  }
+                }
+              } catch (e) {}
+            }
+            await win.destroy();
+          };
+
           if (dirtyRef.current) {
             setConfirmState({
               title: "Save changes?",
@@ -412,15 +428,15 @@ function App() {
               onConfirm: async () => {
                 setConfirmState(null);
                 await handleSaveRef.current();
-                await win.destroy();
+                await closeApp();
               },
               onThird: async () => {
                 setConfirmState(null);
-                await win.destroy();
+                await closeApp();
               },
             });
           } else {
-            await win.destroy();
+            await closeApp();
           }
         });
       } catch {
