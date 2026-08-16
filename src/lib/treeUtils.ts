@@ -104,10 +104,13 @@ export function addQuickTask(
   parentId: string | null,
 ): { tasks: Task[]; newTaskId: string } {
   const order = nextSiblingOrder(tasks, parentId);
+  const parent = parentId ? getTaskById(tasks, parentId) : undefined;
+  
   const newTask = createTask({
     title,
     parentId,
     order,
+    ...(parent?.category ? { category: parent.category } : {}),
   });
 
   let updated = tasks;
