@@ -285,6 +285,13 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         true,
         Some("CmdOrCtrl+Shift+N"),
     )?;
+    let quick_add = MenuItem::with_id(
+        app,
+        "quick_add",
+        "Quick Add",
+        true,
+        Some("CmdOrCtrl+Q"),
+    )?;
     let delete_task = MenuItem::with_id(app, "delete_task", "Delete Task", true, None::<&str>)?;
     let archive = MenuItem::with_id(
         app,
@@ -298,7 +305,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         app,
         "Task",
         true,
-        &[&new_task, &new_subtask, &delete_task, &archive],
+        &[&new_task, &new_subtask, &quick_add, &delete_task, &archive],
     )?;
 
     let edit_menu = Submenu::with_items(

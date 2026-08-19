@@ -33,6 +33,11 @@ import type { Task } from "./types/task";
 import { startNotificationService, stopNotificationService } from "./lib/notificationService";
 import "./App.css";
 
+const globalKeysDown = new Set<string>();
+window.addEventListener("keydown", (e) => globalKeysDown.add(e.key.toLowerCase()));
+window.addEventListener("keyup", (e) => globalKeysDown.delete(e.key.toLowerCase()));
+window.addEventListener("blur", () => globalKeysDown.clear()); // Clear on blur to prevent stuck keys
+
 // Calendar component — lazy-loaded and tree-shaken when __CALENDAR_ENABLED__ is false
 const CalendarView = __CALENDAR_ENABLED__
   ? React.lazy(() => import("./components/Calendar/CalendarView").then(m => ({ default: m.CalendarView })))
@@ -307,10 +312,6 @@ function App() {
   }, [activeView, viewInitialized]);
 
   useEffect(() => {
-    const mod = navigator.platform.toLowerCase().includes("mac")
-      ? "meta"
-      : "ctrl";
-
     const onKey = (e: KeyboardEvent) => {
       // Don't trigger hotkeys if user is typing in an input field (except for the custom hotkey inputs which we handle)
       if (
@@ -321,8 +322,17 @@ function App() {
       }
 
       const key = e.key.toLowerCase();
-      const hasMod = e.getModifierState(mod === "meta" ? "Meta" : "Control");
-      const { hotkeys } = settings;
+      const { hotkeys, hotkeyModifier } = settings;
+      
+      let hasMod = false;
+      if (hotkeyModifier === "default") {
+        const mod = navigator.platform.toLowerCase().includes("mac") ? "meta" : "ctrl";
+        hasMod = e.getModifierState(mod === "meta" ? "Meta" : "Control");
+      } else {
+        // If the key pressed IS the modifier, don't trigger hotkey actions
+        if (key === hotkeyModifier.toLowerCase()) return;
+        hasMod = globalKeysDown.has(hotkeyModifier.toLowerCase());
+      }
 
       if (hasMod) {
         if (hotkeys.save && key === hotkeys.save.toLowerCase()) {
@@ -480,6 +490,9 @@ function App() {
         case "new_subtask":
           handleNewSubTask();
           break;
+        case "quick_add":
+          setIsQuickAddOpen(true);
+          break;
         case "delete_task":
           handleDelete();
           break;
@@ -542,6 +555,7 @@ function App() {
           <>
             <Toolbar
               onNewTask={handleNewTask}
+              onQuickAdd={() => setIsQuickAddOpen(true)}
               onNewSubTask={handleNewSubTask}
               onDelete={handleDelete}
               onSave={handleSave}

@@ -371,6 +371,7 @@ const DEFAULT_SETTINGS = {
     toggleFlatView: "",
     quickAdd: "q",
   } as Hotkeys,
+  hotkeyModifier: "default",
   projectStyle: "none" as "none" | "bold" | "star" | "star-bold",
   projectEmoji: "⭐",
   indentSpacing: 32,
@@ -411,6 +412,7 @@ export interface SettingsState {
   defaultAppView: "tasks" | "calendar" | "lastOpen";
   lastOpenView: "tasks" | "calendar";
   settingsLoaded: boolean;
+  hotkeyModifier: string;
   hotkeys: Hotkeys;
 
   setActiveThemeId: (id: string) => void;
@@ -439,6 +441,7 @@ export interface SettingsState {
   setTimeblockEditMode: (mode: "button" | "doubleClick" | "singleClick") => void;
   setDefaultAppView: (view: "tasks" | "calendar" | "lastOpen") => void;
   setLastOpenView: (view: "tasks" | "calendar") => void;
+  setHotkeyModifier: (modifier: string) => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
@@ -484,6 +487,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setTimeblockEditMode: (mode) => set({ timeblockEditMode: mode }),
   setDefaultAppView: (view) => set({ defaultAppView: view }),
   setLastOpenView: (view) => set({ lastOpenView: view }),
+  setHotkeyModifier: (modifier) => set({ hotkeyModifier: modifier }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
 
   loadSettings: async () => {
@@ -515,6 +519,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         timeblockEditMode?: "button" | "doubleClick" | "singleClick";
         defaultAppView?: "tasks" | "calendar" | "lastOpen";
         lastOpenView?: "tasks" | "calendar";
+        hotkeyModifier?: string;
         hotkeys?: Hotkeys;
       }>("settings_v1");
       
@@ -545,6 +550,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.timeblockEditMode && { timeblockEditMode: saved.timeblockEditMode }),
           ...(saved.defaultAppView && { defaultAppView: saved.defaultAppView }),
           ...(saved.lastOpenView && { lastOpenView: saved.lastOpenView }),
+          ...(saved.hotkeyModifier && { hotkeyModifier: saved.hotkeyModifier }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
           settingsLoaded: true,
         });
@@ -587,6 +593,7 @@ useSettingsStore.subscribe((state) => {
     timeblockEditMode: state.timeblockEditMode,
     defaultAppView: state.defaultAppView,
     lastOpenView: state.lastOpenView,
+    hotkeyModifier: state.hotkeyModifier,
     hotkeys: state.hotkeys,
   };
   try {

@@ -404,8 +404,28 @@ export function SettingsDialog({ onClose }: Props) {
           {activeTab === "hotkeys" && (
             <>
               <div className="settings-group">
+                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span>Default Hotkey Modifier</span>
+                  <input
+                    value={useSettingsStore.getState().hotkeyModifier}
+                    onKeyDown={(e) => {
+                      e.preventDefault();
+                      if (e.key === "Escape" || e.key === "Backspace") useSettingsStore.getState().setHotkeyModifier("default");
+                      else useSettingsStore.getState().setHotkeyModifier(e.key.toLowerCase());
+                    }}
+                    readOnly
+                    placeholder="default"
+                    className="hotkey-input"
+                    style={{ width: "200px" }}
+                  />
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
+                    Press any key to set the modifier (e.g. Control, Shift, Space). Press Esc or Backspace to reset to Default (Ctrl/Cmd based on OS).
+                  </span>
+                </label>
+              </div>
+              <div className="settings-group">
                 <p style={{ margin: "0 0 16px", color: "var(--text-muted)", fontSize: "calc(13px + var(--font-offset, 0px))" }}>
-                  Click an input and press any key to set the hotkey. Press <strong>Escape</strong> to clear a hotkey. (Note: Hotkeys are modified by Ctrl on Windows/Linux or Cmd on macOS, except for the Delete action which acts alone).
+                  Click an input and press any key to set the hotkey. Press <strong>Escape</strong> to clear a hotkey.
                 </p>
                 <div className="hotkey-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>

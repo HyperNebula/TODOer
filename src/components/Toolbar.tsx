@@ -19,6 +19,7 @@ interface ToolbarProps {
   onExitFocus: () => void;
   isFlatView: boolean;
   onToggleFlatView: () => void;
+  onQuickAdd: () => void;
   onOpenPomodoro?: () => void;
 }
 
@@ -43,12 +44,16 @@ export function Toolbar({
   onExitFocus,
   isFlatView,
   onToggleFlatView,
+  onQuickAdd,
   onOpenPomodoro,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
       <button type="button" className="btn" onClick={onNewTask}>
         New Task
+      </button>
+      <button type="button" className="btn" onClick={onQuickAdd}>
+        Quick Add
       </button>
       <button
         type="button"
