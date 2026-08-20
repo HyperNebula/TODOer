@@ -18,7 +18,7 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
   const [projectSearch, setProjectSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLLabelElement>(null);
   
   // Get all tasks that are marked as projects
   const projects = useMemo(() => {
@@ -185,15 +185,30 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
                   }
                 } else if (e.key === "Enter") {
                   if (isDropdownOpen && filteredProjects.length > 0) {
-                    // Auto-select first matched if none exactly selected
-                    setSelectedProjectId(filteredProjects[0].id);
-                    setProjectSearch(filteredProjects[0].title);
+                    let p = filteredProjects.find(x => x.id === selectedProjectId);
+                    if (!p) p = filteredProjects[0];
+                    setSelectedProjectId(p.id);
+                    setProjectSearch(p.title);
                     setIsDropdownOpen(false);
                   } else {
                     handleConfirm();
                   }
                 } else if (e.key === "ArrowDown") {
-                  setIsDropdownOpen(true);
+                  e.preventDefault();
+                  if (!isDropdownOpen) {
+                    setIsDropdownOpen(true);
+                  } else if (filteredProjects.length > 0) {
+                    const idx = filteredProjects.findIndex(x => x.id === selectedProjectId);
+                    const nextIdx = idx >= 0 && idx < filteredProjects.length - 1 ? idx + 1 : 0;
+                    setSelectedProjectId(filteredProjects[nextIdx].id);
+                  }
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  if (isDropdownOpen && filteredProjects.length > 0) {
+                    const idx = filteredProjects.findIndex(x => x.id === selectedProjectId);
+                    const nextIdx = idx > 0 ? idx - 1 : filteredProjects.length - 1;
+                    setSelectedProjectId(filteredProjects[nextIdx].id);
+                  }
                 }
               }}
             />
