@@ -65,6 +65,13 @@ html, body {
   gap: 8px;
 }
 
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0; /* crucial for nested flex scroll */
+  overflow: hidden;
+}
+
 .app-header {
   display: flex;
   align-items: center;

@@ -383,6 +383,9 @@ const DEFAULT_SETTINGS = {
   defaultAppView: "tasks" as "tasks" | "calendar" | "lastOpen",
   lastOpenView: "tasks" as "tasks" | "calendar",
   settingsLoaded: false,
+  filterPresets: [] as import("../types/task").FilterPreset[],
+  filterPresetPanelPosition: "hidden" as "left" | "right" | "top" | "hidden",
+  filterPresetPanelOpen: false,
 };
 
 export interface SettingsState {
@@ -414,6 +417,9 @@ export interface SettingsState {
   settingsLoaded: boolean;
   hotkeyModifier: string;
   hotkeys: Hotkeys;
+  filterPresets: import("../types/task").FilterPreset[];
+  filterPresetPanelPosition: "left" | "right" | "top" | "hidden";
+  filterPresetPanelOpen: boolean;
 
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
@@ -443,6 +449,11 @@ export interface SettingsState {
   setLastOpenView: (view: "tasks" | "calendar") => void;
   setHotkeyModifier: (modifier: string) => void;
   setHotkey: (action: keyof Hotkeys, key: string) => void;
+  saveFilterPreset: (preset: import("../types/task").FilterPreset) => void;
+  deleteFilterPreset: (id: string) => void;
+  renameFilterPreset: (id: string, name: string) => void;
+  setFilterPresetPanelPosition: (position: "left" | "right" | "top" | "hidden") => void;
+  setFilterPresetPanelOpen: (open: boolean) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
 }
@@ -489,6 +500,21 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setLastOpenView: (view) => set({ lastOpenView: view }),
   setHotkeyModifier: (modifier) => set({ hotkeyModifier: modifier }),
   setHotkey: (action, key) => set((state) => ({ hotkeys: { ...state.hotkeys, [action]: key } })),
+  saveFilterPreset: (preset) => set((state) => {
+    const existing = state.filterPresets.findIndex(p => p.id === preset.id);
+    if (existing >= 0) {
+      const newPresets = [...state.filterPresets];
+      newPresets[existing] = preset;
+      return { filterPresets: newPresets };
+    }
+    return { filterPresets: [...state.filterPresets, preset] };
+  }),
+  deleteFilterPreset: (id) => set((state) => ({ filterPresets: state.filterPresets.filter(p => p.id !== id) })),
+  renameFilterPreset: (id, name) => set((state) => ({
+    filterPresets: state.filterPresets.map(p => p.id === id ? { ...p, name } : p)
+  })),
+  setFilterPresetPanelPosition: (position) => set({ filterPresetPanelPosition: position }),
+  setFilterPresetPanelOpen: (open) => set({ filterPresetPanelOpen: open }),
 
   loadSettings: async () => {
     try {
@@ -521,6 +547,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         lastOpenView?: "tasks" | "calendar";
         hotkeyModifier?: string;
         hotkeys?: Hotkeys;
+        filterPresets?: import("../types/task").FilterPreset[];
+        filterPresetPanelPosition?: "left" | "right" | "top" | "hidden";
+        filterPresetPanelOpen?: boolean;
       }>("settings_v1");
       
       if (saved) {
@@ -552,6 +581,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.lastOpenView && { lastOpenView: saved.lastOpenView }),
           ...(saved.hotkeyModifier && { hotkeyModifier: saved.hotkeyModifier }),
           ...(saved.hotkeys && { hotkeys: saved.hotkeys }),
+          ...(saved.filterPresets && { filterPresets: saved.filterPresets }),
+          ...(saved.filterPresetPanelPosition && { filterPresetPanelPosition: saved.filterPresetPanelPosition }),
+          ...(saved.filterPresetPanelOpen !== undefined && { filterPresetPanelOpen: saved.filterPresetPanelOpen }),
           settingsLoaded: true,
         });
       } else {
@@ -595,6 +627,9 @@ useSettingsStore.subscribe((state) => {
     lastOpenView: state.lastOpenView,
     hotkeyModifier: state.hotkeyModifier,
     hotkeys: state.hotkeys,
+    filterPresets: state.filterPresets,
+    filterPresetPanelPosition: state.filterPresetPanelPosition,
+    filterPresetPanelOpen: state.filterPresetPanelOpen,
   };
   try {
     const s = getTauriStore();

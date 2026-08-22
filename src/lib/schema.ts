@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { TaskListFile } from "../types/task";
-import { DEFAULT_VISIBLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../types/task";
+import { DEFAULT_VISIBLE_COLUMNS, DEFAULT_COLUMN_WIDTHS, DEFAULT_FILTER } from "../types/task";
 
 const columnIdSchema = z.enum([
   "done",
@@ -41,6 +41,21 @@ const sortSchema = z.object({
   direction: z.enum(["asc", "desc"]),
 });
 
+const filterSchema = z.object({
+  priorityMin: z.number().nullable(),
+  priorityMax: z.number().nullable(),
+  category: z.string(),
+  done: z.enum(["all", "done", "not_done"]),
+  titleContains: z.string(),
+  dueBefore: z.string().nullable(),
+  dueAfter: z.string().nullable(),
+  createdBefore: z.string().nullable(),
+  createdAfter: z.string().nullable(),
+  showArchived: z.boolean(),
+  flatView: z.boolean(),
+  projectFilter: z.enum(["all", "projects", "non-projects"]),
+});
+
 const taskListFileSchema = z.object({
   version: z.literal(1),
   name: z.string(),
@@ -50,6 +65,7 @@ const taskListFileSchema = z.object({
       visibleColumns: z.array(columnIdSchema),
       columnWidths: z.record(z.string(), z.number()),
       sort: sortSchema.nullable().optional(),
+      filter: filterSchema.nullable().optional(),
     })
     .optional(),
   tasks: z.array(taskSchema),
@@ -68,6 +84,7 @@ export function parseTaskListFile(json: string): TaskListFile {
         ...result.settings?.columnWidths,
       },
       sort: result.settings?.sort ?? null,
+      filter: result.settings?.filter ?? DEFAULT_FILTER,
     },
   };
 }

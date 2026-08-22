@@ -4,9 +4,10 @@ interface FilterBarProps {
   filter: FilterState;
   onChange: (partial: Partial<FilterState>) => void;
   onClear: () => void;
+  onSavePreset: () => void;
 }
 
-export function FilterBar({ filter, onChange, onClear }: FilterBarProps) {
+export function FilterBar({ filter, onChange, onClear, onSavePreset }: FilterBarProps) {
   return (
     <div className="filter-bar">
       <label>
@@ -140,9 +141,19 @@ export function FilterBar({ filter, onChange, onClear }: FilterBarProps) {
         />
       </label>
 
-      <button type="button" className="btn-secondary" onClick={onClear}>
-        Clear filters
-      </button>
+      <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={onSavePreset}
+          title="Save current filters as a preset"
+        >
+          Save Preset
+        </button>
+        <button type="button" className="btn-secondary" onClick={onClear}>
+          Clear filters
+        </button>
+      </div>
     </div>
   );
 }

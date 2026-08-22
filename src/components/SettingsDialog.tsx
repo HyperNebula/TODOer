@@ -99,6 +99,8 @@ export function SettingsDialog({ onClose }: Props) {
     setMaxBackups,
     setHotkey,
     resetSettings,
+    filterPresetPanelPosition,
+    setFilterPresetPanelPosition,
   } = useSettingsStore();
 
   const allThemes = [...BUILT_IN_THEMES, ...customThemes];
@@ -337,6 +339,18 @@ export function SettingsDialog({ onClose }: Props) {
                   </select>
                 </div>
               )}
+              <div className="settings-group">
+                <label>Filter Presets Panel</label>
+                <select
+                  value={filterPresetPanelPosition}
+                  onChange={(e) => setFilterPresetPanelPosition(e.target.value as "hidden" | "left" | "right" | "top")}
+                >
+                  <option value="hidden">Hidden</option>
+                  <option value="left">Left Sidebar</option>
+                  <option value="right">Right Sidebar</option>
+                  <option value="top">Top (Below Filters)</option>
+                </select>
+              </div>
               <div className="settings-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
                   <input type="checkbox" checked={autoSaveEnabled} onChange={(e) => setAutoSaveEnabled(e.target.checked)} />

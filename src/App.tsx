@@ -10,7 +10,9 @@ import { Toolbar } from "./components/Toolbar";
 import { TreeGrid } from "./components/TreeGrid/TreeGrid";
 import { UpdaterStartupCheck } from "./components/Updater";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import { PromptDialog } from "./components/PromptDialog";
 import { QuickAddDialog } from "./components/QuickAddDialog";
+import { FilterPresetPanel } from "./components/FilterPresetPanel";
 import { tasksToCsv } from "./lib/csvExport";
 import { tasksToTaskpaper } from "./lib/taskpaperExport";
 import {
@@ -72,6 +74,9 @@ function App() {
   } | null>(null);
   const settings = useSettingsStore();
   const [viewInitialized, setViewInitialized] = useState(false);
+  const [presetPromptState, setPresetPromptState] = useState<{
+    initialValue: string;
+  } | null>(null);
 
   const handleSave = useCallback(async () => {
     const path = await saveTaskListDialog(
@@ -582,40 +587,46 @@ function App() {
               filter={store.filter}
               onChange={store.setFilter}
               onClear={store.clearFilter}
+              onSavePreset={() => setPresetPromptState({ initialValue: "New Preset" })}
             />
+            <FilterPresetPanel position="top" />
           </>
         )}
 
         {activeView === "tasks" ? (
-          <TreeGrid
-            rows={rows}
-            visibleColumns={visibleColumns}
-            columnWidths={store.file.settings?.columnWidths ?? {}}
-            selectedTaskId={store.selectedTaskId}
-            newlyCreatedTaskId={newlyCreatedTaskId}
-            onEditStarted={() => setNewlyCreatedTaskId(null)}
-            sortColumn={store.sort?.column ?? null}
-            sortDirection={store.sort?.direction ?? null}
-            onSelect={store.setSelectedTaskId}
-            onToggleDone={store.toggleDone}
-            onToggleCollapsed={store.toggleCollapsed}
-            onUpdate={store.updateTask}
-            onToggleSort={store.toggleSort}
-            onEditNotes={setNotesTask}
-            onColumnResize={store.setColumnWidth}
-            priorityColorStyle={settings.priorityColorStyle}
-            showVerticalBorders={settings.showVerticalBorders}
-            enableRowHover={settings.enableRowHover}
-            onNavigateUp={handleNavigateUp}
-            onNavigateDown={handleNavigateDown}
-            onNavigateLeft={handleNavigateLeft}
-            onNavigateRight={handleNavigateRight}
-            onMoveTask={store.moveTask}
-            isFlatView={store.filter.flatView}
-            projectStyle={settings.projectStyle}
-            projectEmoji={settings.projectEmoji}
-            indentSpacing={settings.indentSpacing}
-          />
+          <div className="app-body">
+            <FilterPresetPanel position="left" />
+            <TreeGrid
+              rows={rows}
+              visibleColumns={visibleColumns}
+              columnWidths={store.file.settings?.columnWidths ?? {}}
+              selectedTaskId={store.selectedTaskId}
+              newlyCreatedTaskId={newlyCreatedTaskId}
+              onEditStarted={() => setNewlyCreatedTaskId(null)}
+              sortColumn={store.sort?.column ?? null}
+              sortDirection={store.sort?.direction ?? null}
+              onSelect={store.setSelectedTaskId}
+              onToggleDone={store.toggleDone}
+              onToggleCollapsed={store.toggleCollapsed}
+              onUpdate={store.updateTask}
+              onToggleSort={store.toggleSort}
+              onEditNotes={setNotesTask}
+              onColumnResize={store.setColumnWidth}
+              priorityColorStyle={settings.priorityColorStyle}
+              showVerticalBorders={settings.showVerticalBorders}
+              enableRowHover={settings.enableRowHover}
+              onNavigateUp={handleNavigateUp}
+              onNavigateDown={handleNavigateDown}
+              onNavigateLeft={handleNavigateLeft}
+              onNavigateRight={handleNavigateRight}
+              onMoveTask={store.moveTask}
+              isFlatView={store.filter.flatView}
+              projectStyle={settings.projectStyle}
+              projectEmoji={settings.projectEmoji}
+              indentSpacing={settings.indentSpacing}
+            />
+            <FilterPresetPanel position="right" />
+          </div>
         ) : (
           __CALENDAR_ENABLED__ && CalendarView && (
             <React.Suspense fallback={<div className="calendar-loading">Loading calendar…</div>}>
@@ -664,6 +675,24 @@ function App() {
             onConfirm={confirmState.onConfirm}
             onCancel={() => setConfirmState(null)}
             onThird={confirmState.onThird}
+          />
+        )}
+        {presetPromptState && (
+          <PromptDialog
+            title="Save Filter Preset"
+            message="Enter a name for the preset:"
+            initialValue={presetPromptState.initialValue}
+            onConfirm={(val) => {
+              if (val.trim()) {
+                settings.saveFilterPreset({
+                  id: crypto.randomUUID(),
+                  name: val.trim(),
+                  filter: store.filter,
+                });
+              }
+              setPresetPromptState(null);
+            }}
+            onCancel={() => setPresetPromptState(null)}
           />
         )}
         {isQuickAddOpen && (

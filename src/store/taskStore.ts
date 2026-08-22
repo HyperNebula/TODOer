@@ -321,7 +321,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       sort,
       file: touch({
         ...s.file,
-        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, sort },
+        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, sort, filter: s.file.settings?.filter ?? s.filter },
       }),
       dirty: true,
     })),
@@ -338,16 +338,44 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       sort: newSort,
       file: touch({
         ...s.file,
-        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, sort: newSort },
+        settings: { ...s.file.settings, visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS, columnWidths: s.file.settings?.columnWidths ?? {}, sort: newSort, filter: s.file.settings?.filter ?? s.filter },
       }),
       dirty: true,
     }));
   },
 
   setFilter: (partial) =>
-    set((s) => ({ filter: { ...s.filter, ...partial } })),
+    set((s) => {
+      const newFilter = { ...s.filter, ...partial };
+      return {
+        filter: newFilter,
+        file: touch({
+          ...s.file,
+          settings: {
+            ...s.file.settings,
+            visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS,
+            columnWidths: s.file.settings?.columnWidths ?? {},
+            filter: newFilter,
+          },
+        }),
+        dirty: true,
+      };
+    }),
 
-  clearFilter: () => set({ filter: DEFAULT_FILTER }),
+  clearFilter: () => 
+    set((s) => ({
+      filter: DEFAULT_FILTER,
+      file: touch({
+        ...s.file,
+        settings: {
+          ...s.file.settings,
+          visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS,
+          columnWidths: s.file.settings?.columnWidths ?? {},
+          filter: DEFAULT_FILTER,
+        },
+      }),
+      dirty: true,
+    })),
 
   setFocusTask: (id) => set({ focusTaskId: id }),
 
@@ -399,5 +427,20 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     })),
 
   toggleFlatView: () =>
-    set((s) => ({ filter: { ...s.filter, flatView: !s.filter.flatView } })),
+    set((s) => {
+      const newFilter = { ...s.filter, flatView: !s.filter.flatView };
+      return {
+        filter: newFilter,
+        file: touch({
+          ...s.file,
+          settings: {
+            ...s.file.settings,
+            visibleColumns: s.file.settings?.visibleColumns ?? DEFAULT_VISIBLE_COLUMNS,
+            columnWidths: s.file.settings?.columnWidths ?? {},
+            filter: newFilter,
+          },
+        }),
+        dirty: true,
+      };
+    }),
 }));

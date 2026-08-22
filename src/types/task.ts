@@ -18,6 +18,7 @@ interface TaskListSettings {
   visibleColumns: ColumnId[];
   columnWidths: Partial<Record<ColumnId, number>>;
   sort?: SortState | null;
+  filter?: FilterState | null;
 }
 
 export interface Task {
@@ -164,4 +165,10 @@ export function createTask(partial: Partial<Task> & Pick<Task, "title">): Task {
     isProject: false,
     ...partial,
   };
+}
+
+export interface FilterPreset {
+  id: string;
+  name: string;
+  filter: FilterState;
 }
