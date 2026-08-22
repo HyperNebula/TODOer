@@ -377,6 +377,9 @@ function App() {
         } else if (hotkeys.quickAdd && key === hotkeys.quickAdd.toLowerCase()) {
           e.preventDefault();
           setIsQuickAddOpen(true);
+        } else if (hotkeys.clearFilters && key === hotkeys.clearFilters.toLowerCase()) {
+          e.preventDefault();
+          store.clearFilter();
         }
       } else if (hotkeys.deleteTask && key === hotkeys.deleteTask.toLowerCase() && store.selectedTaskId) {
         handleDelete();

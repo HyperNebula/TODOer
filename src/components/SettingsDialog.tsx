@@ -638,6 +638,20 @@ export function SettingsDialog({ onClose }: Props) {
                       className="hotkey-input"
                     />
                   </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Clear Filters</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.clearFilters}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("clearFilters", "");
+                        else setHotkey("clearFilters", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
                 </div>
               </div>
             </>

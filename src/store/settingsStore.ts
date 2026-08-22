@@ -337,6 +337,7 @@ export type Hotkeys = {
   focusTask: string;
   toggleFlatView: string;
   quickAdd: string;
+  clearFilters: string;
 };
 
 const DEFAULT_SETTINGS = {
@@ -370,6 +371,7 @@ const DEFAULT_SETTINGS = {
     focusTask: "",
     toggleFlatView: "",
     quickAdd: "q",
+    clearFilters: "",
   } as Hotkeys,
   hotkeyModifier: "default",
   projectStyle: "none" as "none" | "bold" | "star" | "star-bold",
