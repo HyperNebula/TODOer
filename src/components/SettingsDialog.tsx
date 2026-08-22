@@ -231,23 +231,23 @@ export function SettingsDialog({ onClose }: Props) {
                 )}
               </div>
               <div className="settings-group">
-                <label className="checkbox-label">
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
                   <input
                     type="checkbox"
                     checked={enableRowHover}
                     onChange={(e) => setEnableRowHover(e.target.checked)}
                   />
-                  Enable Row Hover Highlighting
+                  <strong>Enable Row Hover Highlighting</strong>
                 </label>
               </div>
               <div className="settings-group">
-                <label className="checkbox-label">
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
                   <input
                     type="checkbox"
                     checked={showVerticalBorders}
                     onChange={(e) => setShowVerticalBorders(e.target.checked)}
                   />
-                  Show Vertical Grid Lines
+                  <strong>Show Vertical Grid Lines</strong>
                 </label>
               </div>
               <div className="settings-group">
