@@ -442,20 +442,7 @@ export function SettingsDialog({ onClose }: Props) {
                   Click an input and press any key to set the hotkey. Press <strong>Escape</strong> to clear a hotkey.
                 </p>
                 <div className="hotkey-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span>Delete Task</span>
-                    <input
-                      value={useSettingsStore.getState().hotkeys.deleteTask}
-                      onKeyDown={(e) => {
-                        e.preventDefault();
-                        if (e.key === "Escape") setHotkey("deleteTask", "");
-                        else setHotkey("deleteTask", e.key.toLowerCase());
-                      }}
-                      readOnly
-                      placeholder="None"
-                      className="hotkey-input"
-                    />
-                  </label>
+
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <span>Duplicate Task</span>
                     <input
@@ -554,34 +541,7 @@ export function SettingsDialog({ onClose }: Props) {
                       className="hotkey-input"
                     />
                   </label>
-                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span>Navigate Up</span>
-                    <input
-                      value={useSettingsStore.getState().hotkeys.navigateUp}
-                      onKeyDown={(e) => {
-                        e.preventDefault();
-                        if (e.key === "Escape") setHotkey("navigateUp", "");
-                        else setHotkey("navigateUp", e.key.toLowerCase());
-                      }}
-                      readOnly
-                      placeholder="None"
-                      className="hotkey-input"
-                    />
-                  </label>
-                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span>Navigate Down</span>
-                    <input
-                      value={useSettingsStore.getState().hotkeys.navigateDown}
-                      onKeyDown={(e) => {
-                        e.preventDefault();
-                        if (e.key === "Escape") setHotkey("navigateDown", "");
-                        else setHotkey("navigateDown", e.key.toLowerCase());
-                      }}
-                      readOnly
-                      placeholder="None"
-                      className="hotkey-input"
-                    />
-                  </label>
+
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <span>Toggle Fold All Tasks</span>
                     <input
@@ -646,6 +606,56 @@ export function SettingsDialog({ onClose }: Props) {
                         e.preventDefault();
                         if (e.key === "Escape") setHotkey("clearFilters", "");
                         else setHotkey("clearFilters", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                </div>
+              </div>
+              <div className="settings-group" style={{ marginTop: "24px" }}>
+                <h3 style={{ margin: "0 0 8px", fontSize: "1em", fontWeight: 600 }}>No Modifier Required</h3>
+                <p style={{ margin: "0 0 16px", color: "var(--text-muted)", fontSize: "calc(13px + var(--font-offset, 0px))" }}>
+                  These hotkeys trigger without holding the modifier key.
+                </p>
+                <div className="hotkey-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Delete Task</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.deleteTask}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("deleteTask", "");
+                        else setHotkey("deleteTask", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Navigate Up</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.navigateUp}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("navigateUp", "");
+                        else setHotkey("navigateUp", e.key.toLowerCase());
+                      }}
+                      readOnly
+                      placeholder="None"
+                      className="hotkey-input"
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span>Navigate Down</span>
+                    <input
+                      value={useSettingsStore.getState().hotkeys.navigateDown}
+                      onKeyDown={(e) => {
+                        e.preventDefault();
+                        if (e.key === "Escape") setHotkey("navigateDown", "");
+                        else setHotkey("navigateDown", e.key.toLowerCase());
                       }}
                       readOnly
                       placeholder="None"
