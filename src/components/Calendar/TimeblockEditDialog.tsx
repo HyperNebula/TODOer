@@ -40,6 +40,13 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   const [interval, setInterval] = useState<number>(1);
   const [byweekday, setByweekday] = useState<number[]>([]);
 
+  const getBlockWeekday = () => {
+    const [y, m, d] = block.startTime.slice(0, 10).split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    const day = dt.getDay(); // 0 is Sunday, 1 is Monday...
+    return day === 0 ? 6 : day - 1; // 0=MO, 1=TU, 2=WE, 3=TH, 4=FR, 5=SA, 6=SU
+  };
+
   useEffect(() => {
     if (block.recurrenceRule) {
       setIsRecurring(true);
@@ -55,6 +62,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
       }
     }
   }, [block.recurrenceRule]);
+
 
   const handleSave = () => {
     const updates: Partial<Timeblock> = { title, notes, color: color || undefined, link: link || null };
@@ -150,7 +158,17 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
 
           <div className="timeblock-edit-group" style={{ border: '1px solid var(--border)', padding: '8px', borderRadius: '4px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: isRecurring ? '8px' : '0' }}>
-              <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={e => {
+                  const checked = e.target.checked;
+                  setIsRecurring(checked);
+                  if (checked && frequency === RRule.WEEKLY && byweekday.length === 0) {
+                    setByweekday([getBlockWeekday()]);
+                  }
+                }}
+              />
               Repeat
             </label>
             {isRecurring && (
@@ -158,13 +176,24 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <span>Every</span>
                   <input type="number" min="1" value={interval} onChange={e => setInterval(Math.max(1, parseInt(e.target.value) || 1))} style={{ width: '60px', padding: '4px' }} />
-                  <select value={frequency} onChange={e => setFrequency(parseInt(e.target.value))} style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '4px' }}>
+                  <select
+                    value={frequency}
+                    onChange={e => {
+                      const f = parseInt(e.target.value);
+                      setFrequency(f);
+                      if (f === RRule.WEEKLY && byweekday.length === 0) {
+                        setByweekday([getBlockWeekday()]);
+                      }
+                    }}
+                    style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '4px' }}
+                  >
                     <option value={RRule.DAILY}>Days</option>
                     <option value={RRule.WEEKLY}>Weeks</option>
                     <option value={RRule.MONTHLY}>Months</option>
                     <option value={RRule.YEARLY}>Years</option>
                   </select>
                 </div>
+
                 {frequency === RRule.WEEKLY && (
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {[{ label: 'M', value: RRule.MO.weekday }, { label: 'T', value: RRule.TU.weekday }, { label: 'W', value: RRule.WE.weekday }, { label: 'T', value: RRule.TH.weekday }, { label: 'F', value: RRule.FR.weekday }, { label: 'S', value: RRule.SA.weekday }, { label: 'S', value: RRule.SU.weekday }].map(day => (

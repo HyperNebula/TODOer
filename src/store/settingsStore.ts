@@ -392,6 +392,7 @@ const DEFAULT_SETTINGS = {
   filterPresetPanelOpen: false,
   showPastDue: false,
   taskDrawerWidth: 240,
+  highlightOverdueTasks: true,
 };
 
 export interface SettingsState {
@@ -430,6 +431,7 @@ export interface SettingsState {
   filterPresetPanelOpen: boolean;
   showPastDue: boolean;
   taskDrawerWidth: number;
+  highlightOverdueTasks: boolean;
 
   setActiveThemeId: (id: string) => void;
   saveCustomTheme: (theme: Theme) => void;
@@ -468,9 +470,11 @@ export interface SettingsState {
   setFilterPresetPanelOpen: (open: boolean) => void;
   setShowPastDue: (show: boolean) => void;
   setTaskDrawerWidth: (width: number) => void;
+  setHighlightOverdueTasks: (highlight: boolean) => void;
   loadSettings: () => Promise<void>;
   resetSettings: () => void;
 }
+
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   ...DEFAULT_SETTINGS,
@@ -533,6 +537,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setFilterPresetPanelOpen: (open) => set({ filterPresetPanelOpen: open }),
   setShowPastDue: (show) => set({ showPastDue: show }),
   setTaskDrawerWidth: (width) => set({ taskDrawerWidth: width }),
+  setHighlightOverdueTasks: (highlight) => set({ highlightOverdueTasks: highlight }),
 
   loadSettings: async () => {
     try {
@@ -573,6 +578,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         filterPresetPanelOpen?: boolean;
         showPastDue?: boolean;
         taskDrawerWidth?: number;
+        highlightOverdueTasks?: boolean;
       }>("settings_v1");
       
       if (saved) {
@@ -611,6 +617,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.filterPresetPanelOpen !== undefined && { filterPresetPanelOpen: saved.filterPresetPanelOpen }),
           ...(saved.showPastDue !== undefined && { showPastDue: saved.showPastDue }),
           ...(saved.taskDrawerWidth !== undefined && { taskDrawerWidth: saved.taskDrawerWidth }),
+          ...(saved.highlightOverdueTasks !== undefined && { highlightOverdueTasks: saved.highlightOverdueTasks }),
           settingsLoaded: true,
         });
       } else {
@@ -661,7 +668,9 @@ useSettingsStore.subscribe((state) => {
     filterPresetPanelOpen: state.filterPresetPanelOpen,
     showPastDue: state.showPastDue,
     taskDrawerWidth: state.taskDrawerWidth,
+    highlightOverdueTasks: state.highlightOverdueTasks,
   };
+
   try {
     const s = getTauriStore();
     s.set("settings_v1", dataToSave)

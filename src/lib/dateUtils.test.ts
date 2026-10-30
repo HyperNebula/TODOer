@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { getTodayRange, getTomorrowRange, getWeekRange } from "./dateUtils";
+import { getTodayRange, getTomorrowRange, getWeekRange, isTaskOverdue } from "./dateUtils";
+
 
 describe("dateUtils", () => {
   afterEach(() => {
@@ -45,4 +46,29 @@ describe("dateUtils", () => {
     expect(range.dueAfter).toBe("2026-12-29");
     expect(range.dueBefore).toBe("2027-01-04");
   });
+
+  describe("isTaskOverdue", () => {
+    it("returns true for incomplete task past due date", () => {
+      expect(isTaskOverdue({ dueDate: "2026-09-03", done: false }, "2026-09-04")).toBe(true);
+    });
+
+    it("returns false for task due today or in the future", () => {
+      expect(isTaskOverdue({ dueDate: "2026-09-04", done: false }, "2026-09-04")).toBe(false);
+      expect(isTaskOverdue({ dueDate: "2026-09-05", done: false }, "2026-09-04")).toBe(false);
+    });
+
+    it("returns false if task is already completed", () => {
+      expect(isTaskOverdue({ dueDate: "2026-09-01", done: true }, "2026-09-04")).toBe(false);
+    });
+
+    it("returns false if task has no due date", () => {
+      expect(isTaskOverdue({ dueDate: null, done: false }, "2026-09-04")).toBe(false);
+    });
+
+    it("correctly handles ISO datetime strings in dueDate", () => {
+      expect(isTaskOverdue({ dueDate: "2026-09-03T18:00:00", done: false }, "2026-09-04")).toBe(true);
+      expect(isTaskOverdue({ dueDate: "2026-09-04T09:00:00", done: false }, "2026-09-04")).toBe(false);
+    });
+  });
 });
+

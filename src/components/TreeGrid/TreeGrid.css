@@ -245,3 +245,15 @@
 .tree-grid tr.drop-into td:last-child {
   box-shadow: 0 2px 0 0 var(--accent) inset, 0 -2px 0 0 var(--accent) inset, -2px 0 0 0 var(--accent) inset;
 }
+
+/* ─── Overdue Tasks ────────────────────────────────────────────── */
+
+.tree-grid td.col-due-overdue {
+  color: var(--danger) !important;
+  font-weight: 600;
+}
+
+.tree-grid tbody tr.row-overdue:not(.row-selected) td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--danger);
+}
+

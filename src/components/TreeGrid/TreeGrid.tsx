@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ColumnId, FlatRow, Task } from "../../types/task";
 import { DEFAULT_COLUMN_WIDTHS } from "../../types/task";
 import { formatDate, formatMinutes, parseMinutesInput } from "../../lib/format";
+import { isTaskOverdue } from "../../lib/dateUtils";
 import { openFileLink, selectFileForLink } from "../../lib/fileApi";
 import { TaskEditMenu } from "./TaskEditMenu";
 import { useSettingsStore } from "../../store/settingsStore";
+
 import "./TreeGrid.css";
 
 const COLUMN_LABELS: Record<ColumnId, string> = {
@@ -98,8 +100,10 @@ export function TreeGrid({
   indentSpacing = 32,
   enableRowHover = true,
 }: TreeGridProps) {
+  const { highlightOverdueTasks } = useSettingsStore();
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMenuTaskId, setEditMenuTaskId] = useState<string | null>(null);
+
   const [resizingCol, setResizingCol] = useState<{ col: ColumnId; startX: number; startWidth: number } | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   // useRef so handleDragOver can read draggedId synchronously before the first
@@ -491,9 +495,11 @@ export function TreeGrid({
               column === "priority" ? "col-priority" : "",
               doneClass,
               isSelected ? "selected" : "",
-              priorityColorStyle === "cell" && column === "priority" && task.priority !== null ? `priority-${task.priority}` : ""
+              priorityColorStyle === "cell" && column === "priority" && task.priority !== null ? `priority-${task.priority}` : "",
+              column === "dueDate" && highlightOverdueTasks && isTaskOverdue(task) ? "col-due-overdue" : ""
             ].filter(Boolean).join(" ")}
             onDoubleClick={() => startEdit(task, column)}
+
           >
             {renderEditableCell(task, column)}
           </td>
@@ -672,8 +678,10 @@ export function TreeGrid({
                     multiSelectedIds.has(row.task.id) ? "row-selected" : "",
                     row.task.archived ? "row-archived" : "",
                     priorityColorStyle === "row" && row.task.priority !== null ? `priority-${row.task.priority}` : "",
+                    highlightOverdueTasks && isTaskOverdue(row.task) ? "row-overdue" : "",
                     rowDragClass(row),
                   ].filter(Boolean).join(" ")}
+
                   draggable={!isFlatView}
                   onClick={(e) => {
                     e.stopPropagation();

@@ -103,7 +103,10 @@ export function SettingsDialog({ onClose }: Props) {
     setFilterPresetPanelPosition,
     showPastDue,
     setShowPastDue,
+    highlightOverdueTasks,
+    setHighlightOverdueTasks,
   } = useSettingsStore();
+
 
   const allThemes = [...BUILT_IN_THEMES, ...customThemes];
   const activeTheme = allThemes.find(t => t.id === activeThemeId) || BUILT_IN_THEMES[0];
@@ -284,8 +287,22 @@ export function SettingsDialog({ onClose }: Props) {
                   <option value="top">Top (Below Filters)</option>
                 </select>
               </div>
+              <div className="settings-group">
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "normal" }}>
+                  <input
+                    type="checkbox"
+                    checked={highlightOverdueTasks}
+                    onChange={(e) => setHighlightOverdueTasks(e.target.checked)}
+                  />
+                  <strong>Highlight Overdue Tasks</strong>
+                </label>
+                <span style={{ fontSize: "0.85em", color: "var(--text-muted)", marginLeft: "24px", display: "block", marginTop: "4px" }}>
+                  Visually highlight tasks in red when their due date has passed.
+                </span>
+              </div>
             </>
           )}
+
           {activeTab === "columns" && (
             <ColumnPicker
               visible={visibleColumns}

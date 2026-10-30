@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { Task } from "../../types/task";
 import { getPriorityColor } from "./colors";
 import { useSettingsStore } from "../../store/settingsStore";
+import { isTaskOverdue } from "../../lib/dateUtils";
 
 interface TaskDrawerProps {
   tasks: Task[];
@@ -34,7 +35,8 @@ function comparePriority(a: Task, b: Task, dir: "asc" | "desc"): number {
  * Tasks are draggable onto the calendar time grid to create timeblocks.
  */
 export function TaskDrawer({ tasks, width = 240, onWidthChange, onClose }: TaskDrawerProps) {
-  const { showPastDue } = useSettingsStore();
+  const { showPastDue, highlightOverdueTasks } = useSettingsStore();
+
   const [search, setSearch] = useState("");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [prioritySortDir, setPrioritySortDir] = useState<"asc" | "desc">("asc");
@@ -246,11 +248,27 @@ export function TaskDrawer({ tasks, width = 240, onWidthChange, onClose }: TaskD
               style={t.done ? undefined : (t.priority !== null ? { backgroundColor: getPriorityColor(t.priority) } : undefined)}
             />
             <span className="task-drawer-item-title">{t.title || "(untitled)"}</span>
+            {highlightOverdueTasks && isTaskOverdue(t) && (
+              <span
+                style={{
+                  fontSize: "0.7rem",
+                  color: "var(--danger)",
+                  fontWeight: 600,
+                  marginLeft: "auto",
+                  marginRight: "4px",
+                  flexShrink: 0,
+                }}
+                title={`Overdue: due ${t.dueDate}`}
+              >
+                Overdue
+              </span>
+            )}
             {t.timeEstimateMinutes != null && (
-              <span className="task-drawer-item-est">
+              <span className="task-drawer-item-est" style={highlightOverdueTasks && isTaskOverdue(t) ? { marginLeft: 0 } : undefined}>
                 {t.timeEstimateMinutes}m
               </span>
             )}
+
           </div>
           {!isCollapsed && hasChildren && (
             <ul className="task-drawer-list" style={{ marginTop: "4px", marginBottom: "4px", paddingLeft: 0 }}>
@@ -368,11 +386,27 @@ export function TaskDrawer({ tasks, width = 240, onWidthChange, onClose }: TaskD
                       P{t.priority}
                     </span>
                   )}
+                  {highlightOverdueTasks && isTaskOverdue(t) && (
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--danger)",
+                        fontWeight: 600,
+                        marginLeft: "auto",
+                        marginRight: "4px",
+                        flexShrink: 0,
+                      }}
+                      title={`Overdue: due ${t.dueDate}`}
+                    >
+                      Overdue
+                    </span>
+                  )}
                   {t.timeEstimateMinutes != null && (
-                    <span className="task-drawer-item-est">
+                    <span className="task-drawer-item-est" style={highlightOverdueTasks && isTaskOverdue(t) ? { marginLeft: 0 } : undefined}>
                       {t.timeEstimateMinutes}m
                     </span>
                   )}
+
                 </div>
               </li>
             ))

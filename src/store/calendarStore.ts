@@ -5,7 +5,40 @@ import { useTaskStore } from "./taskStore";
 import { isTauri } from "../lib/fileApi";
 import { rrulestr, RRule } from "rrule";
 
+/** Ensures ISO timestamps have seconds (:00) for strict equality comparison */
+export function normalizeIso(iso?: string | null): string {
+  if (!iso) return "";
+  if (iso.length === 16 && iso[10] === "T") {
+    return iso + ":00";
+  }
+  return iso;
+}
+
+/** Parses a YYYY-MM-DD or YYYY-MM-DDTHH:MM(:SS) into a UTC Date preserving local wall-clock numbers */
+export function parseWallClockUtc(iso: string): Date {
+  const datePart = iso.slice(0, 10);
+  const [y, m, d] = datePart.split("-").map(Number);
+  let h = 0;
+  let min = 0;
+  let s = 0;
+  if (iso.length > 11) {
+    const timePart = iso.slice(11);
+    const parts = timePart.split(":").map(Number);
+    h = parts[0] || 0;
+    min = parts[1] || 0;
+    s = parts[2] || 0;
+  }
+  return new Date(Date.UTC(y, m - 1, d, h, min, s));
+}
+
+/** Formats a UTC Date to YYYY-MM-DDTHH:MM:SS string using its UTC coordinates */
+export function formatWallClockUtc(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+}
+
 interface CalendarStore {
+
   timeblocks: Timeblock[];
   recurringTimeblocks: Timeblock[];
   recurringLoaded: boolean;
@@ -97,56 +130,52 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     const allRecurringAndExceptions = get().recurringTimeblocks;
     const parentBlocks = allRecurringAndExceptions.filter(tb => tb.recurrenceRule != null);
     
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    const startDateUtc = parseWallClockUtc(start.includes("T") ? start : start + "T00:00:00");
+    const endDateUtc = parseWallClockUtc(end.includes("T") ? end : end + "T23:59:59");
     const virtualBlocks: Timeblock[] = [];
 
     parentBlocks.forEach(parent => {
       try {
-        // Parse the RRULE. rrule.js requires dates to be handled carefully.
-        const origDate = new Date(parent.startTime);
-        let dtstart = new Date(origDate);
+        const normParentStart = normalizeIso(parent.startTime);
+        let dtstart = parseWallClockUtc(normParentStart);
         
         // If it's a weekly recurrence, snap the dtstart to the Monday of that week
-        // so that earlier days in the current week (like Monday, if created on Wednesday) are generated.
+        // using UTC coordinates so that local time of day (e.g. after 6pm) does not shift the weekday.
         if (parent.recurrenceRule!.includes("FREQ=WEEKLY")) {
-          const day = dtstart.getDay();
+          const day = dtstart.getUTCDay();
           const diffToMon = day === 0 ? -6 : 1 - day;
-          dtstart.setDate(dtstart.getDate() + diffToMon);
+          dtstart.setUTCDate(dtstart.getUTCDate() + diffToMon);
         }
 
         const rule = rrulestr(parent.recurrenceRule!, { dtstart });
         // Get all occurrences in this range
-        const occurrences = rule.between(startDate, endDate, true);
+        const occurrences = rule.between(startDateUtc, endDateUtc, true);
+
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const [sh, sm, ss] = normParentStart.slice(11).split(":").map(Number);
+        const parentStartMs = parseWallClockUtc(parent.startTime).getTime();
+        const parentEndMs = parseWallClockUtc(parent.endTime).getTime();
+        const duration = Math.max(0, parentEndMs - parentStartMs);
 
         occurrences.forEach(occ => {
-          // Time might be shifted due to UTC logic in rrule, but usually we just keep the time of day the same.
-          // rrule.js output uses the same local time but wrapped in UTC Date object. We need to format back.
-          const origDate = new Date(parent.startTime);
-          const instStart = new Date(occ);
-          instStart.setHours(origDate.getHours(), origDate.getMinutes(), origDate.getSeconds());
-          
-          const duration = new Date(parent.endTime).getTime() - new Date(parent.startTime).getTime();
-          const instEnd = new Date(instStart.getTime() + duration);
-          
-          const pad = (n: number) => String(n).padStart(2, "0");
-          const toLocalIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
-
-          const originalStartStr = toLocalIso(instStart);
+          const originalStartStr = `${occ.getUTCFullYear()}-${pad(occ.getUTCMonth() + 1)}-${pad(occ.getUTCDate())}T${pad(sh)}:${pad(sm)}:${pad(ss || 0)}`;
+          const occStartMs = parseWallClockUtc(originalStartStr).getTime();
+          const occEnd = new Date(occStartMs + duration);
+          const endTimeStr = formatWallClockUtc(occEnd);
 
           // Check if there is an exception for this occurrence (in normal blocks or recurring exceptions)
-          const hasException = allRecurringAndExceptions.some(ex => ex.recurrenceId === parent.id && ex.originalStart === originalStartStr) ||
-                               normalTimeblocks.some(ex => ex.recurrenceId === parent.id && ex.originalStart === originalStartStr);
+          const hasException = allRecurringAndExceptions.some(ex => ex.recurrenceId === parent.id && normalizeIso(ex.originalStart) === originalStartStr) ||
+                               normalTimeblocks.some(ex => ex.recurrenceId === parent.id && normalizeIso(ex.originalStart) === originalStartStr);
           
           // Check if this is the original parent block itself
-          const isOriginal = parent.startTime === originalStartStr;
+          const isOriginal = normParentStart === originalStartStr;
 
           if (!hasException && !isOriginal) {
             virtualBlocks.push({
               ...parent,
               id: `virtual_${parent.id}_${originalStartStr}`,
               startTime: originalStartStr,
-              endTime: toLocalIso(instEnd),
+              endTime: endTimeStr,
               taskIds: [], // Virtual instances don't carry tasks initially
               completed: false, // Reset completion for instances
             });
@@ -162,14 +191,16 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     const visibleBlocks = combined.filter(b => {
       if (b.isDeleted) return false;
       if (b.recurrenceRule) {
-        const hasEx = allRecurringAndExceptions.some(ex => ex.recurrenceId === b.id && ex.originalStart === b.startTime) ||
-                      normalTimeblocks.some(ex => ex.recurrenceId === b.id && ex.originalStart === b.startTime);
+        const normBStart = normalizeIso(b.startTime);
+        const hasEx = allRecurringAndExceptions.some(ex => ex.recurrenceId === b.id && normalizeIso(ex.originalStart) === normBStart) ||
+                      normalTimeblocks.some(ex => ex.recurrenceId === b.id && normalizeIso(ex.originalStart) === normBStart);
         if (hasEx) return false;
       }
       return true;
     });
 
     set({ timeblocks: visibleBlocks });
+
   },
 
   addTimeblock: async (startTime: string, endTime: string, title?: string, color?: string, recurrenceRule?: string, link?: string) => {
@@ -248,6 +279,9 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       // If this block is an exception to a recurrence, we shouldn't completely delete it,
       // otherwise the parent recurrence rule will respawn the virtual block in its place.
       // Instead, we mark it as deleted.
+      set((state) => ({
+        timeblocks: state.timeblocks.filter((b) => b.id !== id),
+      }));
       await get().updateTimeblock(id, { isDeleted: true });
       return;
     }
@@ -267,8 +301,9 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   },
 
   createException: async (parentId: string, originalStart: string, newBlockData: Timeblock) => {
+    const normOriginalStart = normalizeIso(originalStart);
     set((state) => ({
-      timeblocks: [...state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${originalStart}`), newBlockData],
+      timeblocks: [...state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${normOriginalStart}` && tb.id !== `virtual_${parentId}_${originalStart}`), newBlockData],
       recurringTimeblocks: [...state.recurringTimeblocks, newBlockData],
     }));
 
@@ -283,7 +318,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
         link: newBlockData.link || null,
         recurrenceRule: null,
         recurrenceId: parentId,
-        originalStart: originalStart,
+        originalStart: normOriginalStart,
       });
 
       set({ recurringLoaded: false });
@@ -303,8 +338,8 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     try {
       const rule = rrulestr(oldRuleStr);
       const opt = rule.options;
-      const untilDate = new Date(originalStart);
-      untilDate.setSeconds(untilDate.getSeconds() - 1); // just before this occurrence
+      const untilDate = parseWallClockUtc(originalStart);
+      untilDate.setUTCSeconds(untilDate.getUTCSeconds() - 1); // just before this occurrence
       opt.until = untilDate;
       const newRule = new RRule(opt);
       oldRuleStr = newRule.toString();
@@ -351,19 +386,24 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   },
 
   deleteException: async (parentId: string, originalStart: string) => {
+    const normOriginalStart = normalizeIso(originalStart);
     const exId = crypto.randomUUID();
     const delEx: Timeblock = {
       id: exId,
-      startTime: originalStart,
-      endTime: originalStart, // dummy
+      startTime: normOriginalStart,
+      endTime: normOriginalStart, // dummy
       taskIds: [],
       recurrenceId: parentId,
-      originalStart: originalStart,
+      originalStart: normOriginalStart,
       isDeleted: true,
     };
     
     set((state) => ({
-      timeblocks: state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${originalStart}`),
+      timeblocks: state.timeblocks.filter(tb => 
+        tb.id !== `virtual_${parentId}_${normOriginalStart}` && 
+        tb.id !== `virtual_${parentId}_${originalStart}` && 
+        tb.id !== parentId
+      ),
       recurringTimeblocks: [...state.recurringTimeblocks, delEx],
     }));
 
@@ -371,14 +411,14 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       await invoke("add_timeblock", {
         id: exId,
         title: "Deleted Exception",
-        startTime: originalStart,
-        endTime: originalStart,
+        startTime: normOriginalStart,
+        endTime: normOriginalStart,
         notes: "",
         color: null,
         link: null,
         recurrenceRule: null,
         recurrenceId: parentId,
-        originalStart: originalStart,
+        originalStart: normOriginalStart,
         isDeleted: true,
       });
 
@@ -406,26 +446,28 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       if (!parent) return;
       
       const newExId = crypto.randomUUID();
-      const duration = new Date(parent.endTime).getTime() - new Date(parent.startTime).getTime();
-      const instStart = new Date(originalStart);
-      const instEnd = new Date(instStart.getTime() + duration);
-
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const toLocalIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+      const parentStartMs = parseWallClockUtc(parent.startTime).getTime();
+      const parentEndMs = parseWallClockUtc(parent.endTime).getTime();
+      const duration = Math.max(0, parentEndMs - parentStartMs);
+      const normStart = normalizeIso(originalStart);
+      const instStartMs = parseWallClockUtc(normStart).getTime();
+      const instEnd = new Date(instStartMs + duration);
+      const endTimeStr = formatWallClockUtc(instEnd);
 
       const exBlock: Timeblock = {
         ...parent,
         id: newExId,
-        startTime: originalStart,
-        endTime: toLocalIso(instEnd),
+        startTime: normStart,
+        endTime: endTimeStr,
         recurrenceRule: undefined,
         recurrenceId: parentId,
-        originalStart: originalStart,
+        originalStart: normStart,
         taskIds: [taskId],
         completed: false,
       };
 
-      await get().createException(parentId, originalStart, exBlock);
+      await get().createException(parentId, normStart, exBlock);
+
       
       if (isTauri()) {
         await invoke("assign_task_to_timeblock", { timeblockId: newExId, taskId });

@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect, useMemo } from "react";
 import { useTaskStore } from "../../store/taskStore";
-import { useCalendarStore } from "../../store/calendarStore";
+import { useCalendarStore, parseWallClockUtc } from "../../store/calendarStore";
 import { useSettingsStore } from "../../store/settingsStore";
+
 import { TaskDrawer } from "./TaskDrawer";
 import { TimeGrid } from "./TimeGrid";
 import { CalendarToolbar } from "./CalendarToolbar";
@@ -189,13 +190,14 @@ export function CalendarView({
   }
 
   const displayTimeblocks = useMemo(() => {
+    const active = timeblocks.filter(b => !b.isDeleted);
     if (pendingAction?.type === "update") {
-      return timeblocks.map(b => b.id === pendingAction.id ? { ...b, ...pendingAction.updates } : b);
+      return active.map(b => b.id === pendingAction.id ? { ...b, ...pendingAction.updates } : b);
     }
     if (pendingAction?.type === "delete") {
-      return timeblocks.filter(b => b.id !== pendingAction.id);
+      return active.filter(b => b.id !== pendingAction.id);
     }
-    return timeblocks;
+    return active;
   }, [timeblocks, pendingAction]);
 
   return (
@@ -203,9 +205,10 @@ export function CalendarView({
       <CalendarToolbar
         onNewBlock={async () => {
           const dStr = todayIso();
-          const newId = await calendarStore.addTimeblock(dStr + "T09:00", dStr + "T10:00", "New Block", getNextColor());
+          const newId = await calendarStore.addTimeblock(dStr + "T09:00:00", dStr + "T10:00:00", "New Block", getNextColor());
           setEditingBlock({ id: newId, isNew: true });
         }}
+
         onSave={onSave}
         onSaveAs={onSaveAs}
         onOpen={onOpen}
@@ -410,10 +413,11 @@ export function CalendarView({
                     try {
                       const rule = rrulestr(parent.recurrenceRule);
                       const opt = rule.options;
-                      const untilDate = new Date(info.originalStart);
-                      untilDate.setSeconds(untilDate.getSeconds() - 1);
+                      const untilDate = parseWallClockUtc(info.originalStart);
+                      untilDate.setUTCSeconds(untilDate.getUTCSeconds() - 1);
                       opt.until = untilDate;
                       calendarStore.updateTimeblock(info.parentId, { recurrenceRule: new RRule(opt).toString() });
+
                     } catch (e) {
                       calendarStore.deleteSeries(info.parentId);
                     }

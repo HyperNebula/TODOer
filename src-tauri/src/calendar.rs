@@ -79,7 +79,11 @@ pub fn open_calendar_db(
     // Add link column for existing databases (fails silently if already exists)
     let _ = conn.execute("ALTER TABLE timeblocks ADD COLUMN link TEXT;", []);
 
+    // Heal existing corrupted/orphaned deleted exceptions
+    let _ = conn.execute("UPDATE timeblocks SET is_deleted = 1 WHERE title = 'Deleted Exception';", []);
+
     *state.conn.lock().unwrap() = Some(conn);
+
     Ok(())
 }
 
@@ -205,16 +209,20 @@ pub fn add_timeblock(
     recurrence_rule: Option<String>,
     recurrence_id: Option<String>,
     original_start: Option<String>,
+    is_deleted: Option<bool>,
 ) -> Result<(), String> {
     let lock = state.conn.lock().unwrap();
     let conn = lock.as_ref().ok_or("No calendar database is open")?;
 
+    let is_del_val = if is_deleted.unwrap_or(false) { 1 } else { 0 };
+
     conn.execute(
-        "INSERT INTO timeblocks (id, title, start_time, end_time, notes, color, link, recurrence_rule, recurrence_id, original_start) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-        rusqlite::params![id, title, start_time, end_time, notes, color, link, recurrence_rule, recurrence_id, original_start],
+        "INSERT INTO timeblocks (id, title, start_time, end_time, notes, color, link, recurrence_rule, recurrence_id, original_start, is_deleted) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+        rusqlite::params![id, title, start_time, end_time, notes, color, link, recurrence_rule, recurrence_id, original_start, is_del_val],
     ).map_err(|e| e.to_string())?;
     Ok(())
 }
+
 
 #[tauri::command]
 pub fn update_timeblock(
