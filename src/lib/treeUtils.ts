@@ -70,11 +70,27 @@ function nextSiblingOrder(tasks: Task[], parentId: string | null): number {
 export function addTask(
   tasks: Task[],
   afterTaskId: string | null,
+  focusTaskId?: string | null,
 ): { tasks: Task[]; newTaskId: string } {
   let parentId: string | null = null;
   let order = nextSiblingOrder(tasks, null);
+  const focused = focusTaskId ? getTaskById(tasks, focusTaskId) : null;
 
-  if (afterTaskId) {
+  if (focused) {
+    const descendants = getDescendantIds(tasks, focused.id);
+    if (afterTaskId && descendants.has(afterTaskId)) {
+      const after = getTaskById(tasks, afterTaskId);
+      if (after) {
+        parentId = after.parentId;
+        order = after.order + 1;
+      }
+    } else {
+      // If afterTaskId is the focused task itself, null, or outside the focused subtree,
+      // create the task directly under the focused task/project.
+      parentId = focused.id;
+      order = nextSiblingOrder(tasks, focused.id);
+    }
+  } else if (afterTaskId) {
     const after = getTaskById(tasks, afterTaskId);
     if (after) {
       parentId = after.parentId;
@@ -82,17 +98,24 @@ export function addTask(
     }
   }
 
+  const parent = parentId ? getTaskById(tasks, parentId) : undefined;
   const newTask = createTask({
     title: "New Task",
     parentId,
     order,
+    ...(parent?.category ? { category: parent.category } : {}),
   });
 
   const updated = tasks.map((t) => {
-    if (t.parentId === parentId && t.order >= order) {
-      return { ...t, order: t.order + 1 };
+    let item = t;
+    // Auto-expand parent if collapsed so the new task is immediately visible
+    if (parentId && item.id === parentId && item.collapsed) {
+      item = { ...item, collapsed: false };
     }
-    return t;
+    if (item.parentId === parentId && item.order >= order) {
+      item = { ...item, order: item.order + 1 };
+    }
+    return item;
   });
 
   return { tasks: [...updated, newTask], newTaskId: newTask.id };

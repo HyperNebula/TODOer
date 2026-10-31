@@ -58,6 +58,39 @@ describe("treeUtils", () => {
     expect(newTask?.order).toBe(1);
   });
 
+  it("adds task under focused task when focused task is selected", () => {
+    const tasks = makeTasks();
+    // In focus mode on 'r', 'r' is selected
+    const { tasks: updated, newTaskId } = addTask(tasks, "r", "r");
+    const newTask = updated.find((t) => t.id === newTaskId);
+    expect(newTask?.parentId).toBe("r");
+    // 'r' already had 'c' (order 0) and 'c2' (order 1)
+    expect(newTask?.order).toBe(2);
+  });
+
+  it("adds task under focused task when nothing is selected", () => {
+    const tasks = makeTasks();
+    const { tasks: updated, newTaskId } = addTask(tasks, null, "r");
+    const newTask = updated.find((t) => t.id === newTaskId);
+    expect(newTask?.parentId).toBe("r");
+    expect(newTask?.order).toBe(2);
+  });
+
+  it("adds task as sibling of child under focused task when child is selected", () => {
+    const tasks = makeTasks();
+    const { tasks: updated, newTaskId } = addTask(tasks, "c", "r");
+    const newTask = updated.find((t) => t.id === newTaskId);
+    expect(newTask?.parentId).toBe("r");
+    expect(newTask?.order).toBe(1);
+    expect(updated.find((t) => t.id === "c2")?.order).toBe(2);
+  });
+
+  it("expands focused task when adding a task under it", () => {
+    const tasks = makeTasks().map((t) => (t.id === "r" ? { ...t, collapsed: true } : t));
+    const { tasks: updated } = addTask(tasks, "r", "r");
+    expect(updated.find((t) => t.id === "r")?.collapsed).toBe(false);
+  });
+
   it("adds sub-task under parent", () => {
     const tasks = makeTasks();
     const { tasks: updated, newTaskId } = addSubTask(tasks, "r");

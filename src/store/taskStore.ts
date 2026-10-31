@@ -240,8 +240,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   clearSelection: () => set({ selectedTaskId: null, multiSelectedIds: new Set() }),
 
   addTask: (afterTaskId) => {
-    const selected = afterTaskId ?? get().selectedTaskId;
-    const { tasks, newTaskId } = addTask(get().file.tasks, selected);
+    const { focusTaskId, selectedTaskId } = get();
+    const selected = afterTaskId ?? selectedTaskId;
+    const { tasks, newTaskId } = addTask(get().file.tasks, selected, focusTaskId);
     set((s) => ({
       file: touch({ ...s.file, tasks }),
       dirty: true,

@@ -106,4 +106,16 @@ describe("taskStore - selection", () => {
     const created = state.file.tasks.find((t) => t.id === newId);
     expect(created?.priority).toBeNull();
   });
+
+  it("addTask creates a task under focusTaskId when in focus mode", () => {
+    const store = useTaskStore.getState();
+    store.setFocusTask("t1");
+    store.setSelectedTaskId("t1");
+
+    const newTaskId = store.addTask();
+    const state = useTaskStore.getState();
+    const newTask = state.file.tasks.find((t) => t.id === newTaskId);
+    expect(newTask?.parentId).toBe("t1");
+    expect(state.selectedTaskId).toBe(newTaskId);
+  });
 });
