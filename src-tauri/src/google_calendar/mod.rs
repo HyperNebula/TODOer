@@ -4,6 +4,7 @@ pub mod commands;
 pub mod engine;
 pub mod incoming;
 pub mod mapping;
+pub mod recurrence;
 pub mod storage;
 #[cfg(test)]
 pub mod testing;

@@ -1,4 +1,4 @@
-import { RRule, rrulestr } from "rrule";
+import { RRule, RRuleSet, rrulestr } from "rrule";
 import type { Timeblock } from "../types/task";
 import {
   addDays, daysBetween, formatWallClockUtc, hasOffset, instantMs, normalizeIso,
@@ -17,29 +17,84 @@ export function occurrenceEnd(parent: Timeblock, originalStart: string, displayZ
   return end;
 }
 
-function recurrenceRule(parent: Timeblock, zone: string): RRule {
+export function canEditRecurrence(value?: string | null): boolean {
+  if (!value) return true;
+  const lines=value.split(/\r?\n/).filter(line=>!line.startsWith("DTSTART"));
+  if(lines.length!==1 || !lines[0].startsWith("RRULE:")) return false;
+  return lines[0].slice(6).split(";").every(part=>{
+    const [key,content]=part.split("=");
+    return ["FREQ","INTERVAL","COUNT","UNTIL","WKST"].includes(key) || (key==="BYDAY" && !/[0-9+-]/.test(content));
+  });
+}
+
+function recurrenceRule(parent: Timeblock, zone: string): RRule | RRuleSet {
   const wall = parent.allDay ? parent.startTime + "T00:00:00" : wallInZone(parent.startTime, zone);
   const dtstart = parseWallClockUtc(wall);
-  const rule = rrulestr(parent.recurrenceRule!, { dtstart });
-  if (!(rule instanceof RRule)) throw new Error("This recurrence set is not supported by the local calendar editor.");
-  const options = { ...rule.origOptions, dtstart };
-  // Zoned RRULE UNTIL is an instant; rrule's timezone-free expansion needs its wall time.
-  if (options.until && !parent.allDay && (parent.timeZone || hasOffset(parent.startTime))) {
-    options.until = parseWallClockUtc(wallInZone(options.until.toISOString(), zone));
-  }
-  return new RRule(options);
+  const compact=(value:string)=>value.replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const lines=parent.recurrenceRule!.split(/\r?\n/).filter(line=>!line.startsWith("DTSTART")).map(line=>{
+    if(!/^(EXDATE|RDATE)/.test(line)) return line;
+    const separator=line.indexOf(":");
+    const prefix=line.slice(0,separator);const sourceZone=prefix.match(/TZID=([^;:]+)/)?.[1] || zone;
+    const values=line.slice(separator+1).split(",").map(value=>{
+      const match=value.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/);
+      if(!match) throw new Error("This recurrence contains an invalid date.");
+      const date=`${match[1]}-${match[2]}-${match[3]}`;
+      let local=`${date}T${match[4] || "00"}:${match[5] || "00"}:${match[6] || "00"}`;
+      if(!parent.allDay && (match[7] || sourceZone!==zone)) {
+        const instant=match[7] ? local+"Z" : wallToTimestamp(local,sourceZone);
+        local=wallInZone(instant,zone);
+      }
+      return compact(local)+"Z";
+    });
+    return prefix.split(";")[0]+":"+values.join(",");
+  });
+  const parsed=rrulestr(lines.join("\n"), {dtstart});
+  const normalize=(rule:RRule)=>{
+    const options={...rule.origOptions,dtstart};
+    if(options.until && !parent.allDay && (parent.timeZone || hasOffset(parent.startTime))) {
+      options.until=parseWallClockUtc(wallInZone(options.until.toISOString(),zone));
+    }
+    return new RRule(options);
+  };
+  if(!(parsed instanceof RRuleSet)) return normalize(parsed);
+  const set=new RRuleSet();
+  parsed.rrules().forEach(rule=>set.rrule(normalize(rule)));
+  parsed.exrules().forEach(rule=>set.exrule(normalize(rule)));
+  parsed.rdates().forEach(date=>set.rdate(date));parsed.exdates().forEach(date=>set.exdate(date));
+  return set;
 }
 
 export function truncateSeries(parent: Timeblock, originalStart: string, displayZone: string): string {
   const zone = parent.timeZone || displayZone;
   const wall = parent.allDay ? parent.startTime + "T00:00:00" : wallInZone(parent.startTime, zone);
   const rule = rrulestr(parent.recurrenceRule!, { dtstart: parseWallClockUtc(wall) });
-  if (!(rule instanceof RRule)) throw new Error("This recurrence set cannot be split in TODOer.");
+  if (rule instanceof RRuleSet) throw new Error("This recurrence set cannot be split in TODOer.");
   const until = parent.allDay || (!parent.timeZone && !hasOffset(parent.startTime))
     ? parseWallClockUtc(originalStart) : new Date(instantMs(originalStart, zone));
   until.setUTCSeconds(until.getUTCSeconds() - 1);
   // UNTIL and COUNT must not coexist; the shortened original is bounded by UNTIL.
   return new RRule({ ...rule.origOptions, dtstart: parseWallClockUtc(wall), count: null, until }).toString();
+}
+
+export function followingRule(parent: Timeblock, originalStart: string, requested: string | null | undefined, displayZone: string): string | null | undefined {
+  const value=requested === undefined ? parent.recurrenceRule : requested;
+  if(!value) return value;
+  const zone=parent.timeZone || displayZone;
+  const original=recurrenceRule(parent,zone);
+  const next=rrulestr(value);
+  if(original instanceof RRuleSet || next instanceof RRuleSet) throw new Error("Edit this recurrence set in Google Calendar.");
+  const options={...next.origOptions,dtstart:undefined};
+  if(original.origOptions.count && options.count===original.origOptions.count) {
+    const start=parent.allDay ? parent.startTime : wallInZone(parent.startTime,zone);
+    const cutoff=parent.allDay ? originalStart : wallInZone(originalStart,zone);
+    const before=new RRule({...original.origOptions,count:null}).between(parseWallClockUtc(start),parseWallClockUtc(cutoff),true)
+      .filter(date=>date<parseWallClockUtc(cutoff)).filter(date=>{
+        if(parent.allDay || (!parent.timeZone && !hasOffset(parent.startTime))) return true;
+        try {wallToTimestamp(formatWallClockUtc(date),zone);return true;}catch{return false;}
+      }).length;
+    options.count=Math.max(1,original.origOptions.count-before);
+  }
+  return new RRule(options).toString();
 }
 
 export function expandTimeblocks(
@@ -65,14 +120,14 @@ export function expandTimeblocks(
     const rangeEnd = parseWallClockUtc(rangeWall(end));
     let rule = recurrenceRule(parent, zone);
     const parentWall = parent.allDay ? parent.startTime + "T00:00:00" : wallInZone(parent.startTime, zone);
-    const count = rule.origOptions.count;
+    const count = !(rule instanceof RRuleSet) ? rule.origOptions.count : null;
     // Invalid local times do not consume COUNT (RFC 5545). Count valid starts from DTSTART.
-    if (count) rule = new RRule({ ...rule.origOptions, count: null });
+    if (count && !(rule instanceof RRuleSet)) rule = new RRule({ ...rule.origOptions, count: null });
     let validStarts = 0;
     const occurrences = rule.between(count ? parseWallClockUtc(parentWall) : rangeStart, rangeEnd, true, date => {
       if (!count) return true;
       try {
-        if (!parent.allDay) wallToTimestamp(formatWallClockUtc(date), zone, parent.startTime);
+        if (!parent.allDay && !legacy) wallToTimestamp(formatWallClockUtc(date), zone, parent.startTime);
         return ++validStarts <= count;
       } catch (error) {
         if (error instanceof Error && error.message.includes("does not exist")) return true;

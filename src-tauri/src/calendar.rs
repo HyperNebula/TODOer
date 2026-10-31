@@ -58,7 +58,7 @@ pub fn migrate(conn: &mut Connection) -> Result<(), String> {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |r| r.get(0))
         .map_err(|e| e.to_string())?;
-    if version > 3 {
+    if version > 4 {
         return Err("This calendar was created by a newer TODOer version".into());
     }
     if version < 1 {
@@ -120,6 +120,13 @@ pub fn migrate(conn: &mut Connection) -> Result<(), String> {
         let tx = conn.transaction().map_err(|e| e.to_string())?;
         crate::google_calendar::storage::migrate(&tx).map_err(|e| e.message)?;
         tx.pragma_update(None, "user_version", 3)
+            .map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+    }
+    if version < 4 {
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        crate::google_calendar::storage::migrate_hierarchy(&tx).map_err(|e| e.message)?;
+        tx.pragma_update(None, "user_version", 4)
             .map_err(|e| e.to_string())?;
         tx.commit().map_err(|e| e.to_string())?;
     }
@@ -233,6 +240,68 @@ pub fn copy_calendar_db(source_list_path: String, target_list_path: String) -> R
     )
 }
 
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum CalendarMutation {
+    Insert {
+        block: TimeblockRow,
+    },
+    Update {
+        id: String,
+        updates: serde_json::Value,
+    },
+    DeleteSeries {
+        id: String,
+    },
+    Assign {
+        id: String,
+        task_id: String,
+    },
+}
+
+pub fn apply_batch_on(conn: &Connection, operations: Vec<CalendarMutation>) -> Result<(), String> {
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    for operation in operations {
+        match operation {
+            CalendarMutation::Insert { block } => {
+                crate::google_calendar::storage::write_row(&tx, &block).map_err(|e| e.message)?;
+                tx.execute(
+                    "UPDATE timeblocks SET completed=?2,color=?3,link=?4 WHERE id=?1",
+                    rusqlite::params![block.id, block.completed, block.color, block.link],
+                )
+                .map_err(|e| e.to_string())?;
+                for task_id in block.task_ids {
+                    assign_task_to_timeblock_on(&tx, block.id.clone(), task_id)?;
+                }
+            }
+            CalendarMutation::Update { id, updates } => {
+                update_timeblock_on(&tx, id, updates.to_string())?
+            }
+            CalendarMutation::DeleteSeries { id } => {
+                tx.execute(
+                    "DELETE FROM timeblocks WHERE recurrence_id=?1 OR id=?1",
+                    [id],
+                )
+                .map_err(|e| e.to_string())?;
+            }
+            CalendarMutation::Assign { id, task_id } => {
+                assign_task_to_timeblock_on(&tx, id, task_id)?
+            }
+        }
+    }
+    tx.commit().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn calendar_apply_batch(
+    state: tauri::State<'_, CalendarDb>,
+    database_id: String,
+    operations: Vec<CalendarMutation>,
+) -> Result<(), String> {
+    let active = state.conn.lock().map_err(|e| e.to_string())?;
+    apply_batch_on(checked(&active, &database_id)?, operations)
+}
+
 #[cfg(test)]
 mod storage_tests {
     use super::*;
@@ -302,7 +371,7 @@ mod storage_tests {
     fn version_two_preserves_legacy_times_and_task_links() {
         let mut conn = Connection::open_in_memory().unwrap();
         migrate(&mut conn).unwrap();
-        conn.execute_batch("DROP TRIGGER IF EXISTS sync_local_insert; DROP TRIGGER IF EXISTS sync_local_update; DROP TRIGGER IF EXISTS sync_local_delete; ALTER TABLE timeblocks DROP COLUMN all_day;
+        conn.execute_batch("DROP TRIGGER IF EXISTS sync_local_insert; DROP TRIGGER IF EXISTS sync_local_update; DROP TRIGGER IF EXISTS sync_local_delete; ALTER TABLE sync_outbox DROP COLUMN parent_id; ALTER TABLE timeblocks DROP COLUMN all_day;
             ALTER TABLE timeblocks DROP COLUMN time_zone;
             PRAGMA user_version = 1;
             INSERT INTO timeblocks (id, start_time, end_time, notes, completed) VALUES ('legacy', '2026-10-31T09:00:00', '2026-10-31T10:00:00', 'preserve', 1);

@@ -3,8 +3,8 @@ import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type { Timeblock } from "../types/task";
 import { useTaskStore } from "./taskStore";
 import { isTauri } from "../lib/fileApi";
-import { expandTimeblocks, occurrenceEnd, truncateSeries } from "../lib/calendarRecurrence";
-import { dayStartMs, normalizeIso, normalizeSchedule, systemTimeZone, validateTimeZone } from "../lib/calendarDate";
+import { expandTimeblocks, followingRule, occurrenceEnd, truncateSeries } from "../lib/calendarRecurrence";
+import { dayStartMs, normalizeIso, normalizeSchedule, systemTimeZone, validateTimeZone, sameOccurrence, instantMs } from "../lib/calendarDate";
 export { normalizeIso, parseWallClockUtc, formatWallClockUtc } from "../lib/calendarDate";
 
 interface CalendarRow {
@@ -33,6 +33,13 @@ function fromCalendarRow(row: CalendarRow): Timeblock {
     recurrenceId: row.recurrence_id || undefined, originalStart: row.original_start || undefined,
     isDeleted: row.is_deleted, allDay: !!row.all_day, timeZone: row.time_zone || undefined,
   };
+}
+
+function toCalendarRow(block: Timeblock): CalendarRow {
+  return { id:block.id,title:block.title || "New Timeblock",start_time:block.startTime,end_time:block.endTime,
+    notes:block.notes || "",completed:!!block.completed,color:block.color || null,link:block.link || null,
+    task_ids:block.taskIds,recurrence_rule:block.recurrenceRule || null,recurrence_id:block.recurrenceId || null,
+    original_start:block.originalStart || null,is_deleted:!!block.isDeleted,all_day:!!block.allDay,time_zone:block.timeZone || null };
 }
 
 interface CalendarStore {
@@ -269,35 +276,13 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       id: newBlockData.id.startsWith("virtual_") ? crypto.randomUUID() : newBlockData.id,
       recurrenceRule: undefined, recurrenceId: parentId, originalStart: normOriginalStart,
     }, get().timeZone, true);
-    set((state) => ({
-      timeblocks: [...state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${normOriginalStart}` && tb.id !== `virtual_${parentId}_${originalStart}`), newBlockData],
-      recurringTimeblocks: [...state.recurringTimeblocks, newBlockData],
-    }));
-
-    if (isTauri()) {
-      await invoke("add_timeblock", {
-        id: newBlockData.id,
-        title: newBlockData.title || "New Timeblock",
-        allDay: !!newBlockData.allDay,
-        timeZone: newBlockData.timeZone || null,
-        startTime: newBlockData.startTime,
-        endTime: newBlockData.endTime,
-        notes: newBlockData.notes || "",
-        color: newBlockData.color || null,
-        link: newBlockData.link || null,
-        recurrenceRule: null,
-        recurrenceId: parentId,
-        originalStart: normOriginalStart,
-      });
-
-      for (const taskId of newBlockData.taskIds) {
-        await invoke("assign_task_to_timeblock", { timeblockId: newBlockData.id, taskId });
-      }
-      set({ recurringLoaded: false });
-      if (get().currentRangeStart && get().currentRangeEnd) {
-        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
-      }
-    }
+    const parent=get().recurringTimeblocks.find(block=>block.id===parentId);
+    const previous=get().recurringTimeblocks.find(block=>block.recurrenceId===parentId && sameOccurrence(block.originalStart,originalStart,!!parent?.allDay,parent?.timeZone || get().timeZone));
+    if(previous) newBlockData.id=previous.id;
+    if(isTauri()) await invoke("calendar_apply_batch", { operations:[{type:"insert",block:toCalendarRow(newBlockData)}] });
+    set(state=>({timeblocks:[...state.timeblocks.filter(block=>block.id!==newBlockData.id && block.id!==`virtual_${parentId}_${normOriginalStart}`),newBlockData],
+      recurringTimeblocks:[...state.recurringTimeblocks.filter(block=>block.id!==newBlockData.id),newBlockData],recurringLoaded:false}));
+    if(get().currentRangeStart && get().currentRangeEnd) await get().loadRange(get().currentRangeStart!,get().currentRangeEnd!);
   },
 
   splitSeries: async (parentId: string, originalStart: string, newBlockData: Timeblock) => {
@@ -309,44 +294,26 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
 
     const oldRuleStr = truncateSeries(oldParent, originalStart, get().timeZone);
 
-    await get().updateTimeblock(parentId, { recurrenceRule: oldRuleStr });
+    const futureExceptions=get().recurringTimeblocks.filter(block=>block.recurrenceId===parentId && block.originalStart &&
+      (oldParent.allDay ? block.originalStart>=originalStart : instantMs(block.originalStart,oldParent.timeZone || get().timeZone)>=instantMs(originalStart,oldParent.timeZone || get().timeZone)));
+    if(futureExceptions.length) throw new Error("This series has future exceptions. Edit those occurrences in Google Calendar before splitting the series; their local changes have been preserved.");
 
     // The new block is a new series starting from this occurrence
     const newId = crypto.randomUUID();
     const splitBlock = {
       ...newBlockData,
       id: newId,
-      recurrenceRule: newBlockData.recurrenceRule === undefined ? oldParent.recurrenceRule : newBlockData.recurrenceRule,
+      recurrenceRule: followingRule(oldParent,originalStart,newBlockData.recurrenceRule,get().timeZone),
       recurrenceId: undefined,
       originalStart: undefined,
     };
 
-    set((state) => ({
-      timeblocks: [...state.timeblocks.filter(tb => tb.id !== `virtual_${parentId}_${originalStart}`), splitBlock],
-      recurringTimeblocks: [...state.recurringTimeblocks, splitBlock],
-    }));
-
-    if (isTauri()) {
-      await invoke("add_timeblock", {
-        id: splitBlock.id,
-        title: splitBlock.title,
-        allDay: !!splitBlock.allDay,
-        timeZone: splitBlock.timeZone || null,
-        startTime: splitBlock.startTime,
-        endTime: splitBlock.endTime,
-        notes: splitBlock.notes || "",
-        color: splitBlock.color || null,
-        link: splitBlock.link || null,
-        recurrenceRule: splitBlock.recurrenceRule || null,
-        recurrenceId: null,
-        originalStart: null,
-      });
-
-      set({ recurringLoaded: false });
-      if (get().currentRangeStart && get().currentRangeEnd) {
-        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
-      }
-    }
+    if(isTauri()) await invoke("calendar_apply_batch", { operations:[
+      {type:"update",id:parentId,updates:{recurrence_rule:oldRuleStr}}, {type:"insert",block:toCalendarRow(splitBlock)},
+    ] });
+    set(state=>({timeblocks:[...state.timeblocks.filter(block=>block.id!==`virtual_${parentId}_${originalStart}`),splitBlock],
+      recurringTimeblocks:[...state.recurringTimeblocks.map(block=>block.id===parentId ? {...block,recurrenceRule:oldRuleStr}:block),splitBlock],recurringLoaded:false}));
+    if(get().currentRangeStart && get().currentRangeEnd) await get().loadRange(get().currentRangeStart!,get().currentRangeEnd!);
   },
 
   deleteException: async (parentId: string, originalStart: string) => {
@@ -365,43 +332,18 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       timeZone: get().recurringTimeblocks.find(block => block.id === parentId)?.timeZone,
     };
     
-    set((state) => ({
-      timeblocks: state.timeblocks.filter(tb => 
-        tb.id !== `virtual_${parentId}_${normOriginalStart}` && 
-        tb.id !== `virtual_${parentId}_${originalStart}` && 
-        tb.id !== parentId
-      ),
-      recurringTimeblocks: [...state.recurringTimeblocks, delEx],
-    }));
-
-    if (isTauri()) {
-      await invoke("add_timeblock", {
-        id: exId,
-        title: "Deleted Exception",
-        allDay: !!delEx.allDay,
-        timeZone: delEx.timeZone || null,
-        startTime: normOriginalStart,
-        endTime: normOriginalStart,
-        notes: "",
-        color: null,
-        link: null,
-        recurrenceRule: null,
-        recurrenceId: parentId,
-        originalStart: normOriginalStart,
-        isDeleted: true,
-      });
-
-      set({ recurringLoaded: false });
-      if (get().currentRangeStart && get().currentRangeEnd) {
-        await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);
-      }
-    }
+    const previous=get().recurringTimeblocks.find(block=>block.recurrenceId===parentId && sameOccurrence(block.originalStart,originalStart,!!delEx.allDay,delEx.timeZone || get().timeZone));
+    if(previous) delEx.id=previous.id;
+    if(isTauri()) await invoke("calendar_apply_batch",{operations:[{type:"insert",block:toCalendarRow({...delEx,title:"Deleted Exception"})}]});
+    set(state=>({timeblocks:state.timeblocks.filter(block=>block.id!==delEx.id && block.id!==`virtual_${parentId}_${normOriginalStart}` && !(block.id===parentId&&sameOccurrence(block.startTime,originalStart,!!delEx.allDay,delEx.timeZone || get().timeZone))),
+      recurringTimeblocks:[...state.recurringTimeblocks.filter(block=>block.id!==delEx.id),delEx],recurringLoaded:false}));
+    if(get().currentRangeStart && get().currentRangeEnd) await get().loadRange(get().currentRangeStart!,get().currentRangeEnd!);
   },
 
   deleteSeries: async (parentId: string) => {
     const invoke = calendarCommand(get().databaseId);
     if (isTauri()) {
-      await invoke("delete_timeblock", { id: parentId });
+      await invoke("calendar_apply_batch", {operations:[{type:"delete_series",id:parentId}]});
       set({ recurringLoaded: false });
       if (get().currentRangeStart && get().currentRangeEnd) {
         await get().loadRange(get().currentRangeStart!, get().currentRangeEnd!);

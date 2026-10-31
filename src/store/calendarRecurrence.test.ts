@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeIso, parseWallClockUtc, formatWallClockUtc } from "./calendarStore";
 import { rrulestr } from "rrule";
-import { expandTimeblocks, truncateSeries } from "../lib/calendarRecurrence";
+import { canEditRecurrence, expandTimeblocks, followingRule, truncateSeries } from "../lib/calendarRecurrence";
 import type { Timeblock } from "../types/task";
 
 describe("calendar recurrence & wall-clock utilities", () => {
@@ -161,10 +161,22 @@ describe("actual calendar recurrence expansion", () => {
     expect(result).toHaveLength(1);
   });
 
+  it("displays Google recurrence sets while protecting their raw rules from unsupported editing", () => {
+    const event=parent({startTime:"2026-10-27T19:00:00-06:00",endTime:"2026-10-27T20:00:00-06:00",recurrenceRule:"RRULE:FREQ=DAILY;COUNT=3\nEXDATE;TZID=America/Denver:20261028T190000\nRDATE:20261031T010000Z"});
+    const result=expandTimeblocks([event],[event],"2026-10-27","2026-11-01","America/Denver");
+    expect(result.map(block=>block.startTime)).toEqual(["2026-10-27T19:00:00-06:00","2026-10-29T19:00:00-06:00","2026-10-30T19:00:00-06:00"]);
+    expect(canEditRecurrence(event.recurrenceRule)).toBe(false);
+  });
+
   it("stops this-and-following deletion at the chosen instant across daylight-saving changes", () => {
     const event = parent();
     const shortened = { ...event, recurrenceRule: truncateSeries(event, "2026-11-03T19:00:00-07:00", "America/Denver") };
     const result = expandTimeblocks([shortened], [shortened], "2026-10-25", "2026-11-15", "America/Denver");
     expect(result.map(block => block.startTime)).toEqual([event.startTime]);
+  });
+
+  it("keeps only the remaining COUNT when splitting a finite series", () => {
+    const event=parent({recurrenceRule:"RRULE:FREQ=DAILY;COUNT=5"});
+    expect(followingRule(event,"2026-10-29T19:00:00-06:00",event.recurrenceRule,"America/Denver")).toContain("COUNT=3");
   });
 });

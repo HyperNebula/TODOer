@@ -378,7 +378,7 @@ export function CalendarView({
             if (info) {
               if (pendingAction.type === "update") {
                 if (pendingAction.id.startsWith("virtual_")) {
-                  calendarStore.splitSeries(info.parentId, info.originalStart, { ...info.block, ...pendingAction.updates });
+                  void calendarStore.splitSeries(info.parentId, info.originalStart, { ...info.block, ...pendingAction.updates }).catch(error=>useCalendarStore.setState({databaseError:String(error)}));
                 } else {
                   calendarStore.updateTimeblock(info.parentId, pendingAction.updates);
                 }

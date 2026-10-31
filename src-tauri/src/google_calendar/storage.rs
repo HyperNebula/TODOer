@@ -16,6 +16,18 @@ pub fn migrate(conn: &Connection) -> Result<()> {
         CREATE TABLE IF NOT EXISTS sync_outbox (local_id TEXT PRIMARY KEY, revision INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0);
         CREATE TABLE IF NOT EXISTS sync_conflicts (local_id TEXT PRIMARY KEY, remote_json TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'changed', series_id TEXT);
         CREATE TABLE IF NOT EXISTS sync_remote_cache (remote_id TEXT PRIMARY KEY, raw_json TEXT NOT NULL);").map_err(GoogleError::storage)?;
+    install_triggers(conn, false)
+}
+
+pub fn migrate_hierarchy(conn: &Connection) -> Result<()> {
+    conn.execute_batch("CREATE TABLE IF NOT EXISTS sync_retired(remote_id TEXT PRIMARY KEY); ALTER TABLE sync_outbox ADD COLUMN parent_id TEXT;
+        UPDATE sync_outbox SET parent_id=(SELECT recurrence_id FROM timeblocks WHERE id=local_id);
+        DROP TRIGGER sync_local_insert; DROP TRIGGER sync_local_update; DROP TRIGGER sync_local_delete;")
+        .map_err(GoogleError::storage)?;
+    install_triggers(conn, true)
+}
+
+fn install_triggers(conn: &Connection, hierarchy: bool) -> Result<()> {
     let changed = [
         "title",
         "notes",
@@ -55,12 +67,23 @@ pub fn migrate(conn: &Connection) -> Result<()> {
             "1",
         ),
     ] {
+        let column = if hierarchy { ",parent_id" } else { "" };
+        let value = if hierarchy {
+            format!(",{record}.recurrence_id")
+        } else {
+            String::new()
+        };
+        let update = if hierarchy {
+            ",parent_id=excluded.parent_id"
+        } else {
+            ""
+        };
         conn.execute_batch(&format!("CREATE TRIGGER IF NOT EXISTS {name} AFTER {action} ON timeblocks
             WHEN (SELECT importing FROM sync_control WHERE singleton=1)=0 AND EXISTS(SELECT 1 FROM sync_binding) AND ({condition})
             BEGIN
                 UPDATE sync_control SET revision=revision+1 WHERE singleton=1;
-                INSERT INTO sync_outbox(local_id,revision,deleted) VALUES({record}.id,(SELECT revision FROM sync_control WHERE singleton=1),{deleted})
-                ON CONFLICT(local_id) DO UPDATE SET revision=excluded.revision,deleted=excluded.deleted;
+                INSERT INTO sync_outbox(local_id,revision,deleted{column}) VALUES({record}.id,(SELECT revision FROM sync_control WHERE singleton=1),{deleted}{value})
+                ON CONFLICT(local_id) DO UPDATE SET revision=excluded.revision,deleted=excluded.deleted{update};
             END;")).map_err(GoogleError::storage)?;
     }
     Ok(())
@@ -161,8 +184,8 @@ pub fn write_row(conn: &Connection, row: &TimeblockRow) -> Result<()> {
 
 pub fn queue_all(conn: &Connection) -> Result<()> {
     conn.execute_batch("UPDATE sync_control SET revision=revision+1 WHERE singleton=1;
-        INSERT INTO sync_outbox(local_id,revision,deleted) SELECT id,(SELECT revision FROM sync_control WHERE singleton=1),is_deleted FROM timeblocks WHERE 1
-        ON CONFLICT(local_id) DO UPDATE SET revision=excluded.revision,deleted=excluded.deleted;").map_err(GoogleError::storage)
+        INSERT INTO sync_outbox(local_id,revision,deleted,parent_id) SELECT id,(SELECT revision FROM sync_control WHERE singleton=1),is_deleted,recurrence_id FROM timeblocks WHERE 1
+        ON CONFLICT(local_id) DO UPDATE SET revision=excluded.revision,deleted=excluded.deleted,parent_id=excluded.parent_id;").map_err(GoogleError::storage)
 }
 
 #[derive(Clone)]
@@ -170,15 +193,18 @@ pub struct Pending {
     pub local_id: String,
     pub revision: i64,
     pub deleted: bool,
+    pub parent_id: Option<String>,
 }
 pub fn pending(conn: &Connection) -> Result<Vec<Pending>> {
-    let mut stmt=conn.prepare("SELECT local_id,revision,deleted FROM sync_outbox WHERE local_id NOT IN (SELECT local_id FROM sync_conflicts) ORDER BY revision,local_id").map_err(GoogleError::storage)?;
+    let mut stmt=conn.prepare("SELECT o.local_id,o.revision,o.deleted,o.parent_id FROM sync_outbox o WHERE NOT EXISTS (
+        SELECT 1 FROM sync_conflicts c WHERE c.local_id=o.local_id OR c.series_id=o.local_id OR c.local_id=o.parent_id OR c.series_id=o.parent_id) ORDER BY o.revision,o.local_id").map_err(GoogleError::storage)?;
     let result = stmt
         .query_map([], |r| {
             Ok(Pending {
                 local_id: r.get(0)?,
                 revision: r.get(1)?,
                 deleted: r.get(2)?,
+                parent_id: r.get(3)?,
             })
         })
         .map_err(GoogleError::storage)?;
@@ -276,12 +302,41 @@ pub fn conflict(
     kind: &str,
     series: Option<&str>,
 ) -> Result<()> {
+    let inferred = if series.is_none() {
+        let row = row(conn, local_id)?;
+        row.as_ref()
+            .and_then(|row| row.recurrence_id.clone())
+            .or_else(|| {
+                row.filter(|row| row.recurrence_rule.is_some())
+                    .map(|row| row.id)
+            })
+            .or_else(|| {
+                conn.query_row(
+                    "SELECT parent_id FROM sync_outbox WHERE local_id=?1",
+                    [local_id],
+                    |r| r.get::<_, Option<String>>(0),
+                )
+                .optional()
+                .ok()
+                .flatten()
+                .flatten()
+            })
+            .or_else(|| {
+                remote["recurrence"]
+                    .as_array()
+                    .filter(|r| !r.is_empty())
+                    .map(|_| local_id.to_string())
+            })
+    } else {
+        None
+    };
+    let series = series.or(inferred.as_deref());
     conn.execute("INSERT INTO sync_conflicts(local_id,remote_json,kind,series_id) VALUES(?1,?2,?3,?4) ON CONFLICT(local_id) DO UPDATE SET remote_json=excluded.remote_json,kind=excluded.kind,series_id=excluded.series_id",rusqlite::params![local_id,remote.to_string(),kind,series]).map_err(GoogleError::storage)?;
     Ok(())
 }
 
 pub fn clear_binding(conn: &Connection) -> Result<()> {
-    conn.execute_batch("DELETE FROM sync_binding; DELETE FROM sync_events; DELETE FROM sync_outbox; DELETE FROM sync_conflicts; DELETE FROM sync_remote_cache;").map_err(GoogleError::storage)
+    conn.execute_batch("DELETE FROM sync_binding; DELETE FROM sync_events; DELETE FROM sync_outbox; DELETE FROM sync_conflicts; DELETE FROM sync_remote_cache; DELETE FROM sync_retired;").map_err(GoogleError::storage)
 }
 
 #[cfg(test)]

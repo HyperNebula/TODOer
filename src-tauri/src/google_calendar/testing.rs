@@ -96,6 +96,11 @@ impl CalendarApi for FakeApi<'_> {
         self.wrote()
     }
     fn instances(&mut self, _: &str, _: &str, _: &str, _: &str, _: Option<&str>) -> Result<Value> {
+        for event in &self.instance_events {
+            self.events
+                .entry(event["id"].as_str().unwrap().into())
+                .or_insert_with(|| event.clone());
+        }
         Ok(json!({"items":self.instance_events}))
     }
 }

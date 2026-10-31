@@ -427,6 +427,7 @@ pub fn run() {
         calendar::open_calendar_db,
         calendar::close_calendar_db,
         calendar::copy_calendar_db,
+        calendar::calendar_apply_batch,
         save_tasklist_as_with_calendar,
         calendar::get_timeblocks_for_range,
         calendar::get_recurring_timeblocks,

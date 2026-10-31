@@ -127,10 +127,18 @@ pub fn canonical(event: &Value, zone: &str) -> Result<Value> {
             json!({ "dateTime": instant.with_timezone(&chrono::Utc).to_rfc3339_opts(SecondsFormat::AutoSi, true), "timeZone": value["timeZone"].as_str().unwrap_or(zone) }),
         )
     };
+    let mut original = if event["recurringEventId"].is_string() {
+        time(&event["originalStartTime"])?
+    } else {
+        Value::Null
+    };
+    if let Some(value) = original.as_object_mut() {
+        value.remove("timeZone");
+    }
     let mut recurrence = event["recurrence"].as_array().cloned().unwrap_or_default();
     recurrence.sort_by_key(Value::to_string);
     Ok(
-        json!({ "summary": event["summary"].as_str().unwrap_or(""), "description": event["description"].as_str().unwrap_or(""), "start": time(&event["start"])?, "end": time(&event["end"])?, "recurrence": recurrence }),
+        json!({ "summary": event["summary"].as_str().unwrap_or(""), "description": event["description"].as_str().unwrap_or(""), "start": time(&event["start"])?, "end": time(&event["end"])?, "recurrence": recurrence, "recurringEventId": event["recurringEventId"].as_str(), "originalStartTime": original }),
     )
 }
 

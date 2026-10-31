@@ -4,6 +4,8 @@ import { RRule, rrulestr } from "rrule";
 import { openFileLink } from "../../lib/fileApi";
 import { addDays, hasOffset, normalizeSchedule, wallInZone, wallToTimestamp } from "../../lib/calendarDate";
 import { useCalendarStore } from "../../store/calendarStore";
+import { canEditRecurrence } from "../../lib/calendarRecurrence";
+import { googleOpenEvent, googleErrorMessage } from "../../lib/googleCalendarApi";
 import "./TimeblockEditDialog.css";
 
 interface Props {
@@ -25,6 +27,8 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   const [color, setColor] = useState(block.color || "");
   const [link, setLink] = useState(block.link || "");
   
+  const scheduleReadOnly = !canEditRecurrence(block.recurrenceRule);
+  const databaseId=useCalendarStore(state=>state.databaseId);
   const displayZone = useCalendarStore(state => state.timeZone);
   const [allDay, setAllDay] = useState(!!block.allDay);
   const [timeZone, setTimeZone] = useState(block.timeZone || displayZone);
@@ -58,6 +62,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   useEffect(() => {
     if (block.recurrenceRule) {
       setIsRecurring(true);
+      if(scheduleReadOnly) return;
       try {
         const rule = rrulestr(block.recurrenceRule);
         setFrequency(rule.options.freq);
@@ -90,7 +95,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
         startTime: schedule.startTime, endTime: schedule.endTime, allDay, timeZone: schedule.timeZone,
       };
 
-      if (isRecurring) {
+      if(scheduleReadOnly) {updates.recurrenceRule=block.recurrenceRule;} else if (isRecurring) {
         try {
           const options: any = {
             ...(block.recurrenceRule ? rrulestr(block.recurrenceRule).origOptions : {}),
@@ -161,23 +166,24 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
           </div>
 
           <label className="timeblock-all-day-toggle">
-            <input type="checkbox" checked={allDay} onChange={event => toggleAllDay(event.target.checked)} /> All day
+            <input type="checkbox" disabled={scheduleReadOnly} checked={allDay} onChange={event => toggleAllDay(event.target.checked)} /> All day
           </label>
           <div className="timeblock-edit-group">
             <label htmlFor="timeblock-start">{allDay ? "Start date" : "Start date and time"}</label>
-            <input id="timeblock-start" type={allDay ? "date" : "datetime-local"} value={startValue} onChange={event => setStartValue(event.target.value)} required />
+            <input disabled={scheduleReadOnly} id="timeblock-start" type={allDay ? "date" : "datetime-local"} value={startValue} onChange={event => setStartValue(event.target.value)} required />
           </div>
           <div className="timeblock-edit-group">
             <label htmlFor="timeblock-end">{allDay ? "Last day (inclusive)" : "End date and time"}</label>
-            <input id="timeblock-end" type={allDay ? "date" : "datetime-local"} value={endValue} onChange={event => setEndValue(event.target.value)} required />
+            <input disabled={scheduleReadOnly} id="timeblock-end" type={allDay ? "date" : "datetime-local"} value={endValue} onChange={event => setEndValue(event.target.value)} required />
           </div>
           {!allDay && <div className="timeblock-edit-group">
             <label htmlFor="timeblock-zone">Event time zone</label>
-            <input id="timeblock-zone" value={timeZone} onChange={event => setTimeZone(event.target.value)} list="timeblock-zones" placeholder="America/Denver" />
+            <input disabled={scheduleReadOnly} id="timeblock-zone" value={timeZone} onChange={event => setTimeZone(event.target.value)} list="timeblock-zones" placeholder="America/Denver" />
             <datalist id="timeblock-zones">
               {[...new Set([displayZone, "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney"])].map(zone => <option key={zone} value={zone} />)}
             </datalist>
           </div>}
+          {scheduleReadOnly && <div><p>This recurrence can be viewed here. Edit its schedule in Google Calendar.</p>{databaseId && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}</div>}
           {error && <div role="alert" className="calendar-error">{error}</div>}
 
           <div className="timeblock-edit-group" style={{ border: '1px solid var(--border)', padding: '8px', borderRadius: '4px' }}>
@@ -185,6 +191,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
               <input
                 type="checkbox"
                 checked={isRecurring}
+                disabled={scheduleReadOnly}
                 onChange={e => {
                   const checked = e.target.checked;
                   setIsRecurring(checked);
@@ -195,12 +202,13 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
               />
               Repeat
             </label>
-            {isRecurring && (
+            {isRecurring && !scheduleReadOnly && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <span>Every</span>
                   <input type="number" min="1" value={interval} onChange={e => setInterval(Math.max(1, parseInt(e.target.value) || 1))} style={{ width: '60px', padding: '4px' }} />
                   <select
+                    disabled={scheduleReadOnly}
                     value={frequency}
                     onChange={e => {
                       const f = parseInt(e.target.value);
@@ -222,6 +230,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {[{ label: 'M', value: RRule.MO.weekday }, { label: 'T', value: RRule.TU.weekday }, { label: 'W', value: RRule.WE.weekday }, { label: 'T', value: RRule.TH.weekday }, { label: 'F', value: RRule.FR.weekday }, { label: 'S', value: RRule.SA.weekday }, { label: 'S', value: RRule.SU.weekday }].map(day => (
                       <button
+                        disabled={scheduleReadOnly}
                         key={day.value}
                         type="button"
                         onClick={() => {

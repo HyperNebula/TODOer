@@ -1,4 +1,4 @@
-use super::{api::CalendarApi, mapping, storage, GoogleError, Result};
+use super::{api::CalendarApi, mapping, recurrence, storage, GoogleError, Result};
 use rusqlite::Connection;
 use serde_json::{json, Value};
 
@@ -97,7 +97,30 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
         return Ok(());
     }
     api.calendar(&binding.calendar_id).map_err(|error| if matches!(error.code.as_str(),"not_found"|"gone") { GoogleError::new("calendar_unavailable","The dedicated Google calendar was removed. Your local schedule is intact. Recover or explicitly replace its calendar in Settings.") } else { error })?;
-    for pending in storage::pending(conn)? {
+    let mut operations = storage::pending(conn)?;
+    operations.sort_by_key(|operation| {
+        (
+            if operation.deleted {
+                if operation.parent_id.is_some() {
+                    2
+                } else {
+                    3
+                }
+            } else if operation.parent_id.is_some() {
+                1
+            } else {
+                0
+            },
+            operation.revision,
+        )
+    });
+    for pending in operations {
+        if !storage::pending(conn)?
+            .iter()
+            .any(|entry| entry.local_id == pending.local_id)
+        {
+            continue;
+        }
         if !storage::binding(conn)?.is_some_and(|binding| binding.enabled) {
             return Ok(());
         }
@@ -108,14 +131,14 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
             ));
         }
         let row = storage::row(conn, &pending.local_id)?;
-        // Recurring masters and exceptions are enabled in the recurrence phase.
-        if row
-            .as_ref()
-            .is_some_and(|row| row.recurrence_rule.is_some() || row.recurrence_id.is_some())
-        {
-            continue;
-        }
-        let entry = storage::ensure_mapping(conn, &pending.local_id)?;
+        let entry = if let Some(row) = row.as_ref().filter(|row| row.recurrence_id.is_some()) {
+            match recurrence::ensure_instance(conn, api, row, &binding)? {
+                Some(entry) => entry,
+                None => continue,
+            }
+        } else {
+            storage::ensure_mapping(conn, &pending.local_id)?
+        };
         let deleted = pending.deleted || row.is_none();
         if deleted {
             let remote = current_remote(api, &binding.calendar_id, &entry.remote_id)?;
@@ -156,16 +179,23 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
             )?;
             continue;
         }
-        let mut payload = mapping::event_payload(row.as_ref().unwrap(), &binding.time_zone)?;
+        let mut payload = recurrence::payload(conn, row.as_ref().unwrap(), &binding.time_zone)?;
         let desired = mapping::canonical(&payload, &binding.time_zone)?;
         let response = if entry.base.is_some() {
-            let remote = current_remote(api, &binding.calendar_id, &entry.remote_id)?;
+            let mut remote = current_remote(api, &binding.calendar_id, &entry.remote_id)?;
             let current = if remote.is_null() {
                 Value::Null
             } else {
                 mapping::canonical(&remote, &binding.time_zone)?
             };
             if current == desired {
+                if entry
+                    .raw
+                    .as_ref()
+                    .is_some_and(|raw| raw["_todoerDefaultInstance"] == true)
+                {
+                    remote["_todoerDefaultInstance"] = json!(true);
+                }
                 storage::acknowledge(conn, &pending, &remote, &binding.time_zone)?;
                 continue;
             }
@@ -182,7 +212,13 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
                     "Google returned an event without a version.",
                 )
             })?;
-            api.patch(&binding.calendar_id, &entry.remote_id, &payload, etag)
+            let mut patch = payload.clone();
+            patch.as_object_mut().unwrap().remove("recurringEventId");
+            patch.as_object_mut().unwrap().remove("originalStartTime");
+            if row.as_ref().unwrap().recurrence_id.is_some() {
+                patch.as_object_mut().unwrap().remove("recurrence");
+            }
+            api.patch(&binding.calendar_id, &entry.remote_id, &patch, etag)
         } else {
             payload["id"] = json!(entry.remote_id);
             payload["extendedProperties"] = json!({"private":{"todoerLocalId":pending.local_id,"todoerCalendarId":storage::identity(conn)?}});

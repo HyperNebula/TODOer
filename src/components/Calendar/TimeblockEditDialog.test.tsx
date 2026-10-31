@@ -80,4 +80,12 @@ describe("calendar event editing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith("one", expect.objectContaining({ startTime: "2026-11-01T01:30:37.123-07:00", endTime: "2026-11-01T02:30:37.123-07:00" }));
   });
+
+  it("keeps complex recurrence rules unchanged during text edits", () => {
+    const recurrenceRule="RRULE:FREQ=DAILY;COUNT=3\nEXDATE:20260308T160000Z";
+    const {onSave}=editor({...event,recurrenceRule});
+    expect((screen.getByLabelText("Start date and time") as HTMLInputElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button",{name:"Save"}));
+    expect(onSave).toHaveBeenCalledWith("one",expect.objectContaining({recurrenceRule}));
+  });
 });

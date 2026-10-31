@@ -1,4 +1,4 @@
-use super::{api::CalendarApi, mapping, storage, GoogleError, Result};
+use super::{api::CalendarApi, mapping, recurrence, storage, GoogleError, Result};
 use rusqlite::{Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -23,11 +23,49 @@ pub fn record(
 }
 
 pub fn apply(conn: &Connection, id: &str, remote: &Value, zone: &str) -> Result<()> {
+    let parent = recurrence::parent_local_id(conn, remote)?;
     if remote.is_null() || remote["status"] == "cancelled" {
-        conn.execute("DELETE FROM timeblocks WHERE id=?1", [id])
+        if let Some(parent) =
+            parent.filter(|parent| storage::row(conn, parent).ok().flatten().is_some())
+        {
+            let original = recurrence::occurrence_key(&remote["originalStartTime"], zone)?;
+            let mut row = mapping::local_row(
+                id,
+                &serde_json::json!({"start":{"date": "2000-01-01"},"end":{"date":"2000-01-02"}}),
+                zone,
+            )?;
+            row.start_time = original.clone();
+            row.end_time = original.clone();
+            row.all_day = original.len() == 10;
+            row.time_zone = if row.all_day {
+                None
+            } else {
+                storage::row(conn, &parent)?
+                    .and_then(|row| row.time_zone)
+                    .or(Some(zone.into()))
+            };
+            row.recurrence_id = Some(parent);
+            row.original_start = Some(original);
+            row.is_deleted = true;
+            row.title = "Deleted Exception".into();
+            storage::write_row(conn, &row)?;
+        } else {
+            conn.execute(
+                "DELETE FROM timeblocks WHERE recurrence_id=?1 OR id=?1",
+                [id],
+            )
             .map_err(GoogleError::storage)?;
+        }
     } else {
-        storage::write_row(conn, &mapping::local_row(id, remote, zone)?)?;
+        let mut row = mapping::local_row(id, remote, zone)?;
+        if let Some(parent) = parent {
+            row.recurrence_id = Some(parent);
+            row.original_start = Some(recurrence::occurrence_key(
+                &remote["originalStartTime"],
+                zone,
+            )?);
+        }
+        storage::write_row(conn, &row)?;
     }
     Ok(())
 }
@@ -39,14 +77,59 @@ pub fn merge_event(conn: &Connection, remote: &Value, zone: &str) -> Result<()> 
             "Google returned an event without an ID.",
         )
     })?;
+    let retired: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sync_retired WHERE remote_id=?1 OR remote_id=?2)",
+            rusqlite::params![remote_id, remote["recurringEventId"].as_str()],
+            |r| r.get(0),
+        )
+        .map_err(GoogleError::storage)?;
+    if retired {
+        return Ok(());
+    }
     let mappings = storage::mappings(conn)?;
     let mapped = mappings.iter().find(|entry| entry.remote_id == remote_id);
-    if mapped.is_none() && remote["status"] == "cancelled" {
+    let mut effective = remote.clone();
+    if effective["status"] == "cancelled" && !effective["recurringEventId"].is_string() {
+        if let Some(raw) = mapped
+            .and_then(|entry| entry.raw.as_ref())
+            .filter(|raw| raw["recurringEventId"].is_string())
+        {
+            effective["recurringEventId"] = raw["recurringEventId"].clone();
+            effective["originalStartTime"] = raw["originalStartTime"].clone();
+        }
+    }
+    let remote = &effective;
+    if mapped.is_none()
+        && remote["status"] == "cancelled"
+        && !remote["recurringEventId"].is_string()
+    {
         return Ok(());
     }
     let identity = storage::identity(conn)?;
+    let parent = recurrence::parent_local_id(conn, remote)?;
+    let matching_instance = if let Some(parent) = &parent {
+        let key = recurrence::occurrence_key(&remote["originalStartTime"], zone)?;
+        storage::rows(conn)?
+            .into_iter()
+            .find(|row| {
+                row.recurrence_id.as_ref() == Some(parent)
+                    && row.original_start.as_deref().is_some_and(|value| {
+                        recurrence::original_time(value, zone)
+                            .and_then(|value| recurrence::occurrence_key(&value, zone))
+                            .ok()
+                            .as_deref()
+                            == Some(&key)
+                    })
+            })
+            .map(|row| row.id)
+    } else {
+        None
+    };
     let id = if let Some(entry) = mapped {
         entry.local_id.clone()
+    } else if let Some(id) = matching_instance {
+        id
     } else {
         let claimed = remote["extendedProperties"]["private"]["todoerLocalId"].as_str();
         if remote["extendedProperties"]["private"]["todoerCalendarId"].as_str()
@@ -59,17 +142,6 @@ pub fn merge_event(conn: &Connection, remote: &Value, zone: &str) -> Result<()> 
         }
     };
     let local = storage::row(conn, &id)?;
-    // Recurring records are imported in Phase 6; retaining the cache makes the upgrade lossless.
-    if remote["recurrence"]
-        .as_array()
-        .is_some_and(|values| !values.is_empty())
-        || remote["recurringEventId"].is_string()
-        || local
-            .as_ref()
-            .is_some_and(|row| row.recurrence_rule.is_some() || row.recurrence_id.is_some())
-    {
-        return Ok(());
-    }
     let current = if remote["status"] == "cancelled" {
         Value::Null
     } else {
@@ -82,13 +154,27 @@ pub fn merge_event(conn: &Connection, remote: &Value, zone: &str) -> Result<()> 
         }
     };
     let desired = match local.as_ref().filter(|row| !row.is_deleted) {
-        Some(row) => mapping::canonical(&mapping::event_payload(row, zone)?, zone)?,
+        Some(row) => mapping::canonical(&recurrence::payload(conn, row, zone)?, zone)?,
         None => Value::Null,
     };
+    let series = parent
+        .clone()
+        .or_else(|| {
+            remote["recurrence"]
+                .as_array()
+                .filter(|array| !array.is_empty())
+                .map(|_| id.clone())
+        })
+        .or_else(|| {
+            local
+                .as_ref()
+                .filter(|row| row.recurrence_rule.is_some())
+                .map(|row| row.id.clone())
+        });
     let dirty: bool = conn
         .query_row(
-            "SELECT EXISTS(SELECT 1 FROM sync_outbox WHERE local_id=?1)",
-            [&id],
+            "SELECT EXISTS(SELECT 1 FROM sync_outbox WHERE local_id=?1 OR local_id=?2 OR parent_id=?2)",
+            rusqlite::params![&id,series],
             |r| r.get(0),
         )
         .map_err(GoogleError::storage)?;
@@ -191,11 +277,15 @@ pub fn pull(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
                 .collect();
             for entry in storage::mappings(conn)? {
                 if entry.base.as_ref().is_some_and(|base| !base.is_null())
+                    && !entry
+                        .raw
+                        .as_ref()
+                        .is_some_and(|raw| raw["_todoerDefaultInstance"] == true)
                     && !seen.contains(entry.remote_id.as_str())
                 {
                     merge_event(
                         conn,
-                        &json!({"id":entry.remote_id,"status":"cancelled"}),
+                        &json!({"id":entry.remote_id,"status":"cancelled","recurringEventId":entry.raw.as_ref().and_then(|raw|raw["recurringEventId"].as_str()),"originalStartTime":entry.raw.as_ref().map(|raw|raw["originalStartTime"].clone())}),
                         &binding.time_zone,
                     )?;
                 }
@@ -227,8 +317,12 @@ pub fn pull(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
             .filter_map(|event| event["id"].as_str())
             .collect();
         let known = storage::mappings(conn)?;
-        for value in cached {
-            let event: Value = serde_json::from_str(&value).map_err(GoogleError::storage)?;
+        let mut cached = cached
+            .into_iter()
+            .map(|value| serde_json::from_str::<Value>(&value).map_err(GoogleError::storage))
+            .collect::<Result<Vec<_>>>()?;
+        cached.sort_by_key(|event| event["recurringEventId"].is_string());
+        for event in cached {
             let id = event["id"].as_str().unwrap_or("");
             if downloaded.contains(id) || !known.iter().any(|entry| entry.remote_id == id) {
                 merge_event(conn, &event, &binding.time_zone)?;
@@ -251,6 +345,162 @@ pub struct ConflictView {
     pub revision: i64,
     pub kind: String,
     pub series_id: Option<String>,
+}
+
+fn family_revision(conn: &Connection, id: &str, series: Option<&str>) -> Result<i64> {
+    conn.query_row("SELECT COALESCE(MAX(revision),0) FROM sync_outbox WHERE local_id=?1 OR local_id=?2 OR parent_id=?2",rusqlite::params![id,series],|r|r.get(0)).map_err(GoogleError::storage)
+}
+
+fn fresh_mapping(conn: &Connection, id: &str) -> Result<()> {
+    let mut bytes = [0u8; 16];
+    getrandom::fill(&mut bytes).map_err(|_| {
+        GoogleError::new(
+            "randomness",
+            "A new calendar identity could not be created.",
+        )
+    })?;
+    conn.execute(
+        "INSERT OR IGNORE INTO sync_retired SELECT remote_id FROM sync_events WHERE local_id=?1",
+        [id],
+    )
+    .map_err(GoogleError::storage)?;
+    let fresh = mapping::stable_id(&storage::identity(conn)?, &format!("{id}:{bytes:x?}"));
+    conn.execute("UPDATE sync_events SET remote_id=?2,etag=NULL,base_json=NULL,raw_json=NULL,html_link=NULL WHERE local_id=?1",[id,&fresh]).map_err(GoogleError::storage)?;
+    Ok(())
+}
+
+fn resolve_series(
+    conn: &Connection,
+    api: &mut dyn CalendarApi,
+    series: &str,
+    choice: &str,
+    revision: i64,
+) -> Result<()> {
+    if family_revision(conn, series, Some(series))? != revision {
+        return Err(GoogleError::new(
+            "conflict_changed",
+            "This series changed locally. Review its updated versions.",
+        ));
+    }
+    let binding = storage::binding(conn)?
+        .ok_or_else(|| GoogleError::new("not_enabled", "Enable sync first."))?;
+    let mut stmt=conn.prepare("SELECT ?1 UNION SELECT id FROM timeblocks WHERE recurrence_id=?1 UNION SELECT local_id FROM sync_outbox WHERE parent_id=?1 UNION SELECT local_id FROM sync_conflicts WHERE series_id=?1").map_err(GoogleError::storage)?;
+    let mut ids = stmt
+        .query_map([series], |r| r.get::<_, String>(0))
+        .map_err(GoogleError::storage)?
+        .collect::<std::result::Result<Vec<_>, _>>()
+        .map_err(GoogleError::storage)?;
+    drop(stmt);
+    ids.sort_by_key(|id| id != series);
+    let mappings = storage::mappings(conn)?;
+    let mut versions = Vec::new();
+    for id in &ids {
+        let entry = mappings.iter().find(|entry| entry.local_id == *id);
+        let remote = if let Some(entry) = entry {
+            match api.get(&binding.calendar_id, &entry.remote_id) {
+                Ok(value) => value,
+                Err(error) if matches!(error.code.as_str(), "not_found" | "gone") => Value::Null,
+                Err(error) => return Err(error),
+            }
+        } else {
+            Value::Null
+        };
+        let stored: Option<String> = conn
+            .query_row(
+                "SELECT remote_json FROM sync_conflicts WHERE local_id=?1",
+                [id],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(GoogleError::storage)?;
+        let canonical = |value: &Value| {
+            if value.is_null() {
+                Ok(Value::Null)
+            } else {
+                mapping::canonical(value, &binding.time_zone)
+            }
+        };
+        if let Some(stored) = stored {
+            let stored: Value = serde_json::from_str(&stored).map_err(GoogleError::storage)?;
+            if canonical(&stored)? != canonical(&remote)? {
+                storage::conflict(conn, id, &remote, "changed", Some(series))?;
+                return Err(GoogleError::new(
+                    "conflict_changed",
+                    "Google changed this series again. Review the updated versions.",
+                ));
+            }
+        }
+        versions.push((id.clone(), entry.cloned(), remote));
+    }
+    let recreated = choice == "local"
+        && (versions[0].2.is_null() || versions[0].2["status"] == "cancelled")
+        && storage::row(conn, series)?.is_some();
+    let google_deleted_root =
+        choice == "google" && (versions[0].2.is_null() || versions[0].2["status"] == "cancelled");
+    storage::importing(conn, |conn| {
+        if family_revision(conn, series, Some(series))? != revision {
+            return Err(GoogleError::new(
+                "conflict_changed",
+                "This series changed locally. Review its updated versions.",
+            ));
+        }
+        for (id, entry, remote) in &versions {
+            let row = storage::row(conn, id)?;
+            if choice == "google" {
+                if google_deleted_root && id != series {
+                    conn.execute("DELETE FROM timeblocks WHERE id=?1", [id])
+                        .map_err(GoogleError::storage)?;
+                    if let Some(entry) = entry {
+                        record(conn, id, &entry.remote_id, &Value::Null, &binding.time_zone)?;
+                    }
+                    conn.execute("DELETE FROM sync_outbox WHERE local_id=?1", [id])
+                        .map_err(GoogleError::storage)?;
+                    continue;
+                }
+                if remote.is_null() && id != series {
+                    if let Some(mut row) = row {
+                        row.is_deleted = true;
+                        storage::write_row(conn, &row)?;
+                    }
+                } else {
+                    apply(conn, id, remote, &binding.time_zone)?;
+                }
+                if let Some(entry) = entry {
+                    record(conn, id, &entry.remote_id, remote, &binding.time_zone)?;
+                }
+                conn.execute("DELETE FROM sync_outbox WHERE local_id=?1", [id])
+                    .map_err(GoogleError::storage)?;
+            } else {
+                if recreated || remote.is_null() || remote["status"] == "cancelled" {
+                    if entry.is_some() {
+                        fresh_mapping(conn, id)?;
+                    }
+                } else if let Some(entry) = entry {
+                    record(conn, id, &entry.remote_id, remote, &binding.time_zone)?;
+                }
+                if row.is_none() && (remote.is_null() || remote["status"] == "cancelled") {
+                    conn.execute("DELETE FROM sync_outbox WHERE local_id=?1", [id])
+                        .map_err(GoogleError::storage)?;
+                    continue;
+                }
+                conn.execute(
+                    "UPDATE sync_control SET revision=revision+1 WHERE singleton=1",
+                    [],
+                )
+                .map_err(GoogleError::storage)?;
+                let deleted = row.as_ref().is_none_or(|row| row.is_deleted);
+                conn.execute("INSERT INTO sync_outbox(local_id,revision,deleted,parent_id) VALUES(?1,(SELECT revision FROM sync_control WHERE singleton=1),?2,?3)
+                    ON CONFLICT(local_id) DO UPDATE SET revision=excluded.revision,deleted=excluded.deleted,parent_id=excluded.parent_id",
+                    rusqlite::params![id,deleted,if id==series{None}else{Some(series)}]).map_err(GoogleError::storage)?;
+            }
+        }
+        conn.execute(
+            "DELETE FROM sync_conflicts WHERE series_id=?1 OR local_id=?1",
+            [series],
+        )
+        .map_err(GoogleError::storage)?;
+        Ok(())
+    })
 }
 pub fn conflicts(conn: &Connection) -> Result<Vec<ConflictView>> {
     let binding = storage::binding(conn)?
@@ -276,20 +526,12 @@ pub fn conflicts(conn: &Connection) -> Result<Vec<ConflictView>> {
             let google: Value = serde_json::from_str(&raw).map_err(GoogleError::storage)?;
             let local = match storage::row(conn, &id)?.filter(|row| !row.is_deleted) {
                 Some(row) => mapping::canonical(
-                    &mapping::event_payload(&row, &binding.time_zone)?,
+                    &recurrence::payload(conn, &row, &binding.time_zone)?,
                     &binding.time_zone,
                 )?,
                 None => Value::Null,
             };
-            let revision = conn
-                .query_row(
-                    "SELECT revision FROM sync_outbox WHERE local_id=?1",
-                    [&id],
-                    |r| r.get(0),
-                )
-                .optional()
-                .map_err(GoogleError::storage)?
-                .unwrap_or(0);
+            let revision = family_revision(conn, &id, series_id.as_deref())?;
             Ok(ConflictView {
                 local_id: id,
                 local,
@@ -314,6 +556,17 @@ pub fn resolve(
             "choice",
             "Choose the TODOer or Google version.",
         ));
+    }
+    let series: Option<Option<String>> = conn
+        .query_row(
+            "SELECT series_id FROM sync_conflicts WHERE local_id=?1",
+            [id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(GoogleError::storage)?;
+    if let Some(series) = series.flatten() {
+        return resolve_series(conn, api, &series, choice, revision);
     }
     let binding = storage::binding(conn)?
         .ok_or_else(|| GoogleError::new("not_enabled", "Enable sync first."))?;

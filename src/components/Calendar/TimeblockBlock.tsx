@@ -4,6 +4,8 @@ import { useSettingsStore } from "../../store/settingsStore";
 
 import { daysBetween, formatWallClockUtc, hasOffset, instantMs, moveTimedBlock, parseWallClockUtc, segmentForDate, timestampInZone } from "../../lib/calendarDate";
 
+import { canEditRecurrence } from "../../lib/calendarRecurrence";
+
 interface TimeblockBlockProps {
   block: Timeblock;
   tasks: Task[];
@@ -76,6 +78,7 @@ export function TimeblockBlock({
   const [isHovered, setIsHovered] = useState(false);
 
   function onResizeMouseDown(e: React.MouseEvent) {
+    if(!canEditRecurrence(block.recurrenceRule)) return;
     e.preventDefault();
     e.stopPropagation();
     resizeRef.current = { startY: e.clientY, origEndTime: block.endTime };
@@ -114,6 +117,7 @@ export function TimeblockBlock({
   const dragRef = useRef<{ startY: number; origStart: string; origEnd: string } | null>(null);
 
   function onBlockMouseDown(e: React.MouseEvent) {
+    if(!canEditRecurrence(block.recurrenceRule)) {onEditTimeblock(block.id);return;}
     // Don't initiate move if clicking on a button or the resize handle
     if ((e.target as HTMLElement).closest(".tb-edit, .tb-complete-toggle, .tb-chip-remove, .tb-resize-handle")) return;
     e.preventDefault();
@@ -285,7 +289,7 @@ export function TimeblockBlock({
         </button>
       )}
 
-      {!segment.continuesAfter && <div
+      {!segment.continuesAfter && canEditRecurrence(block.recurrenceRule) && <div
         className="tb-resize-handle"
         onMouseDown={onResizeMouseDown}
         title="Drag to resize"

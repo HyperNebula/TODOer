@@ -115,10 +115,9 @@ describe("calendar database lifecycle", () => {
     await useCalendarStore.getState().createException("series", "2026-11-01", {
       id: "virtual_series_2026-11-01", startTime: "2026-11-01", endTime: "2026-11-03", allDay: true, taskIds: ["task"],
     });
-    const args = invoke.mock.calls.find(([command]) => command === "add_timeblock")![1];
+    const args = invoke.mock.calls.find(([command]) => command === "calendar_apply_batch")![1].operations[0].block;
     expect(args.id).not.toMatch(/^virtual_/);
-    expect(args).toMatchObject({ allDay: true, timeZone: null, recurrenceId: "series", originalStart: "2026-11-01" });
-    expect(invoke).toHaveBeenCalledWith("assign_task_to_timeblock", { databaseId: "session", timeblockId: args.id, taskId: "task" });
+    expect(args).toMatchObject({ all_day:true,time_zone:null,recurrence_id:"series",original_start:"2026-11-01",task_ids:["task"] });
   });
 
   it("preserves all-day dates and the requested recurrence when splitting a series", async () => {
@@ -129,8 +128,8 @@ describe("calendar database lifecycle", () => {
     await useCalendarStore.getState().splitSeries("series", "2026-11-01T09:00:00Z", {
       ...parent, allDay: true, timeZone: undefined, startTime: "2026-11-01", endTime: "2026-11-03", recurrenceRule: "RRULE:FREQ=WEEKLY",
     });
-    expect(invoke).toHaveBeenLastCalledWith("add_timeblock", expect.objectContaining({
-      allDay: true, timeZone: null, startTime: "2026-11-01", endTime: "2026-11-03", recurrenceRule: "RRULE:FREQ=WEEKLY",
-    }));
+    const operations=invoke.mock.calls.find(([command])=>command==="calendar_apply_batch")![1].operations;
+    expect(operations[0]).toMatchObject({type:"update",id:"series"});
+    expect(operations[1].block).toMatchObject({all_day:true,time_zone:null,start_time:"2026-11-01",end_time:"2026-11-03",recurrence_rule:"RRULE:FREQ=WEEKLY"});
   });
 });
