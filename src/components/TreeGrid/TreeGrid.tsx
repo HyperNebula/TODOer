@@ -321,6 +321,14 @@ export function TreeGrid({
         if (e.key === "Escape") setEdit(null);
         return;
       }
+      // Block navigation if any modal dialog / overlay is open
+      if (
+        document.querySelector(
+          ".confirm-overlay, .settings-dialog-overlay, .timeblock-edit-overlay, .task-edit-menu-overlay, .notes-overlay"
+        )
+      ) {
+        return;
+      }
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
