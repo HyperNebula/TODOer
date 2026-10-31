@@ -32,7 +32,6 @@ import { generatePdfBlob } from "./lib/printPdf";
 import { useSettingsStore } from "./store/settingsStore";
 import { useTaskStore } from "./store/taskStore";
 import type { Task } from "./types/task";
-import { startNotificationService, stopNotificationService } from "./lib/notificationService";
 import "./App.css";
 
 const globalKeysDown = new Set<string>();
@@ -47,6 +46,10 @@ const CalendarView = __CALENDAR_ENABLED__
 
 const CalendarSettingsDialog = __CALENDAR_ENABLED__
   ? React.lazy(() => import("./components/Calendar/CalendarSettingsDialog").then(m => ({ default: m.CalendarSettingsDialog })))
+  : null;
+
+const CalendarRuntime = __CALENDAR_ENABLED__
+  ? React.lazy(() => import("./components/Calendar/CalendarRuntime"))
   : null;
 
 type AppView = "tasks" | "calendar";
@@ -87,8 +90,12 @@ function App() {
   }, [store]);
 
   const handleSaveAs = useCallback(async () => {
-    const path = await saveTaskListAsDialog(store.getSerialized());
-    if (path) store.markSaved(path);
+    try {
+      const path = await saveTaskListAsDialog(store.getSerialized(), store.filePath);
+      if (path) store.markSaved(path);
+    } catch (error) {
+      setConfirmState({ title: "Save As failed", message: String(error), confirmLabel: "OK", onConfirm: () => setConfirmState(null) });
+    }
   }, [store]);
 
   const handleOpen = useCallback(async () => {
@@ -300,15 +307,9 @@ function App() {
     };
     loadLast();
     
-    if (__CALENDAR_ENABLED__) {
-      startNotificationService();
-    }
 
     return () => { 
       mounted = false; 
-      if (__CALENDAR_ENABLED__) {
-        stopNotificationService();
-      }
     };
   }, []); // Run once on mount
 
@@ -553,6 +554,7 @@ function App() {
   return (
     <>
       <ThemeApplier />
+      {CalendarRuntime && <React.Suspense fallback={null}><CalendarRuntime /></React.Suspense>}
       <UpdaterStartupCheck />
       <div className="app">
         <header className="app-header">

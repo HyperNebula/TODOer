@@ -221,6 +221,7 @@ export async function saveTaskListDialog(
 
 export async function saveTaskListAsDialog(
   contents: string,
+  sourcePath: string | null = null,
 ): Promise<string | null> {
   if (!isTauri()) {
     // If they explicitly want "Save As", we shouldn't use the cached handle
@@ -270,7 +271,11 @@ export async function saveTaskListAsDialog(
   });
   if (!path) return null;
   const maxBackups = useSettingsStore.getState().maxBackups;
-  await invoke("write_tasklist_file", { path, contents, maxBackups });
+  if (__CALENDAR_ENABLED__) {
+    await invoke("save_tasklist_as_with_calendar", { sourceListPath: sourcePath, path, contents, maxBackups });
+  } else {
+    await invoke("write_tasklist_file", { path, contents, maxBackups });
+  }
   await setLastFilePath(path);
   return path;
 }

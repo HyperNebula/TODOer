@@ -103,6 +103,32 @@ fn write_csv_file(path: String, contents: String) -> Result<(), String> {
     atomic_write(Path::new(&path), &contents)
 }
 
+#[cfg(feature = "calendar")]
+#[tauri::command]
+fn save_tasklist_as_with_calendar(
+    app: tauri::AppHandle,
+    source_list_path: Option<String>,
+    path: String,
+    contents: String,
+    max_backups: usize,
+) -> Result<(), String> {
+    let target = Path::new(&path).with_extension("calendar.db");
+    let existed = target.exists();
+    if let Some(source) = source_list_path {
+        calendar::copy_calendar_db(source, path.clone())?;
+    } else if existed {
+        return Err(
+            "The destination already has a calendar. Choose a new filename to preserve it.".into(),
+        );
+    }
+    let result = write_tasklist_file(app, path, contents, max_backups);
+    if result.is_err() && !existed && target.exists() {
+        // Only remove the new backup created by this operation, never the source.
+        let _ = fs::remove_file(&target);
+    }
+    result
+}
+
 #[tauri::command]
 fn open_path(path: String) -> Result<(), String> {
     if path.starts_with("http://") || path.starts_with("https://") {
@@ -289,13 +315,7 @@ fn build_menu(app: &tauri::App) -> tauri::Result<Menu<tauri::Wry>> {
         true,
         Some("CmdOrCtrl+Shift+N"),
     )?;
-    let quick_add = MenuItem::with_id(
-        app,
-        "quick_add",
-        "Quick Add",
-        true,
-        Some("CmdOrCtrl+Q"),
-    )?;
+    let quick_add = MenuItem::with_id(app, "quick_add", "Quick Add", true, Some("CmdOrCtrl+Q"))?;
     let delete_task = MenuItem::with_id(app, "delete_task", "Delete Task", true, None::<&str>)?;
     let archive = MenuItem::with_id(
         app,
@@ -402,6 +422,8 @@ pub fn run() {
         get_archive_path,
         calendar::open_calendar_db,
         calendar::close_calendar_db,
+        calendar::copy_calendar_db,
+        save_tasklist_as_with_calendar,
         calendar::get_timeblocks_for_range,
         calendar::get_recurring_timeblocks,
         calendar::add_timeblock,

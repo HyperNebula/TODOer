@@ -3,12 +3,15 @@ import { useCalendarStore } from "../store/calendarStore";
 import { isTauri } from "./fileApi";
 
 let checkInterval: number | null = null;
+let serviceGeneration = 0;
 const NOTIFIED_BLOCKS = new Set<string>();
 
 export async function startNotificationService() {
   if (!isTauri()) return;
+  const generation = ++serviceGeneration;
 
   let permissionGranted = await isPermissionGranted();
+  if (generation !== serviceGeneration) return;
   if (!permissionGranted) {
     const permission = await requestPermission();
     permissionGranted = permission === "granted";
@@ -30,6 +33,7 @@ export async function startNotificationService() {
 }
 
 export function stopNotificationService() {
+  ++serviceGeneration;
   if (checkInterval !== null) {
     clearInterval(checkInterval);
     checkInterval = null;

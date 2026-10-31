@@ -83,7 +83,6 @@ export function CalendarView({
   const { taskDrawerWidth, setTaskDrawerWidth } = useSettingsStore();
   const tasks = store.file.tasks;
   const timeblocks = calendarStore.timeblocks;
-  const filePath = store.filePath;
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [anchorDate, setAnchorDate] = useState(todayIso);
@@ -121,15 +120,6 @@ export function CalendarView({
     if (e.target.value) setAnchorDate(e.target.value);
   }
 
-  // Open DB when file changes
-  useEffect(() => {
-    if (filePath) {
-      calendarStore.openDb(filePath);
-    } else {
-      calendarStore.closeDb();
-    }
-  }, [filePath]);
-
   // Load timeblocks for visible range when dates change or DB becomes ready
   useEffect(() => {
     if (!calendarStore.dbReady || dates.length === 0) return;
@@ -139,7 +129,7 @@ export function CalendarView({
     lastDate.setDate(lastDate.getDate() + 1);
     const endStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}T00:00:00`;
     calendarStore.loadRange(start, endStr);
-  }, [dates, calendarStore.dbReady]);
+  }, [dates, calendarStore.dbReady, calendarStore.databaseId]);
 
   function handleUpdateTimeblock(id: string, updates: Partial<Omit<Timeblock, "id">>) {
     const block = timeblocks.find(b => b.id === id);
