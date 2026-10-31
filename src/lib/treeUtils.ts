@@ -132,11 +132,12 @@ export function addQuickTask(
 
 export function findParentProject(tasks: Task[], startTaskId: string | null): Task | null {
   if (!startTaskId) return null;
-  let current = tasks.find((t) => t.id === startTaskId);
+  let current: Task | undefined = tasks.find((t) => t.id === startTaskId);
   while (current) {
     if (current.isProject) return current;
-    if (!current.parentId) break;
-    current = tasks.find((t) => t.id === current.parentId);
+    const parentId: string | null = current.parentId;
+    if (!parentId) break;
+    current = tasks.find((t) => t.id === parentId);
   }
   return null;
 }
