@@ -65,7 +65,7 @@ interface TaskStore {
   clearSelection: () => void;
   addTask: (afterTaskId?: string | null) => string;
   addQuickTask: (title: string, parentId: string | null, priority?: number, timeEstimateMinutes?: number | null, notes?: string) => string;
-  addQuickProject: (title: string, category?: string, priority?: number, notes?: string) => string;
+  addQuickProject: (title: string, category?: string, priority?: number | null, notes?: string) => string;
   addSubTask: (parentId: string) => string;
   deleteSelectedTask: () => void;
   toggleSelectedDone: () => void;

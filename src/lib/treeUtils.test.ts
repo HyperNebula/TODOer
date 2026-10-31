@@ -253,6 +253,13 @@ describe("treeUtils", () => {
       expect(created?.priority).toBe(8);
       expect(created?.notes).toBe("Project description");
     });
+
+    it("creates a root-level project task with null priority by default", () => {
+      const { tasks: updated, newTaskId } = addQuickProject([], "Project Without Priority");
+      const created = updated.find((t) => t.id === newTaskId);
+      expect(created).toBeDefined();
+      expect(created?.priority).toBeNull();
+    });
   });
 });
 

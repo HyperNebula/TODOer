@@ -17,16 +17,17 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
 
   // Shared fields
   const [title, setTitle] = useState("");
-  const [priority, setPriority] = useState<number>(5);
   const [notes, setNotes] = useState("");
 
   // Task-specific fields
+  const [taskPriority, setTaskPriority] = useState<number>(5);
   const [timeEstimate, setTimeEstimate] = useState<string>("");
   const [projectSearch, setProjectSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Project-specific fields
   const [category, setCategory] = useState("");
+  const [projectPriority, setProjectPriority] = useState<string>("");
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [highlightedCategoryIndex, setHighlightedCategoryIndex] = useState<number>(-1);
 
@@ -119,7 +120,7 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
         store.addQuickTask(
           title.trim(),
           selectedProjectId,
-          priority,
+          taskPriority,
           isNaN(mins) ? null : mins,
           notes.trim() || undefined
         );
@@ -127,10 +128,14 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
       }
     } else {
       if (title.trim()) {
+        const parsedPriority =
+          projectPriority.trim() === ""
+            ? null
+            : Math.min(10, Math.max(1, parseInt(projectPriority, 10) || 5));
         store.addQuickProject(
           title.trim(),
           category.trim(),
-          priority,
+          parsedPriority,
           notes.trim()
         );
         onClose();
@@ -303,8 +308,8 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
                     max="10"
                     className="inline-edit"
                     style={{ padding: "8px", boxSizing: "border-box" }}
-                    value={priority}
-                    onChange={(e) => setPriority(parseInt(e.target.value) || 5)}
+                    value={taskPriority}
+                    onChange={(e) => setTaskPriority(parseInt(e.target.value) || 5)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleConfirm();
                     }}
@@ -546,15 +551,16 @@ export function QuickAddDialog({ onClose }: QuickAddDialogProps) {
               </label>
 
               <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "14px", fontWeight: 500 }}>Priority</span>
+                <span style={{ fontSize: "14px", fontWeight: 500 }}>Priority (Optional)</span>
                 <input
                   type="number"
                   min="1"
                   max="10"
                   className="inline-edit"
                   style={{ padding: "8px", boxSizing: "border-box" }}
-                  value={priority}
-                  onChange={(e) => setPriority(parseInt(e.target.value) || 5)}
+                  value={projectPriority}
+                  onChange={(e) => setProjectPriority(e.target.value)}
+                  placeholder="None"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleConfirm();
                   }}

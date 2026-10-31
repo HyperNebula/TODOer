@@ -146,7 +146,7 @@ export function addQuickProject(
   tasks: Task[],
   title: string,
   category: string = "",
-  priority: number = 5,
+  priority: number | null = null,
   notes: string = ""
 ): { tasks: Task[]; newTaskId: string } {
   // Always placed at root level

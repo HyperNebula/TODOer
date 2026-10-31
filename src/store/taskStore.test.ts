@@ -97,4 +97,13 @@ describe("taskStore - selection", () => {
     expect(created?.isProject).toBe(true);
     expect(created?.parentId).toBeNull();
   });
+
+  it("addQuickProject defaults priority to null", () => {
+    const store = useTaskStore.getState();
+    const newId = store.addQuickProject("Project No Priority");
+
+    const state = useTaskStore.getState();
+    const created = state.file.tasks.find((t) => t.id === newId);
+    expect(created?.priority).toBeNull();
+  });
 });
