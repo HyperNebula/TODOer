@@ -3,19 +3,22 @@ import type { Task, Timeblock } from "../../types/task";
 import { TimeblockBlock } from "./TimeblockBlock";
 import { getNextColor, getPriorityColor } from "./colors";
 
+import { addDays, dateAtMinutes, segmentForDate, wallInZone } from "../../lib/calendarDate";
 import { useSettingsStore } from "../../store/settingsStore";
 
 
 
 interface TimeGridProps {
+  canCreate?: boolean;
   viewMode: "day" | "week";
   /** ISO date strings for the columns shown (1 = day view, 7 = week view) */
   dates: string[];
   /** Today's ISO date string (YYYY-MM-DD) for highlighting */
   today: string;
+  timeZone: string;
   timeblocks: Timeblock[];
   tasks: Task[];
-  onAddTimeblock: (startTime: string, endTime: string, title?: string, color?: string, recurrenceRule?: string, link?: string) => Promise<string>;
+  onAddTimeblock: (startTime: string, endTime: string, title?: string, color?: string, recurrenceRule?: string, link?: string, allDay?: boolean, timeZone?: string) => Promise<string>;
   onUpdateTimeblock: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
   onAssignTask: (blockId: string, taskId: string) => void;
   onEditTimeblock: (id: string, isNew?: boolean) => void;
@@ -29,8 +32,8 @@ function formatHour(h: number) {
 }
 
 function formatDateHeading(isoDate: string) {
-  const d = new Date(isoDate + "T00:00:00");
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const d = new Date(isoDate + "T00:00:00Z");
+  return d.toLocaleDateString(undefined, { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
 }
 
 /** Snap a minute value to the nearest 15-minute slot */
@@ -38,28 +41,20 @@ function snapMin(min: number) {
   return Math.round(min / 15) * 15;
 }
 
-/** Convert a block's startTime / endTime to minutes-from-grid-start */
-function blockToGridMinutes(block: Timeblock, gridStartMin: number): { startMin: number; endMin: number } {
-  const s = new Date(block.startTime);
-  const e = new Date(block.endTime);
-  const startMin = s.getHours() * 60 + s.getMinutes() - gridStartMin;
-  const endMin   = e.getHours() * 60 + e.getMinutes() - gridStartMin;
-  return { startMin, endMin };
-}
-
 /**
  * Layout overlapping blocks. Returns a map of blockId -> { width, left } (in percentages)
  */
-function calculateLayout(blocks: Timeblock[]) {
-  const sorted = [...blocks].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+function calculateLayout(blocks: Timeblock[], timeZone: string, date: string, gridStart: number, gridEnd: number) {
+  const segments = new Map(blocks.map(block => [block.id, segmentForDate(block, date, timeZone, gridStart, gridEnd)!]));
+  const sorted = [...blocks].sort((a, b) => segments.get(a.id)!.startMin - segments.get(b.id)!.startMin);
   
   const clusters: Timeblock[][] = [];
   let currentCluster: Timeblock[] = [];
   let clusterEnd = 0;
 
   for (const block of sorted) {
-    const start = new Date(block.startTime).getTime();
-    const end = new Date(block.endTime).getTime();
+    const start = segments.get(block.id)!.startMin;
+    const end = segments.get(block.id)!.endMin;
     
     if (currentCluster.length > 0 && start >= clusterEnd) {
       clusters.push(currentCluster);
@@ -79,12 +74,12 @@ function calculateLayout(blocks: Timeblock[]) {
     const columns: Timeblock[][] = [];
     
     for (const block of cluster) {
-      const start = new Date(block.startTime).getTime();
+      const start = segments.get(block.id)!.startMin;
       let placed = false;
       
       for (const col of columns) {
         const lastBlock = col[col.length - 1];
-        if (new Date(lastBlock.endTime).getTime() <= start) {
+        if (segments.get(lastBlock.id)!.endMin <= start) {
           col.push(block);
           placed = true;
           break;
@@ -119,9 +114,11 @@ function calculateLayout(blocks: Timeblock[]) {
  * headers stay aligned with their columns.
  */
 export function TimeGrid({
+  canCreate = true,
   viewMode,
   dates,
   today,
+  timeZone,
   timeblocks,
   tasks,
   onAddTimeblock,
@@ -143,9 +140,15 @@ export function TimeGrid({
   const gridHeight = totalHours * 60 * pxPerMin;
 
   const [currentTimeMin, setCurrentTimeMin] = useState(() => {
-    const d = new Date();
-    return d.getHours() * 60 + d.getMinutes();
+    const wall = wallInZone(new Date().toISOString(), timeZone);
+    return Number(wall.slice(11, 13)) * 60 + Number(wall.slice(14, 16));
   });
+
+  const [error, setError] = useState("");
+  async function runAction(action: () => Promise<void>) {
+    try { setError(""); await action(); }
+    catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+  }
 
   const hasScrolledToNow = useRef(false);
 
@@ -178,12 +181,14 @@ export function TimeGrid({
   }, [currentTimeMin, gridStartMin, calendarEndHour, totalHours, pxPerMin]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const d = new Date();
-      setCurrentTimeMin(d.getHours() * 60 + d.getMinutes());
-    }, 60000);
+    const update = () => {
+      const wall = wallInZone(new Date().toISOString(), timeZone);
+      setCurrentTimeMin(Number(wall.slice(11, 13)) * 60 + Number(wall.slice(14, 16)));
+    };
+    update();
+    const interval = setInterval(update, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [timeZone]);
 
   /** Sync header horizontal scroll with body scroll */
   function handleWrapperScroll() {
@@ -207,14 +212,12 @@ export function TimeGrid({
   }
 
   function makeIso(isoDate: string, minFromGridStart: number) {
-    const totalMin = gridStartMin + minFromGridStart;
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    return `${isoDate}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+    return dateAtMinutes(isoDate, gridStartMin + minFromGridStart);
   }
 
   // ── Click on empty column area to create a timeblock ──────────────────────
   async function handleColumnClick(e: React.MouseEvent, isoDate: string) {
+    if (!canCreate) return;
     if ((e.target as HTMLElement).closest(".timeblock-block")) return;
     const rawMin = clientYToGridMin(e.clientY);
     const startMin = snapMin(rawMin);
@@ -231,16 +234,17 @@ export function TimeGrid({
 
   async function handleDrop(e: React.DragEvent, isoDate: string) {
     e.preventDefault();
+    if (!canCreate) return;
     const taskId = e.dataTransfer.getData("text/plain");
     if (!taskId) return;
 
     const rawMin = clientYToGridMin(e.clientY);
     const dropMin = snapMin(rawMin);
 
-    const blocksOnDate = timeblocks.filter((b) => b.startTime.startsWith(isoDate));
+    const blocksOnDate = timeblocks.filter(block => segmentForDate(block, isoDate, timeZone, gridStartMin, calendarEndHour * 60));
     const target = blocksOnDate.find((b) => {
-      const { startMin, endMin } = blockToGridMinutes(b, gridStartMin);
-      return dropMin >= startMin && dropMin < endMin;
+      const segment = segmentForDate(b, isoDate, timeZone, gridStartMin, calendarEndHour * 60)!;
+      return dropMin + gridStartMin >= segment.startMin && dropMin + gridStartMin < segment.endMin;
     });
 
     if (target) {
@@ -259,6 +263,7 @@ export function TimeGrid({
 
   return (
     <div className="time-grid-outer">
+      {error && <div role="alert" className="calendar-error">{error}</div>}
       {/* ── Fixed header row — outside the scroll wrapper ─────────────────── */}
       <div className="time-grid-header-row">
         {/* Spacer that aligns with the hours column */}
@@ -266,11 +271,21 @@ export function TimeGrid({
         {/* Overflow-hidden container driven by body scrollLeft */}
         <div className="time-grid-header-cols" ref={headerColsRef}>
           {dates.map((isoDate) => (
-            <div
-              key={isoDate}
-              className={`time-grid-col-header${isoDate === today ? " time-grid-col-header--today" : ""}`}
-            >
-              {formatDateHeading(isoDate)}
+            <div key={isoDate} className="time-grid-header-day">
+              <div className={`time-grid-col-header${isoDate === today ? " time-grid-col-header--today" : ""}`}>{formatDateHeading(isoDate)}</div>
+              <div className="time-grid-all-day-cell" aria-label={`All-day events on ${isoDate}`}>
+                {timeblocks.filter(block => block.allDay && !block.isDeleted && block.startTime <= isoDate && block.endTime > isoDate).map(block => (
+                  <button key={block.id} type="button" className="all-day-event" style={block.color ? { backgroundColor: block.color } : undefined}
+                    title={`${block.title || "Untitled"}: ${block.startTime} through ${addDays(block.endTime, -1)}`}
+                    onClick={() => onEditTimeblock(block.id)}>
+                    {block.startTime < isoDate ? "? " : ""}{block.title || "Untitled"}{block.endTime > addDays(isoDate, 1) ? " ?" : ""}
+                  </button>
+                ))}
+                <button type="button" className="all-day-add" disabled={!canCreate} aria-label={`New all-day event on ${isoDate}`} onClick={() => void runAction(async () => {
+                  const id = await onAddTimeblock(isoDate, addDays(isoDate, 1), "New all-day event", getNextColor(), undefined, undefined, true);
+                  onEditTimeblock(id, true);
+                })}>+ All day</button>
+              </div>
             </div>
           ))}
         </div>
@@ -300,11 +315,9 @@ export function TimeGrid({
         {/* Columns — one per date, no headers here */}
         <div className="time-grid-columns">
           {dates.map((isoDate) => {
-            const blocksForDate = timeblocks.filter(
-              (b) => b.startTime.startsWith(isoDate)
-            );
+            const blocksForDate = timeblocks.filter(block => segmentForDate(block, isoDate, timeZone, gridStartMin, calendarEndHour * 60));
             
-            const layouts = calculateLayout(blocksForDate);
+            const layouts = calculateLayout(blocksForDate, timeZone, isoDate, gridStartMin, calendarEndHour * 60);
 
             return (
               <div key={isoDate} className="time-grid-column">
@@ -323,11 +336,11 @@ export function TimeGrid({
                     if ((e.target as HTMLElement).closest(".timeblock-block")) return;
                     
                     if (Math.abs(e.clientY - y) < 5) {
-                      handleColumnClick(e, isoDate);
+                      void runAction(() => handleColumnClick(e, isoDate));
                     }
                   }}
                   onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, isoDate)}
+                  onDrop={(e) => void runAction(() => handleDrop(e, isoDate))}
                 >
                   {/* Hour line guides */}
                   {hours.map((h) => (
@@ -356,6 +369,9 @@ export function TimeGrid({
                         tasks={tasks}
                         pxPerMin={pxPerMin}
                         gridStartMin={gridStartMin}
+                        gridEndMin={calendarEndHour * 60}
+                        viewDate={isoDate}
+                        timeZone={timeZone}
                         styleWidth={layout?.width}
                         styleLeft={layout?.left}
                         onUpdate={onUpdateTimeblock}

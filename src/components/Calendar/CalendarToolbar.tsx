@@ -1,6 +1,7 @@
 
 
 interface CalendarToolbarProps {
+  canCreate?: boolean;
   onNewBlock: () => void;
   onSave: () => void;
   onSaveAs: () => void;
@@ -12,6 +13,7 @@ interface CalendarToolbarProps {
 }
 
 export function CalendarToolbar({
+  canCreate = true,
   onNewBlock,
   onSave,
   onSaveAs,
@@ -23,7 +25,7 @@ export function CalendarToolbar({
 }: CalendarToolbarProps) {
   return (
     <div className="toolbar">
-      <button type="button" className="btn" onClick={onNewBlock}>
+      <button type="button" className="btn" onClick={onNewBlock} disabled={!canCreate}>
         New Block
       </button>
       <span className="toolbar-sep" />

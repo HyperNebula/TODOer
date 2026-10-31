@@ -1,5 +1,6 @@
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { useCalendarStore } from "../store/calendarStore";
+import { instantMs } from "./calendarDate";
 import { isTauri } from "./fileApi";
 
 let checkInterval: number | null = null;
@@ -17,6 +18,7 @@ export async function startNotificationService() {
     permissionGranted = permission === "granted";
   }
 
+  if (generation !== serviceGeneration) return;
   if (!permissionGranted) {
     console.warn("Notification permission not granted.");
     return;
@@ -49,9 +51,17 @@ function checkUpcomingTimeblocks() {
   const notifyThresholdMs = 5 * 60 * 1000; 
 
   for (const block of timeblocks) {
-    if (block.completed || block.isDeleted) continue;
+    if (block.completed || block.isDeleted || block.allDay) continue;
 
-    const startTime = new Date(block.startTime);
+    let startTime: Date;
+    let endTime: Date;
+    try {
+      startTime = new Date(instantMs(block.startTime, block.timeZone || store.timeZone));
+      endTime = new Date(instantMs(block.endTime, block.timeZone || store.timeZone));
+    } catch {
+      // A legacy floating event may fall in a skipped local hour; it has no notification instant.
+      continue;
+    }
     const timeUntilStart = startTime.getTime() - now.getTime();
 
     // If it's starting in less than 5 minutes, and we haven't notified yet
@@ -67,7 +77,6 @@ function checkUpcomingTimeblocks() {
     }
 
     // Optional: Notify when ending
-    const endTime = new Date(block.endTime);
     const timeUntilEnd = endTime.getTime() - now.getTime();
     if (timeUntilEnd > 0 && timeUntilEnd <= notifyThresholdMs) {
       const notifyId = `${block.id}-end`;

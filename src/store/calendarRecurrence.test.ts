@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { normalizeIso, parseWallClockUtc, formatWallClockUtc } from "./calendarStore";
 import { rrulestr } from "rrule";
+import { expandTimeblocks, truncateSeries } from "../lib/calendarRecurrence";
+import type { Timeblock } from "../types/task";
 
 describe("calendar recurrence & wall-clock utilities", () => {
   describe("normalizeIso", () => {
@@ -104,5 +106,65 @@ describe("calendar recurrence & wall-clock utilities", () => {
 
       expect(normalizeIso(exceptionOriginalStart)).toBe(occurrenceStart);
     });
+  });
+});
+
+const parent = (values: Partial<Timeblock> = {}): Timeblock => ({
+  id: "series", title: "Evening", taskIds: [],
+  startTime: "2026-10-27T19:00:00-06:00", endTime: "2026-10-27T20:00:00-06:00",
+  timeZone: "America/Denver", recurrenceRule: "RRULE:FREQ=WEEKLY;BYDAY=TU", ...values,
+});
+
+describe("actual calendar recurrence expansion", () => {
+  it("keeps weekly evening events on Tuesday and changes the offset across fall-back", () => {
+    const event = parent();
+    const result = expandTimeblocks([event], [event], "2026-10-25T00:00:00", "2026-11-10T00:00:00", "America/Denver");
+    expect(result.map(block => block.startTime)).toEqual(["2026-10-27T19:00:00-06:00", "2026-11-03T19:00:00-07:00"]);
+  });
+
+  it("never generates weekly occurrences before the series start", () => {
+    const event = parent({ startTime: "2026-10-28T23:30:00", endTime: "2026-10-29T00:30:00", timeZone: undefined, recurrenceRule: "RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR" });
+    const result = expandTimeblocks([event], [event], "2026-10-25", "2026-11-01", "America/Denver");
+    expect(result.map(block => block.startTime)).toEqual(["2026-10-28T23:30:00", "2026-10-30T23:30:00"]);
+  });
+
+  it("skips nonexistent spring-forward starts without consuming COUNT", () => {
+    const event = parent({ startTime: "2026-03-07T02:30:00-07:00", endTime: "2026-03-07T03:30:00-07:00", recurrenceRule: "RRULE:FREQ=DAILY;COUNT=3" });
+    const result = expandTimeblocks([event], [event], "2026-03-07", "2026-03-12", "America/Denver");
+    expect(result.map(block => block.startTime)).toEqual(["2026-03-07T02:30:00-07:00", "2026-03-09T02:30:00-06:00", "2026-03-10T02:30:00-06:00"]);
+  });
+
+  it("preserves a later repeated-hour master without generating a duplicate", () => {
+    const event = parent({ startTime: "2026-11-01T01:30:00-07:00", endTime: "2026-11-01T02:30:00-07:00", recurrenceRule: "RRULE:FREQ=DAILY;COUNT=2" });
+    const result = expandTimeblocks([event], [event], "2026-11-01", "2026-11-03", "America/Denver");
+    expect(result.map(block => block.startTime)).toEqual(["2026-11-01T01:30:00-07:00", "2026-11-02T01:30:00-07:00"]);
+  });
+
+  it("matches moved and deleted exceptions by original instant even with different offsets", () => {
+    const event = parent();
+    const exception: Timeblock = { id: "moved", taskIds: [], startTime: "2026-11-04T20:00:00-07:00", endTime: "2026-11-04T21:00:00-07:00", timeZone: "America/Denver", recurrenceId: event.id, originalStart: "2026-11-04T02:00:00Z" };
+    const deleted = { ...exception, id: "deleted", originalStart: "2026-10-28T01:00:00Z", isDeleted: true };
+    const result = expandTimeblocks([event, exception], [event, exception, deleted], "2026-10-25", "2026-11-10", "America/Denver");
+    expect(result.map(block => block.id)).toEqual(["moved"]);
+  });
+
+  it("projects occurrences into another display zone and includes overnight continuations", () => {
+    const event = parent({ startTime: "2026-10-27T23:00:00-06:00", endTime: "2026-10-28T02:00:00-06:00", recurrenceRule: "RRULE:FREQ=DAILY;COUNT=3" });
+    const result = expandTimeblocks([], [event], "2026-10-29", "2026-10-30", "UTC");
+    expect(result.map(block => block.startTime)).toEqual(["2026-10-28T23:00:00-06:00"]);
+  });
+
+  it("keeps all-day recurrence date-only and includes multiday occurrences beginning before the view", () => {
+    const event = parent({ startTime: "2026-03-06", endTime: "2026-03-09", allDay: true, timeZone: undefined, recurrenceRule: "RRULE:FREQ=WEEKLY;COUNT=2" });
+    const result = expandTimeblocks([], [event], "2026-03-14", "2026-03-15", "Asia/Tokyo");
+    expect(result).toMatchObject([{ startTime: "2026-03-13", endTime: "2026-03-16", allDay: true }]);
+    expect(result).toHaveLength(1);
+  });
+
+  it("stops this-and-following deletion at the chosen instant across daylight-saving changes", () => {
+    const event = parent();
+    const shortened = { ...event, recurrenceRule: truncateSeries(event, "2026-11-03T19:00:00-07:00", "America/Denver") };
+    const result = expandTimeblocks([shortened], [shortened], "2026-10-25", "2026-11-15", "America/Denver");
+    expect(result.map(block => block.startTime)).toEqual([event.startTime]);
   });
 });

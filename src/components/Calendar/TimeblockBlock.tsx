@@ -2,10 +2,7 @@ import { useRef, useState } from "react";
 import type { Task, Timeblock } from "../../types/task";
 import { useSettingsStore } from "../../store/settingsStore";
 
-function toLocalIsoString(date: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
-}
+import { daysBetween, formatWallClockUtc, hasOffset, instantMs, moveTimedBlock, parseWallClockUtc, segmentForDate, timestampInZone } from "../../lib/calendarDate";
 
 interface TimeblockBlockProps {
   block: Timeblock;
@@ -14,6 +11,9 @@ interface TimeblockBlockProps {
   pxPerMin: number;
   /** offset in minutes from midnight for the grid's start hour */
   gridStartMin: number;
+  gridEndMin: number;
+  viewDate: string;
+  timeZone: string;
   styleWidth?: number;
   styleLeft?: number;
   onUpdate: (id: string, updates: Partial<Omit<Timeblock, "id">>) => void;
@@ -34,6 +34,9 @@ export function TimeblockBlock({
   tasks,
   pxPerMin,
   gridStartMin,
+  gridEndMin,
+  viewDate,
+  timeZone,
   styleWidth,
   styleLeft,
   onUpdate,
@@ -49,25 +52,23 @@ export function TimeblockBlock({
   const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
   const effectiveEnd = dragStateRef.current?.endStr ?? block.endTime;
 
-  const startMin =
-    (new Date(effectiveStart).getHours() * 60 +
-      new Date(effectiveStart).getMinutes()) -
-    gridStartMin;
-  const endMin =
-    (new Date(effectiveEnd).getHours() * 60 +
-      new Date(effectiveEnd).getMinutes()) -
-    gridStartMin;
-  const durationMin = Math.max(endMin - startMin, 15);
-
-  const top = startMin * pxPerMin + 2;
-  const height = Math.max(durationMin * pxPerMin - 4, 22);
-
-  const timeFormatter = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  const startTimeDisplay = timeFormatter.format(new Date(effectiveStart));
-  const endTimeDisplay = timeFormatter.format(new Date(effectiveEnd));
+  const segment = segmentForDate({ ...block, startTime: effectiveStart, endTime: effectiveEnd }, viewDate, timeZone, gridStartMin, gridEndMin)
+    || segmentForDate(block, viewDate, timeZone, gridStartMin, gridEndMin)!;
+  const startMin = segment.startMin - gridStartMin;
+  const durationMin = segment.endMin - segment.startMin;
+  const top = startMin * pxPerMin;
+  const availableHeight = (gridEndMin - segment.startMin) * pxPerMin;
+  const height = Math.min(Math.max(durationMin * pxPerMin - 2, 22), availableHeight);
+  const eventZone = block.timeZone || timeZone;
+  const [error, setError] = useState("");
+  const legacy = !block.timeZone && !hasOffset(block.startTime);
+  const blockInstant = (value: string) => legacy ? parseWallClockUtc(value).getTime() : instantMs(value, eventZone);
+  const formatTime = (value: string) => new Intl.DateTimeFormat(undefined, {
+    timeZone: legacy ? "UTC" : timeZone, hour: "numeric", minute: "2-digit",
+  }).format(new Date(blockInstant(value)));
+  const startTimeDisplay = formatTime(effectiveStart);
+  const endTimeDisplay = formatTime(effectiveEnd);
+  const storedInstant = (milliseconds: number) => legacy ? formatWallClockUtc(new Date(milliseconds)) : timestampInZone(milliseconds, eventZone);
 
   // ── Resize state ────────────────────────────────────────────────────────────
   const resizeRef = useRef<{ startY: number; origEndTime: string } | null>(null);
@@ -84,12 +85,12 @@ export function TimeblockBlock({
       if (!resizeRef.current) return;
       const deltaY = me.clientY - resizeRef.current.startY;
       const deltaMin = Math.round(deltaY / pxPerMin / 15) * 15; // snap to 15 min
-      const origEnd = new Date(resizeRef.current.origEndTime);
+      const origEnd = new Date(blockInstant(resizeRef.current.origEndTime));
       const newEnd = new Date(origEnd.getTime() + deltaMin * 60_000);
       // Don't let the block get shorter than 15 min
-      const startMs = new Date(block.startTime).getTime();
+      const startMs = blockInstant(block.startTime);
       if (newEnd.getTime() - startMs >= 15 * 60_000) {
-        dragStateRef.current = { endStr: toLocalIsoString(newEnd) };
+        dragStateRef.current = { endStr: storedInstant(newEnd.getTime()) };
         setDragTick(t => t + 1);
       }
     };
@@ -116,7 +117,6 @@ export function TimeblockBlock({
     // Don't initiate move if clicking on a button or the resize handle
     if ((e.target as HTMLElement).closest(".tb-edit, .tb-complete-toggle, .tb-chip-remove, .tb-resize-handle")) return;
     e.preventDefault();
-    const duration = new Date(block.endTime).getTime() - new Date(block.startTime).getTime();
     dragRef.current = { startY: e.clientY, origStart: block.startTime, origEnd: block.endTime };
 
     const origColEl = (e.target as HTMLElement).closest(".time-grid-col-body") as HTMLElement | null;
@@ -125,15 +125,11 @@ export function TimeblockBlock({
       if (!dragRef.current) return;
       const deltaY = me.clientY - dragRef.current.startY;
       const deltaMin = Math.round(deltaY / pxPerMin / 5) * 5; // snap to 5 min
-      const newStart = new Date(new Date(dragRef.current.origStart).getTime() + deltaMin * 60_000);
-
-      let startStr = toLocalIsoString(newStart);
       let deltaX = 0;
 
       const elements = document.elementsFromPoint(me.clientX, me.clientY);
       const colEl = elements.find(el => el.classList.contains("time-grid-col-body")) as HTMLElement | undefined;
       if (colEl && colEl.dataset.date) {
-        startStr = `${colEl.dataset.date}T${startStr.split("T")[1]}`;
         if (origColEl) {
           const origRect = origColEl.getBoundingClientRect();
           const newRect = colEl.getBoundingClientRect();
@@ -141,10 +137,20 @@ export function TimeblockBlock({
         }
       }
 
-      const parsedStart = new Date(startStr);
-      const endStr = toLocalIsoString(new Date(parsedStart.getTime() + duration));
-
-      dragStateRef.current = { startStr, endStr, deltaX };
+      const deltaDays = colEl?.dataset.date ? daysBetween(viewDate, colEl.dataset.date) : 0;
+      if (deltaMin === 0 && deltaDays === 0) {
+        dragStateRef.current = null;
+        setDragTick(t => t + 1);
+        return;
+      }
+      try {
+        const schedule = moveTimedBlock(block, deltaMin, deltaDays, timeZone);
+        dragStateRef.current = { startStr: schedule.startTime, endStr: schedule.endTime, deltaX };
+        setError("");
+      } catch (error) {
+        dragStateRef.current = null;
+        setError(error instanceof Error ? error.message : String(error));
+      }
       setDragTick(t => t + 1);
     };
 
@@ -187,13 +193,14 @@ export function TimeblockBlock({
       style={{
         top,
         height,
-        minHeight: 22,
+        minHeight: Math.min(22, availableHeight),
         left: styleLeft !== undefined ? `calc(${styleLeft}% + 4px)` : undefined,
         width: styleWidth !== undefined ? `calc(${styleWidth}% - 8px)` : undefined,
         transform: dragStateRef.current?.deltaX ? `translateX(${dragStateRef.current.deltaX}px)` : undefined,
         ...(block.color ? { backgroundColor: block.color } : {}),
         ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {})
       }}
+      title={error || `${startTimeDisplay} ? ${endTimeDisplay} (${timeZone})${segment.continuesBefore ? " ? continues from earlier" : ""}${segment.continuesAfter ? " ? continues later" : ""}`}
       onMouseDown={onBlockMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -219,7 +226,7 @@ export function TimeblockBlock({
           </button>
         )}
 
-        {block.title && <div className="tb-title">{block.title}</div>}
+        {block.title && <div className="tb-title">{segment.continuesBefore ? "? " : ""}{block.title}{segment.continuesAfter ? " ?" : ""}</div>}
 
         {timeblockEditMode === "button" && (
           <button
@@ -278,11 +285,11 @@ export function TimeblockBlock({
         </button>
       )}
 
-      <div
+      {!segment.continuesAfter && <div
         className="tb-resize-handle"
         onMouseDown={onResizeMouseDown}
         title="Drag to resize"
-      />
+      />}
     </div>
   );
 }

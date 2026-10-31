@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useMemo } from "react";
 import { useTaskStore } from "../../store/taskStore";
-import { useCalendarStore, parseWallClockUtc } from "../../store/calendarStore";
+import { useCalendarStore } from "../../store/calendarStore";
 import { useSettingsStore } from "../../store/settingsStore";
 
 import { TaskDrawer } from "./TaskDrawer";
@@ -10,48 +10,34 @@ import { TimeblockEditDialog } from "./TimeblockEditDialog";
 import { RecurrenceEditPrompt } from "./RecurrenceEditPrompt";
 import { getNextColor } from "./colors";
 import "./CalendarView.css";
-import { rrulestr, RRule } from "rrule";
+import { truncateSeries } from "../../lib/calendarRecurrence";
+import { addDays, systemTimeZone, todayInZone } from "../../lib/calendarDate";
+import { isTauri } from "../../lib/fileApi";
 import type { Timeblock, Task } from "../../types/task";
 
 type CalendarViewMode = "day" | "week";
 
-/** Return the ISO date string (YYYY-MM-DD) for a given Date in *local* time */
-function toIsoDate(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Return YYYY-MM-DD for 'today' in local time */
-function todayIso() {
-  return toIsoDate(new Date());
-}
+function todayIso(zone = systemTimeZone()) { return todayInZone(zone); }
 
 /** Build an array of ISO date strings starting from anchorDate */
 function buildDates(anchorDate: string, count: number): string[] {
-  const result: string[] = [];
-  const base = new Date(anchorDate + "T00:00:00");
-  // Snap to Monday for week view
+  let start = anchorDate;
   if (count === 7) {
-    const day = base.getDay(); // 0=Sun
-    const diffToMon = (day === 0 ? -6 : 1 - day);
-    base.setDate(base.getDate() + diffToMon);
+    const day = new Date(anchorDate + "T00:00:00Z").getUTCDay();
+    start = addDays(anchorDate, day === 0 ? -6 : 1 - day);
   }
-  for (let i = 0; i < count; i++) {
-    const d = new Date(base);
-    d.setDate(base.getDate() + i);
-    result.push(toIsoDate(d));
-  }
-  return result;
+  return Array.from({ length: count }, (_, index) => addDays(start, index));
 }
 
 /** Format a range label for the toolbar (e.g. "Jul 28 – Aug 3, 2026") */
 function formatRangeLabel(dates: string[]): string {
   if (dates.length === 1) {
-    const d = new Date(dates[0] + "T00:00:00");
-    return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const d = new Date(dates[0] + "T00:00:00Z");
+    return d.toLocaleDateString(undefined, { timeZone: "UTC", weekday: "long", month: "long", day: "numeric", year: "numeric" });
   }
-  const first = new Date(dates[0] + "T00:00:00");
-  const last = new Date(dates[dates.length - 1] + "T00:00:00");
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const first = new Date(dates[0] + "T00:00:00Z");
+  const last = new Date(dates[dates.length - 1] + "T00:00:00Z");
+  const opts: Intl.DateTimeFormatOptions = { timeZone: "UTC", month: "short", day: "numeric" };
   return `${first.toLocaleDateString(undefined, opts)} – ${last.toLocaleDateString(undefined, { ...opts, year: "numeric" })}`;
 }
 
@@ -83,6 +69,7 @@ export function CalendarView({
   const { taskDrawerWidth, setTaskDrawerWidth } = useSettingsStore();
   const tasks = store.file.tasks;
   const timeblocks = calendarStore.timeblocks;
+  const canCreate = !isTauri() || calendarStore.dbReady;
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [anchorDate, setAnchorDate] = useState(todayIso);
@@ -99,17 +86,14 @@ export function CalendarView({
 
   const dates = useMemo(() => buildDates(anchorDate, viewMode === "day" ? 1 : 7), [anchorDate, viewMode]);
 
-  function navigatePrev() {
-    const d = new Date(anchorDate + "T00:00:00");
-    d.setDate(d.getDate() - (viewMode === "day" ? 1 : 7));
-    setAnchorDate(toIsoDate(d));
-  }
+  function navigatePrev() { setAnchorDate(date => addDays(date, viewMode === "day" ? -1 : -7)); }
+  function navigateNext() { setAnchorDate(date => addDays(date, viewMode === "day" ? 1 : 7)); }
 
-  function navigateNext() {
-    const d = new Date(anchorDate + "T00:00:00");
-    d.setDate(d.getDate() + (viewMode === "day" ? 1 : 7));
-    setAnchorDate(toIsoDate(d));
-  }
+  useEffect(() => {
+    setAnchorDate(todayIso(calendarStore.timeZone));
+    setEditingBlock(null);
+    setPendingAction(null);
+  }, [calendarStore.databaseId, calendarStore.timeZone]);
 
   function openDatePicker() {
     dateInputRef.current?.showPicker?.();
@@ -124,12 +108,9 @@ export function CalendarView({
   useEffect(() => {
     if (!calendarStore.dbReady || dates.length === 0) return;
     const start = dates[0] + "T00:00:00";
-    // end is the day AFTER the last date
-    const lastDate = new Date(dates[dates.length - 1] + "T00:00:00");
-    lastDate.setDate(lastDate.getDate() + 1);
-    const endStr = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}T00:00:00`;
+    const endStr = addDays(dates[dates.length - 1], 1) + "T00:00:00";
     calendarStore.loadRange(start, endStr);
-  }, [dates, calendarStore.dbReady, calendarStore.databaseId]);
+  }, [dates, calendarStore.dbReady, calendarStore.databaseId, calendarStore.timeZone]);
 
   function handleUpdateTimeblock(id: string, updates: Partial<Omit<Timeblock, "id">>) {
     const block = timeblocks.find(b => b.id === id);
@@ -193,8 +174,9 @@ export function CalendarView({
   return (
     <div className="calendar-view">
       <CalendarToolbar
+        canCreate={canCreate}
         onNewBlock={async () => {
-          const dStr = todayIso();
+          const dStr = todayIso(calendarStore.timeZone);
           const newId = await calendarStore.addTimeblock(dStr + "T09:00:00", dStr + "T10:00:00", "New Block", getNextColor());
           setEditingBlock({ id: newId, isNew: true });
         }}
@@ -210,6 +192,7 @@ export function CalendarView({
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="cal-toolbar">
         <div className="cal-toolbar-left">
+          <span className="cal-time-zone" title="Calendar display time zone">{calendarStore.timeZone}</span>
           <button
             id="cal-tasks-drawer-btn"
             className={`btn cal-tasks-btn${drawerOpen ? " active" : ""}`}
@@ -283,10 +266,13 @@ export function CalendarView({
         )}
 
         <div className="cal-grid-container">
+          {!canCreate && !calendarStore.databaseError && <div role="status" className="calendar-status">{store.filePath ? "Opening calendar…" : "Save this task list to add calendar events."}</div>}
           <TimeGrid
+            canCreate={canCreate}
             viewMode={viewMode}
             dates={dates}
-            today={todayIso()}
+            today={todayIso(calendarStore.timeZone)}
+            timeZone={calendarStore.timeZone}
             timeblocks={displayTimeblocks}
             tasks={tasks}
             onAddTimeblock={calendarStore.addTimeblock}
@@ -314,6 +300,7 @@ export function CalendarView({
       
       {editingBlock && timeblocks.find(b => b.id === editingBlock.id) && (
         <TimeblockEditDialog
+          key={editingBlock.id}
           block={timeblocks.find(b => b.id === editingBlock.id)!}
           isNew={editingBlock.isNew}
           tasks={tasks}
@@ -398,21 +385,9 @@ export function CalendarView({
               } else {
                 if (pendingAction.id.startsWith("virtual_")) {
                   // End series before this occurrence
-                  const parent = timeblocks.find(b => b.id === info.parentId);
-                  if (parent && parent.recurrenceRule) {
-                    try {
-                      const rule = rrulestr(parent.recurrenceRule);
-                      const opt = rule.options;
-                      const untilDate = parseWallClockUtc(info.originalStart);
-                      untilDate.setUTCSeconds(untilDate.getUTCSeconds() - 1);
-                      opt.until = untilDate;
-                      calendarStore.updateTimeblock(info.parentId, { recurrenceRule: new RRule(opt).toString() });
-
-                    } catch (e) {
-                      calendarStore.deleteSeries(info.parentId);
-                    }
-                  } else {
-                    calendarStore.deleteSeries(info.parentId);
+                  const parent = calendarStore.recurringTimeblocks.find(b => b.id === info.parentId);
+                  if (parent?.recurrenceRule) {
+                    calendarStore.updateTimeblock(info.parentId, { recurrenceRule: truncateSeries(parent, info.originalStart, calendarStore.timeZone) });
                   }
                 } else {
                   calendarStore.deleteSeries(info.parentId);

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import type { Timeblock, Task } from "../../types/task";
 import { RRule, rrulestr } from "rrule";
 import { openFileLink } from "../../lib/fileApi";
+import { addDays, hasOffset, normalizeSchedule, wallInZone, wallToTimestamp } from "../../lib/calendarDate";
+import { useCalendarStore } from "../../store/calendarStore";
 import "./TimeblockEditDialog.css";
 
 interface Props {
@@ -23,17 +25,25 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   const [color, setColor] = useState(block.color || "");
   const [link, setLink] = useState(block.link || "");
   
-  const [startTimeStr, setStartTimeStr] = useState(() => {
-    const d = new Date(block.startTime);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
-
-  const [endTimeStr, setEndTimeStr] = useState(() => {
-    const d = new Date(block.endTime);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
+  const displayZone = useCalendarStore(state => state.timeZone);
+  const [allDay, setAllDay] = useState(!!block.allDay);
+  const [timeZone, setTimeZone] = useState(block.timeZone || displayZone);
+  const [error, setError] = useState("");
+  const initialZone = block.timeZone || displayZone;
+  const [startValue, setStartValue] = useState(() => block.allDay ? block.startTime : wallInZone(block.startTime, initialZone).slice(0, 16));
+  const [endValue, setEndValue] = useState(() => block.allDay ? addDays(block.endTime, -1) : wallInZone(block.endTime, initialZone).slice(0, 16));
+  const toggleAllDay = (checked: boolean) => {
+    setAllDay(checked);
+    setError("");
+    if (checked) {
+      setStartValue(startValue.slice(0, 10));
+      const lastDate = endValue.endsWith("T00:00") ? addDays(endValue.slice(0, 10), -1) : endValue.slice(0, 10);
+      setEndValue(lastDate < startValue.slice(0, 10) ? startValue.slice(0, 10) : lastDate);
+    } else {
+      setStartValue(startValue + "T09:00");
+      setEndValue(endValue + "T10:00");
+    }
+  };
 
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<number>(RRule.DAILY);
@@ -41,10 +51,8 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   const [byweekday, setByweekday] = useState<number[]>([]);
 
   const getBlockWeekday = () => {
-    const [y, m, d] = block.startTime.slice(0, 10).split("-").map(Number);
-    const dt = new Date(y, m - 1, d);
-    const day = dt.getDay(); // 0 is Sunday, 1 is Monday...
-    return day === 0 ? 6 : day - 1; // 0=MO, 1=TU, 2=WE, 3=TH, 4=FR, 5=SA, 6=SU
+    const weekday = new Date(startValue.slice(0, 10) + "T00:00:00Z").getUTCDay();
+    return weekday === 0 ? 6 : weekday - 1;
   };
 
   useEffect(() => {
@@ -55,7 +63,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
         setFrequency(rule.options.freq);
         setInterval(rule.options.interval || 1);
         if (rule.options.byweekday) {
-          setByweekday(rule.options.byweekday.map((w: any) => w.weekday));
+          setByweekday(rule.options.byweekday.map((w: any) => typeof w === "number" ? w : w.weekday));
         }
       } catch (e) {
         console.error("Failed to parse recurrence rule", e);
@@ -65,44 +73,51 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
 
 
   const handleSave = () => {
-    const updates: Partial<Timeblock> = { title, notes, color: color || undefined, link: link || null };
-    
-    const startD = new Date(block.startTime);
-    const [sh, sm] = startTimeStr.split(":").map(Number);
-    startD.setHours(sh, sm, 0, 0);
-    
-    const endD = new Date(block.endTime);
-    const [eh, em] = endTimeStr.split(":").map(Number);
-    endD.setHours(eh, em, 0, 0);
+    setError("");
+    try {
+      const legacy = !block.timeZone && !hasOffset(block.startTime) && !block.allDay && !allDay && timeZone === displayZone;
+      const timedValue = (value: string, previous: string) => {
+        if (!block.allDay && timeZone === initialZone && value === wallInZone(previous, initialZone).slice(0, 16)) return previous;
+        return legacy ? value : wallToTimestamp(value, timeZone, block.allDay ? undefined : previous);
+      };
+      const schedule = normalizeSchedule({
+        ...block, allDay, timeZone: allDay || legacy ? undefined : timeZone,
+        startTime: allDay ? startValue : timedValue(startValue, block.startTime),
+        endTime: allDay ? addDays(endValue, 1) : timedValue(endValue, block.endTime),
+      }, displayZone, legacy);
+      const updates: Partial<Timeblock> = {
+        title, notes, color: color || undefined, link: link || null,
+        startTime: schedule.startTime, endTime: schedule.endTime, allDay, timeZone: schedule.timeZone,
+      };
 
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
-
-    updates.startTime = toIso(startD);
-    updates.endTime = toIso(endD);
-
-    if (isRecurring) {
-      try {
-        const options: any = {
-          freq: frequency,
-          interval: interval,
-        };
-        if (frequency === RRule.WEEKLY && byweekday.length > 0) {
-          // RRule weekday constants
-          const weekDaysList = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU];
-          options.byweekday = byweekday.map(d => weekDaysList[d]);
+      if (isRecurring) {
+        try {
+          const options: any = {
+            ...(block.recurrenceRule ? rrulestr(block.recurrenceRule).origOptions : {}),
+            dtstart: undefined,
+            freq: frequency,
+            interval: interval,
+            byweekday: null,
+          };
+          if (frequency === RRule.WEEKLY && byweekday.length > 0) {
+            // RRule weekday constants
+            const weekDaysList = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU];
+            options.byweekday = byweekday.map(d => weekDaysList[d]);
+          }
+          const rule = new RRule(options);
+          updates.recurrenceRule = rule.toString();
+        } catch {
+          throw new Error("The recurrence rule could not be saved. Check the repeat settings.");
         }
-        const rule = new RRule(options);
-        updates.recurrenceRule = rule.toString();
-      } catch (e) {
-        console.error("Failed to build recurrence rule", e);
+      } else {
+        updates.recurrenceRule = null;
       }
-    } else {
-      updates.recurrenceRule = null as any; // clear it using null as instructed by backend updates logic
-    }
 
-    onSave(block.id, updates);
-    onClose();
+      onSave(block.id, updates);
+      onClose();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const handleCancel = () => {
@@ -145,16 +160,25 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <div className="timeblock-edit-group" style={{ flex: 1 }}>
-              <label>Start Time</label>
-              <input type="time" value={startTimeStr} onChange={e => setStartTimeStr(e.target.value)} />
-            </div>
-            <div className="timeblock-edit-group" style={{ flex: 1 }}>
-              <label>End Time</label>
-              <input type="time" value={endTimeStr} onChange={e => setEndTimeStr(e.target.value)} />
-            </div>
+          <label className="timeblock-all-day-toggle">
+            <input type="checkbox" checked={allDay} onChange={event => toggleAllDay(event.target.checked)} /> All day
+          </label>
+          <div className="timeblock-edit-group">
+            <label htmlFor="timeblock-start">{allDay ? "Start date" : "Start date and time"}</label>
+            <input id="timeblock-start" type={allDay ? "date" : "datetime-local"} value={startValue} onChange={event => setStartValue(event.target.value)} required />
           </div>
+          <div className="timeblock-edit-group">
+            <label htmlFor="timeblock-end">{allDay ? "Last day (inclusive)" : "End date and time"}</label>
+            <input id="timeblock-end" type={allDay ? "date" : "datetime-local"} value={endValue} onChange={event => setEndValue(event.target.value)} required />
+          </div>
+          {!allDay && <div className="timeblock-edit-group">
+            <label htmlFor="timeblock-zone">Event time zone</label>
+            <input id="timeblock-zone" value={timeZone} onChange={event => setTimeZone(event.target.value)} list="timeblock-zones" placeholder="America/Denver" />
+            <datalist id="timeblock-zones">
+              {[...new Set([displayZone, "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney"])].map(zone => <option key={zone} value={zone} />)}
+            </datalist>
+          </div>}
+          {error && <div role="alert" className="calendar-error">{error}</div>}
 
           <div className="timeblock-edit-group" style={{ border: '1px solid var(--border)', padding: '8px', borderRadius: '4px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: isRecurring ? '8px' : '0' }}>

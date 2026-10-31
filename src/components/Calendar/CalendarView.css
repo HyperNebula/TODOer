@@ -319,6 +319,55 @@
   display: none;
 }
 
+.time-grid-header-day {
+  flex: 1 0 120px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+.time-grid-header-day .time-grid-col-header {
+  flex: none;
+  box-sizing: border-box;
+}
+
+.time-grid-all-day-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  border-right: 1px solid var(--border-light);
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.all-day-event, .all-day-add {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 5px;
+  font: inherit;
+  font-size: 0.75rem;
+  text-align: left;
+  color: var(--text);
+  background: var(--row-hover);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.all-day-add { background: transparent; color: var(--text-muted); margin-top: auto; }
+.all-day-event:hover, .all-day-add:hover { border-color: var(--accent); }
+.all-day-event:focus-visible, .all-day-add:focus-visible { outline: 2px solid var(--accent); }
+.all-day-add:disabled { cursor: default; opacity: 0.5; }
+.cal-time-zone { color: var(--text-muted); font-size: 0.75rem; }
+.calendar-error { padding: 8px 12px; color: var(--danger); background: var(--surface); }
+.calendar-status { padding: 8px 12px; color: var(--text-muted); }
+
 /* ── Time grid wrapper (scrollable) ──────────────────────── */
 .time-grid-wrapper {
   flex: 1;

@@ -44,14 +44,16 @@ export interface Task {
 export interface Timeblock {
   id: string;
   title?: string;
-  startTime: string; // ISO 8601 timestamp
-  endTime: string;   // ISO 8601 timestamp
+  startTime: string; // RFC 3339 instant, legacy floating datetime, or all-day date
+  endTime: string;   // Exclusive end; date-only for all-day events
+  allDay?: boolean;
+  timeZone?: string; // IANA event/recurrence zone; absent on legacy floating events
   taskIds: string[];
   notes?: string;
   completed?: boolean;
   color?: string;
   link?: string | null;
-  recurrenceRule?: string;
+  recurrenceRule?: string | null;
   recurrenceId?: string;
   originalStart?: string;
   isDeleted?: boolean;
