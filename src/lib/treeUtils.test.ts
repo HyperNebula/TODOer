@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  addQuickProject,
   addSubTask,
   addTask,
   archiveCompleted,
   buildTree,
   deleteTask,
+  findParentProject,
   flattenVisible,
   getDescendantIds,
   moveTask,
@@ -196,6 +198,60 @@ describe("treeUtils", () => {
       const tasks = makeForMove();
       const result = moveTask(tasks, "B", "B", 0);
       expect(result).toEqual(tasks);
+    });
+  });
+
+  describe("findParentProject", () => {
+    const p1 = createTask({ id: "p1", title: "Project 1", parentId: null, order: 0, isProject: true });
+    const c1 = createTask({ id: "c1", title: "Task 1", parentId: "p1", order: 0 });
+    const sub1 = createTask({ id: "sub1", title: "Subtask 1", parentId: "c1", order: 0 });
+    const standalone = createTask({ id: "standalone", title: "Standalone", parentId: null, order: 1 });
+    const standaloneChild = createTask({ id: "sc1", title: "Standalone Child", parentId: "standalone", order: 0 });
+    const tasks = [p1, c1, sub1, standalone, standaloneChild];
+
+    it("returns null if startTaskId is null or not found", () => {
+      expect(findParentProject(tasks, null)).toBeNull();
+      expect(findParentProject(tasks, "unknown")).toBeNull();
+    });
+
+    it("returns the project itself if startTaskId is a project", () => {
+      expect(findParentProject(tasks, "p1")?.id).toBe("p1");
+    });
+
+    it("returns the parent project for a direct child task", () => {
+      expect(findParentProject(tasks, "c1")?.id).toBe("p1");
+    });
+
+    it("returns the root project for a deeply nested subtask", () => {
+      expect(findParentProject(tasks, "sub1")?.id).toBe("p1");
+    });
+
+    it("returns null if neither task nor ancestors are projects", () => {
+      expect(findParentProject(tasks, "standalone")).toBeNull();
+      expect(findParentProject(tasks, "sc1")).toBeNull();
+    });
+  });
+
+  describe("addQuickProject", () => {
+    it("creates a root-level project task with given fields", () => {
+      const tasks = [createTask({ id: "existing", title: "Existing", parentId: null, order: 0 })];
+      const { tasks: updated, newTaskId } = addQuickProject(
+        tasks,
+        "New Mobile App",
+        "Engineering",
+        8,
+        "Project description"
+      );
+
+      const created = updated.find((t) => t.id === newTaskId);
+      expect(created).toBeDefined();
+      expect(created?.title).toBe("New Mobile App");
+      expect(created?.isProject).toBe(true);
+      expect(created?.parentId).toBeNull();
+      expect(created?.order).toBe(1);
+      expect(created?.category).toBe("Engineering");
+      expect(created?.priority).toBe(8);
+      expect(created?.notes).toBe("Project description");
     });
   });
 });

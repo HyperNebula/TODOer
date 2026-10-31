@@ -13,6 +13,7 @@ import {
   addSubTask,
   addTask,
   addQuickTask,
+  addQuickProject,
   archiveCompleted,
   buildTree,
   deleteTask,
@@ -64,6 +65,7 @@ interface TaskStore {
   clearSelection: () => void;
   addTask: (afterTaskId?: string | null) => string;
   addQuickTask: (title: string, parentId: string | null, priority?: number, timeEstimateMinutes?: number | null, notes?: string) => string;
+  addQuickProject: (title: string, category?: string, priority?: number, notes?: string) => string;
   addSubTask: (parentId: string) => string;
   deleteSelectedTask: () => void;
   toggleSelectedDone: () => void;
@@ -251,6 +253,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   addQuickTask: (title, parentId, priority, timeEstimateMinutes, notes) => {
     const { tasks, newTaskId } = addQuickTask(get().file.tasks, title, parentId, priority, timeEstimateMinutes, notes);
+    set((s) => ({
+      file: touch({ ...s.file, tasks }),
+      dirty: true,
+      selectedTaskId: newTaskId,
+      multiSelectedIds: new Set([newTaskId]),
+    }));
+    return newTaskId;
+  },
+
+  addQuickProject: (title, category, priority, notes) => {
+    const { tasks, newTaskId } = addQuickProject(
+      get().file.tasks,
+      title,
+      category,
+      priority,
+      notes
+    );
     set((s) => ({
       file: touch({ ...s.file, tasks }),
       dirty: true,

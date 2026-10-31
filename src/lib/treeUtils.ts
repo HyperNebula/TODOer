@@ -130,6 +130,39 @@ export function addQuickTask(
   return { tasks: [...updated, newTask], newTaskId: newTask.id };
 }
 
+export function findParentProject(tasks: Task[], startTaskId: string | null): Task | null {
+  if (!startTaskId) return null;
+  let current = tasks.find((t) => t.id === startTaskId);
+  while (current) {
+    if (current.isProject) return current;
+    if (!current.parentId) break;
+    current = tasks.find((t) => t.id === current.parentId);
+  }
+  return null;
+}
+
+export function addQuickProject(
+  tasks: Task[],
+  title: string,
+  category: string = "",
+  priority: number = 5,
+  notes: string = ""
+): { tasks: Task[]; newTaskId: string } {
+  // Always placed at root level
+  const parentId = null;
+  const order = nextSiblingOrder(tasks, null);
+  const newProject = createTask({
+    title,
+    parentId,
+    order,
+    isProject: true,
+    category: category.trim(),
+    priority,
+    notes: notes.trim(),
+  });
+  return { tasks: [...tasks, newProject], newTaskId: newProject.id };
+}
+
 export function addSubTask(
   tasks: Task[],
   parentId: string,

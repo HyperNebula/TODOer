@@ -78,4 +78,23 @@ describe("taskStore - selection", () => {
     expect(state.selectedTaskId).toBe("t4");
     expect(Array.from(state.multiSelectedIds)).toEqual(["t4"]);
   });
+
+  it("addQuickProject creates a root project, selects it, and marks dirty", () => {
+    const store = useTaskStore.getState();
+    const newId = store.addQuickProject("Website Redesign", "Marketing", 7, "Launch in Q4");
+
+    const state = useTaskStore.getState();
+    expect(state.dirty).toBe(true);
+    expect(state.selectedTaskId).toBe(newId);
+    expect(state.multiSelectedIds.has(newId)).toBe(true);
+
+    const created = state.file.tasks.find((t) => t.id === newId);
+    expect(created).toBeDefined();
+    expect(created?.title).toBe("Website Redesign");
+    expect(created?.category).toBe("Marketing");
+    expect(created?.priority).toBe(7);
+    expect(created?.notes).toBe("Launch in Q4");
+    expect(created?.isProject).toBe(true);
+    expect(created?.parentId).toBeNull();
+  });
 });
