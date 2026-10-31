@@ -385,6 +385,7 @@ pub fn run() {
             {
                 app.manage(calendar::CalendarDb::new());
                 app.manage(google_calendar::auth::GoogleAuth::new());
+                app.manage(google_calendar::commands::SyncState::new());
             }
 
             Ok(())
@@ -437,7 +438,11 @@ pub fn run() {
         google_calendar::auth::google_connect,
         google_calendar::auth::google_cancel_connect,
         google_calendar::auth::google_account_status,
-        google_calendar::auth::google_disconnect
+        google_calendar::auth::google_disconnect,
+        google_calendar::commands::google_sync_status,
+        google_calendar::commands::google_enable_sync,
+        google_calendar::commands::google_sync_now,
+        google_calendar::commands::google_pause_sync
     ]);
 
     builder

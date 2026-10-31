@@ -1,4 +1,11 @@
+pub mod api;
 pub mod auth;
+pub mod commands;
+pub mod engine;
+pub mod mapping;
+pub mod storage;
+#[cfg(test)]
+pub mod testing;
 
 use serde::Serialize;
 

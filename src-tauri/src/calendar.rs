@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 pub struct CalendarDb {
-    conn: Mutex<Option<OpenCalendar>>,
+    pub(crate) conn: Mutex<Option<OpenCalendar>>,
 }
 
 impl CalendarDb {
@@ -38,6 +38,7 @@ pub struct TimeblockRow {
 pub struct OpenCalendar {
     pub connection: Connection,
     pub session_id: String,
+    pub path: PathBuf,
 }
 
 impl Deref for OpenCalendar {
@@ -57,7 +58,7 @@ pub fn migrate(conn: &mut Connection) -> Result<(), String> {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |r| r.get(0))
         .map_err(|e| e.to_string())?;
-    if version > 2 {
+    if version > 3 {
         return Err("This calendar was created by a newer TODOer version".into());
     }
     if version < 1 {
@@ -115,6 +116,15 @@ pub fn migrate(conn: &mut Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
         tx.commit().map_err(|e| e.to_string())?;
     }
+    if version < 3 {
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        crate::google_calendar::storage::migrate(&tx).map_err(|e| e.message)?;
+        tx.pragma_update(None, "user_version", 3)
+            .map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+    }
+    conn.busy_timeout(std::time::Duration::from_secs(5))
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -168,6 +178,7 @@ pub fn open_calendar_db(
     *active = Some(OpenCalendar {
         connection: conn,
         session_id: session_id.clone(),
+        path: database_path(&list_path),
     });
     Ok(CalendarSession {
         database_id: session_id,
@@ -209,6 +220,7 @@ pub fn copy_calendar(source: &Path, target: &Path) -> Result<(), String> {
         .backup(rusqlite::DatabaseName::Main, target, None)
         .map_err(|e| e.to_string())?;
     let target_db = Connection::open(target).map_err(|e| e.to_string())?;
+    crate::google_calendar::storage::clear_binding(&target_db).map_err(|e| e.message)?;
     target_db.execute("UPDATE calendar_metadata SET value = lower(hex(randomblob(16))) WHERE key = 'calendar_id'", []).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -290,7 +302,7 @@ mod storage_tests {
     fn version_two_preserves_legacy_times_and_task_links() {
         let mut conn = Connection::open_in_memory().unwrap();
         migrate(&mut conn).unwrap();
-        conn.execute_batch("ALTER TABLE timeblocks DROP COLUMN all_day;
+        conn.execute_batch("DROP TRIGGER IF EXISTS sync_local_insert; DROP TRIGGER IF EXISTS sync_local_update; DROP TRIGGER IF EXISTS sync_local_delete; ALTER TABLE timeblocks DROP COLUMN all_day;
             ALTER TABLE timeblocks DROP COLUMN time_zone;
             PRAGMA user_version = 1;
             INSERT INTO timeblocks (id, start_time, end_time, notes, completed) VALUES ('legacy', '2026-10-31T09:00:00', '2026-10-31T10:00:00', 'preserve', 1);
@@ -470,6 +482,7 @@ mod storage_tests {
         let active = Some(OpenCalendar {
             connection: conn,
             session_id: "new".into(),
+            path: PathBuf::new(),
         });
         assert!(checked(&active, "old").is_err());
         assert!(checked(&active, "new").is_ok());
