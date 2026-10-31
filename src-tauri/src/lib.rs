@@ -5,6 +5,8 @@ use tauri::{Emitter, Manager};
 
 #[cfg(feature = "calendar")]
 mod calendar;
+#[cfg(feature = "calendar")]
+mod google_calendar;
 
 fn atomic_write(path: &Path, contents: &str) -> Result<(), String> {
     let parent = path.parent().ok_or("Invalid path")?;
@@ -382,6 +384,7 @@ pub fn run() {
             #[cfg(feature = "calendar")]
             {
                 app.manage(calendar::CalendarDb::new());
+                app.manage(google_calendar::auth::GoogleAuth::new());
             }
 
             Ok(())
@@ -430,7 +433,11 @@ pub fn run() {
         calendar::update_timeblock,
         calendar::delete_timeblock,
         calendar::assign_task_to_timeblock,
-        calendar::remove_task_from_timeblock
+        calendar::remove_task_from_timeblock,
+        google_calendar::auth::google_connect,
+        google_calendar::auth::google_cancel_connect,
+        google_calendar::auth::google_account_status,
+        google_calendar::auth::google_disconnect
     ]);
 
     builder

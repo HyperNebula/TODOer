@@ -5,6 +5,7 @@ import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../../sto
 import { ConfirmDialog } from "../ConfirmDialog";
 import { PromptDialog } from "../PromptDialog";
 import "../SettingsDialog.css";
+import { GoogleAccountPanel } from "./GoogleAccountPanel";
 
 interface Props {
   onClose: () => void;
@@ -27,7 +28,7 @@ const COLOR_LABELS: Record<keyof ThemeColors, string> = {
 };
 
 export function CalendarSettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "themes" | "behavior">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "themes" | "behavior" | "google">("appearance");
   const [appVersion, setAppVersion] = useState<string>("");
   
   useEffect(() => {
@@ -138,9 +139,11 @@ export function CalendarSettingsDialog({ onClose }: Props) {
         <div className="settings-tabs">
           <button className={`settings-tab ${activeTab === "appearance" ? "active" : ""}`} onClick={() => setActiveTab("appearance")}>Appearance</button>
           <button className={`settings-tab ${activeTab === "themes" ? "active" : ""}`} onClick={() => setActiveTab("themes")}>Themes</button>
+          {import.meta.env.DEV && <button className={`settings-tab ${activeTab === "google" ? "active" : ""}`} onClick={() => setActiveTab("google")}>Google (development)</button>}
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
         </div>
         <div className="settings-content">
+          {activeTab === "google" && <GoogleAccountPanel />}
           {activeTab === "appearance" && (
             <>
               <div className="settings-group">
