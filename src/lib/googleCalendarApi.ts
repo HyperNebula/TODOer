@@ -39,3 +39,21 @@ export const googleEnableSync = (databaseId: string, listName: string, timeZone:
   invoke<GoogleSyncStatus>("google_enable_sync", { databaseId, listName, timeZone, recoveryCalendarId: recoveryCalendarId || null, replaceExisting });
 export const googleSyncNow = (databaseId: string) => invoke<GoogleSyncStatus>("google_sync_now", { databaseId });
 export const googlePauseSync = (databaseId: string, paused: boolean) => invoke<GoogleSyncStatus>("google_pause_sync", { databaseId, paused });
+export interface GoogleEventSummary {
+  summary?: string;
+  description?: string;
+  start?: { date?: string; dateTime?: string; timeZone?: string };
+  end?: { date?: string; dateTime?: string; timeZone?: string };
+}
+export interface GoogleConflict {
+  local_id: string;
+  local: GoogleEventSummary | null;
+  google: GoogleEventSummary | null;
+  revision: number;
+  kind: string;
+  series_id: string | null;
+}
+export const googleConflicts = (databaseId: string) => invoke<GoogleConflict[]>("google_conflicts", { databaseId });
+export const googleResolveConflict = (databaseId: string, localId: string, choice: "local" | "google", revision: number) =>
+  invoke<GoogleSyncStatus>("google_resolve_conflict", { databaseId, localId, choice, revision });
+export const googleOpenEvent = (databaseId: string, localId: string) => invoke<void>("google_open_event", { databaseId, localId });

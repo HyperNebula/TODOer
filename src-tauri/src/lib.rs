@@ -442,7 +442,10 @@ pub fn run() {
         google_calendar::commands::google_sync_status,
         google_calendar::commands::google_enable_sync,
         google_calendar::commands::google_sync_now,
-        google_calendar::commands::google_pause_sync
+        google_calendar::commands::google_pause_sync,
+        google_calendar::commands::google_conflicts,
+        google_calendar::commands::google_resolve_conflict,
+        google_calendar::commands::google_open_event
     ]);
 
     builder

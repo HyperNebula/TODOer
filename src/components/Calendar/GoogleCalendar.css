@@ -1,0 +1,9 @@
+.google-conflict-dialog { width: 800px; }
+.google-conflict-versions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.google-conflict-versions section { min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 4px; overflow-wrap: anywhere; }
+.google-conflict-notes { white-space: pre-wrap; }
+.google-conflict-item { display: grid; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.google-sync-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.google-sync-panel { display: grid; gap: 12px; }
+.google-sync-panel input { width: 100%; box-sizing: border-box; }
+@media (max-width: 600px) { .google-conflict-versions { grid-template-columns: 1fr; } }

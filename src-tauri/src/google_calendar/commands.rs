@@ -1,4 +1,4 @@
-use super::{api::HttpApi, auth::GoogleAuth, engine, storage, GoogleError, Result};
+use super::{api::HttpApi, auth::GoogleAuth, engine, incoming, storage, GoogleError, Result};
 use crate::calendar::CalendarDb;
 use rusqlite::Connection;
 use serde::Serialize;
@@ -87,6 +87,7 @@ pub fn status(app: &tauri::AppHandle, id: &str) -> Result<SyncStatus> {
 fn work(
     app: &tauri::AppHandle,
     id: &str,
+    allow_account_change: bool,
     operation: impl FnOnce(&Connection, &mut HttpApi<'_>) -> Result<()>,
 ) -> Result<SyncStatus> {
     let state = app.state::<SyncState>();
@@ -100,6 +101,11 @@ fn work(
     let subject = account
         .subject
         .ok_or_else(|| GoogleError::new("reconnect", "Connect your Google account first."))?;
+    if !allow_account_change
+        && storage::binding(&conn)?.is_some_and(|binding| binding.subject != subject)
+    {
+        return Err(GoogleError::new("account_mismatch","Reconnect the Google account linked to this list, or explicitly create a replacement calendar."));
+    }
     state.running.store(true, Ordering::SeqCst);
     let result = (|| {
         let mut api = HttpApi::new(auth.inner(), &subject)?;
@@ -129,7 +135,7 @@ pub async fn google_enable_sync(
     replace_existing: Option<bool>,
 ) -> Result<SyncStatus> {
     tauri::async_runtime::spawn_blocking(move || {
-        work(&app, &database_id, |conn, api| {
+        work(&app, &database_id, true, |conn, api| {
             let subject = app
                 .state::<GoogleAuth>()
                 .status()?
@@ -153,7 +159,8 @@ pub async fn google_enable_sync(
 #[tauri::command]
 pub async fn google_sync_now(app: tauri::AppHandle, database_id: String) -> Result<SyncStatus> {
     tauri::async_runtime::spawn_blocking(move || {
-        work(&app, &database_id, |conn, api| {
+        work(&app, &database_id, false, |conn, api| {
+            incoming::pull(conn, api, || active(&app, &database_id))?;
             engine::push(conn, api, || active(&app, &database_id))
         })
     })
@@ -174,4 +181,87 @@ pub fn google_pause_sync(
     )
     .map_err(GoogleError::storage)?;
     status(&app, &database_id)
+}
+
+#[tauri::command]
+pub fn google_conflicts(
+    app: tauri::AppHandle,
+    database_id: String,
+) -> Result<Vec<incoming::ConflictView>> {
+    incoming::conflicts(&connection(&app, &database_id)?)
+}
+
+#[tauri::command]
+pub async fn google_resolve_conflict(
+    app: tauri::AppHandle,
+    database_id: String,
+    local_id: String,
+    choice: String,
+    revision: i64,
+) -> Result<SyncStatus> {
+    tauri::async_runtime::spawn_blocking(move || {
+        work(&app, &database_id, false, |conn, api| {
+            incoming::resolve(conn, api, &local_id, &choice, revision)
+        })
+    })
+    .await
+    .map_err(|_| GoogleError::new("worker", "The conflict worker stopped unexpectedly."))?
+}
+
+#[tauri::command]
+pub fn google_open_event(
+    app: tauri::AppHandle,
+    database_id: String,
+    local_id: String,
+) -> Result<()> {
+    use rusqlite::OptionalExtension;
+    let conn = connection(&app, &database_id)?;
+    let id = local_id
+        .strip_prefix("virtual_")
+        .and_then(|value| value.split_once('_').map(|(parent, _)| parent))
+        .unwrap_or(&local_id);
+    let saved: Option<Option<String>> = conn
+        .query_row(
+            "SELECT html_link FROM sync_events WHERE local_id=?1",
+            [id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(GoogleError::storage)?;
+    let link = if let Some(link) = saved.flatten() {
+        link
+    } else {
+        let raw: Option<String> = conn
+            .query_row(
+                "SELECT remote_json FROM sync_conflicts WHERE local_id=?1",
+                [id],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(GoogleError::storage)?;
+        raw.and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+            .and_then(|value| value["htmlLink"].as_str().map(str::to_string))
+            .ok_or_else(|| {
+                GoogleError::new(
+                    "not_synced",
+                    "Sync this event first to open it in Google Calendar.",
+                )
+            })?
+    };
+    let url = reqwest::Url::parse(&link)
+        .map_err(|_| GoogleError::new("invalid_link", "Google returned an invalid event link."))?;
+    if url.scheme() != "https"
+        || !matches!(
+            url.host_str(),
+            Some("calendar.google.com" | "www.google.com")
+        )
+        || !url.path().starts_with("/calendar/")
+    {
+        return Err(GoogleError::new(
+            "invalid_link",
+            "The saved event link is not a Google Calendar link.",
+        ));
+    }
+    tauri_plugin_opener::open_url(url.as_str(), None::<&str>)
+        .map_err(|_| GoogleError::new("browser", "The Google Calendar event could not be opened."))
 }
