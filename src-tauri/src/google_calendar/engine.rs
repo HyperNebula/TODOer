@@ -65,6 +65,11 @@ pub fn enable(
         conn.execute("UPDATE sync_binding SET calendar_id=?1,setup_state='ready',enabled=0 WHERE singleton=1",[id]).map_err(GoogleError::storage)?;
         id.into()
     };
+    let same_binding = existing.as_ref().is_some_and(|binding| {
+        binding.calendar_id == calendar
+            && binding.subject == subject
+            && binding.setup_state == "ready"
+    });
     storage::importing(conn, |conn| {
         if existing.as_ref().is_some_and(|b| b.calendar_id != calendar) {
             storage::clear_binding(conn)?;
@@ -78,7 +83,10 @@ pub fn enable(
             ON CONFLICT(singleton) DO UPDATE SET subject=excluded.subject,calendar_id=excluded.calendar_id,time_zone=excluded.time_zone,enabled=1,setup_state='ready',pause_reason=NULL",
             [subject,&calendar,zone]).map_err(GoogleError::storage)?;
         conn.execute("INSERT INTO calendar_metadata(key,value) VALUES('display_time_zone',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value",[zone]).map_err(GoogleError::storage)?;
-        storage::queue_all(conn)
+        if !same_binding {
+            storage::queue_all(conn)?;
+        }
+        Ok(())
     })
 }
 
@@ -274,6 +282,72 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
 mod tests {
     use super::*;
     use crate::google_calendar::testing::{db, local, FakeApi};
+    #[test]
+    fn lost_response_then_process_restart_keeps_the_mapping_and_outbox() {
+        let path = std::env::temp_dir().join(format!(
+            "todoer-restart-{}-{}.db",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let mut api = FakeApi {
+            fail_after_write: true,
+            ..Default::default()
+        };
+        let identity;
+        let remote_id;
+        {
+            let db = db();
+            local(&db, "one");
+            assert!(push(&db, &mut api, || true).is_err());
+            identity = storage::identity(&db).unwrap();
+            remote_id = storage::mappings(&db).unwrap()[0].remote_id.clone();
+            db.backup(rusqlite::DatabaseName::Main, &path, None)
+                .unwrap();
+        }
+        {
+            let mut db = Connection::open(&path).unwrap();
+            crate::calendar::migrate(&mut db).unwrap();
+            assert_eq!(storage::identity(&db).unwrap(), identity);
+            assert_eq!(storage::mappings(&db).unwrap()[0].remote_id, remote_id);
+            assert_eq!(storage::pending(&db).unwrap().len(), 1);
+            push(&db, &mut api, || true).unwrap();
+            assert_eq!(api.events.len(), 1);
+            assert_eq!(api.writes, 1);
+            assert!(storage::pending(&db).unwrap().is_empty());
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn missing_calendar_preserves_local_schedule_and_pending_changes() {
+        let db = db();
+        local(&db, "one");
+        let mut api = FakeApi {
+            missing_calendar: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            push(&db, &mut api, || true).unwrap_err().code,
+            "calendar_unavailable"
+        );
+        assert_eq!(storage::rows(&db).unwrap().len(), 1);
+        assert_eq!(storage::pending(&db).unwrap().len(), 1);
+        assert_eq!(api.writes, 0);
+    }
+
+    #[test]
+    fn recovering_the_same_binding_does_not_queue_unchanged_local_events() {
+        let db = db();
+        local(&db, "one");
+        let mut api = FakeApi::default();
+        push(&db, &mut api, || true).unwrap();
+        api.events.values_mut().next().unwrap()["summary"] = json!("Phone edit");
+        enable(&db, &mut api, "user", "List", "UTC", None, false).unwrap();
+        assert!(storage::pending(&db).unwrap().is_empty());
+    }
     #[test]
     fn lost_insert_response_retries_without_duplicates() {
         let db = db();

@@ -66,6 +66,12 @@ export function GoogleSyncPanel() {
         </div>
         <p>Existing calendar ID: {binding?.calendar_id || "Not yet created"}</p>
       </details>
+      {!!sync.status?.recent_runs?.length && <details><summary>Recent sync activity</summary>
+        <p>Stored locally: time, result, and change counts. Event details and credentials are excluded.</p>
+        <ul>{sync.status.recent_runs.map((run, index) => <li key={`${run.at}-${index}`}>
+          {new Date(run.at).toLocaleString()} · {run.result} · {run.pending_count} pending · {run.conflict_count} conflicts
+        </li>)}</ul>
+      </details>}
     </>}
     {replace && <ConfirmDialog title="Create a replacement Google calendar?" message={`This will upload all existing timeblocks to a new TODOer — ${name} calendar in the connected account. The old Google calendar will remain. If an interrupted setup already created a calendar, recovery avoids making another one.`}
       confirmLabel="Create replacement" onCancel={() => setReplace(false)} onConfirm={() => { setReplace(false); void enable(true); }} />}

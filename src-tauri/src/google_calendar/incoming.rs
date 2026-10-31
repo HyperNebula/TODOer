@@ -142,12 +142,31 @@ pub fn merge_event(conn: &Connection, remote: &Value, zone: &str) -> Result<()> 
         }
     };
     let local = storage::row(conn, &id)?;
+    if mapped.is_none() {
+        conn.execute(
+            "INSERT OR IGNORE INTO sync_events(local_id,remote_id) VALUES(?1,?2)",
+            [&id, remote_id],
+        )
+        .map_err(GoogleError::storage)?;
+    }
     let current = if remote["status"] == "cancelled" {
         Value::Null
     } else {
         match mapping::canonical(remote, zone) {
             Ok(value) => value,
             Err(error) => {
+                // Retain identity even when no local schedule can be imported,
+                // so a later correction or cancellation clears this conflict.
+                conn.execute(
+                    "UPDATE sync_events SET raw_json=?2,etag=?3,html_link=?4 WHERE local_id=?1",
+                    rusqlite::params![
+                        &id,
+                        remote.to_string(),
+                        remote["etag"].as_str(),
+                        remote["htmlLink"].as_str()
+                    ],
+                )
+                .map_err(GoogleError::storage)?;
                 storage::conflict(conn, &id, remote, &error.code, None)?;
                 return Ok(());
             }
@@ -179,13 +198,6 @@ pub fn merge_event(conn: &Connection, remote: &Value, zone: &str) -> Result<()> 
         )
         .map_err(GoogleError::storage)?;
     let previous = mapped.and_then(|entry| entry.base.as_ref());
-    if mapped.is_none() {
-        conn.execute(
-            "INSERT OR IGNORE INTO sync_events(local_id,remote_id) VALUES(?1,?2)",
-            [&id, remote_id],
-        )
-        .map_err(GoogleError::storage)?;
-    }
     if dirty && current != desired && Some(&current) != previous {
         storage::conflict(
             conn,
@@ -828,5 +840,21 @@ mod tests {
         engine::push(&db, &mut api, || true).unwrap();
         assert!(storage::pending(&db).unwrap().is_empty());
         assert_eq!(api.events.len(), 2);
+    }
+
+    #[test]
+    fn deleting_an_unsupported_remote_event_clears_its_review_item() {
+        let db = db();
+        let unsupported = json!({"id":"unsupported","summary":"Unsupported schedule","htmlLink":"https://calendar.google.com/calendar/event?eid=test"});
+        storage::importing(&db, |db| merge_event(db, &unsupported, "UTC")).unwrap();
+        assert_eq!(conflicts(&db).unwrap().len(), 1);
+        assert_eq!(storage::mappings(&db).unwrap()[0].remote_id, "unsupported");
+        storage::importing(&db, |db| {
+            merge_event(db, &json!({"id":"unsupported","status":"cancelled"}), "UTC")
+        })
+        .unwrap();
+        assert!(conflicts(&db).unwrap().is_empty());
+        assert!(storage::rows(&db).unwrap().is_empty());
+        assert!(storage::pending(&db).unwrap().is_empty());
     }
 }

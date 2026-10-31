@@ -66,6 +66,7 @@ fn client_id() -> Result<String> {
     Ok(value.into())
 }
 
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 fn credential() -> Result<keyring::Entry> {
     keyring::Entry::new("com.david.todoer-plus.google-calendar", &client_id()?).map_err(|_| {
         GoogleError::new(
@@ -73,6 +74,14 @@ fn credential() -> Result<keyring::Entry> {
             "The operating system credential store is unavailable.",
         )
     })
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn credential() -> Result<keyring::Entry> {
+    Err(GoogleError::new(
+        "unsupported_platform",
+        "Google sync requires Windows Credential Manager or macOS Keychain.",
+    ))
 }
 
 fn load_account() -> Result<Option<SavedAccount>> {
@@ -132,12 +141,21 @@ fn challenge(verifier: &str) -> String {
 }
 
 fn parse_callback(target: &str, expected_state: &str) -> Result<Option<String>> {
-    let url = reqwest::Url::parse(&format!("http://127.0.0.1{target}"))
-        .map_err(|_| GoogleError::new("callback", "Invalid sign-in callback."))?;
+    if !target.starts_with("/oauth2/callback?") || target.contains('#') {
+        return Ok(None);
+    }
+    let Ok(url) = reqwest::Url::parse(&format!("http://127.0.0.1{target}")) else {
+        return Ok(None);
+    };
     if url.path() != "/oauth2/callback" {
         return Ok(None);
     }
-    let values: std::collections::HashMap<_, _> = url.query_pairs().into_owned().collect();
+    let mut values = std::collections::HashMap::new();
+    for (key, value) in url.query_pairs().into_owned() {
+        if values.insert(key, value).is_some() {
+            return Ok(None);
+        }
+    }
     if values.get("state").map(String::as_str) != Some(expected_state) {
         return Ok(None);
     }
@@ -151,6 +169,53 @@ fn parse_callback(target: &str, expected_state: &str) -> Result<Option<String>> 
         .get("code")
         .filter(|value| !value.is_empty())
         .cloned())
+}
+
+fn callback_request(request: &str, address: &str, state: &str) -> Result<Option<String>> {
+    let Some((headers, _)) = request.split_once("\r\n\r\n") else {
+        return Ok(None);
+    };
+    let mut lines = headers.split("\r\n");
+    let parts: Vec<_> = lines.next().unwrap_or("").split_whitespace().collect();
+    if parts.len() != 3 || parts[0] != "GET" || !matches!(parts[2], "HTTP/1.1" | "HTTP/1.0") {
+        return Ok(None);
+    }
+    let hosts: Vec<_> = lines
+        .filter_map(|line| line.split_once(':'))
+        .filter(|(name, _)| name.eq_ignore_ascii_case("host"))
+        .collect();
+    if hosts.len() != 1 || hosts[0].1.trim() != address {
+        return Ok(None);
+    }
+    parse_callback(parts[1], state)
+}
+
+fn read_callback(stream: &mut std::net::TcpStream, active: impl Fn() -> bool) -> String {
+    // TCP can split headers across reads. Bound both size and elapsed time so a
+    // local incomplete request cannot consume the whole sign-in window.
+    let deadline = Instant::now() + Duration::from_secs(3);
+    let mut bytes = Vec::new();
+    let mut chunk = [0u8; 1024];
+    while bytes.len() < 8192 && Instant::now() < deadline && active() {
+        let limit = chunk.len().min(8192 - bytes.len());
+        match stream.read(&mut chunk[..limit]) {
+            Ok(0) => break,
+            Ok(count) => bytes.extend_from_slice(&chunk[..count]),
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                ) =>
+            {
+                continue
+            }
+            Err(_) => break,
+        }
+        if bytes.windows(4).any(|part| part == b"\r\n\r\n") {
+            break;
+        }
+    }
+    String::from_utf8(bytes).unwrap_or_default()
 }
 
 impl GoogleAuth {
@@ -246,25 +311,14 @@ impl GoogleAuth {
             }
             match listener.accept() {
                 Ok((mut stream, _)) => {
+                    // Accepted sockets can inherit the listener's mode on Windows.
+                    let _ = stream.set_nonblocking(false);
                     let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
                     let _ = stream.set_write_timeout(Some(Duration::from_secs(1)));
-                    let mut request = [0u8; 8192];
-                    let count = stream.read(&mut request).unwrap_or(0);
-                    let request = String::from_utf8_lossy(&request[..count]);
-                    let line = request.lines().next().unwrap_or("");
-                    let mut parts = line.split_whitespace();
-                    let method = parts.next().unwrap_or("");
-                    let target = parts.next().unwrap_or("");
-                    let valid_host = request.lines().any(|line| {
-                        line.split_once(':').is_some_and(|(name, value)| {
-                            name.eq_ignore_ascii_case("host") && value.trim() == address.to_string()
-                        })
+                    let request = read_callback(&mut stream, || {
+                        self.flow.load(Ordering::SeqCst) == generation && Instant::now() < deadline
                     });
-                    let parsed = if method == "GET" && valid_host {
-                        parse_callback(target, &state)
-                    } else {
-                        Ok(None)
-                    };
+                    let parsed = callback_request(&request, &address.to_string(), &state);
                     let accepted = !matches!(parsed, Ok(None));
                     let message = if accepted {
                         "Sign-in received. You can close this tab and return to TODOer."
@@ -534,5 +588,53 @@ mod tests {
         let first = nonce().unwrap();
         assert_eq!(first.len(), 43);
         assert_ne!(first, nonce().unwrap());
+    }
+
+    #[test]
+    fn callback_rejects_ambiguous_or_untrusted_requests() {
+        let valid =
+            "GET /oauth2/callback?state=right&code=test HTTP/1.1\r\nHost: 127.0.0.1:1234\r\n\r\n";
+        assert_eq!(
+            callback_request(valid, "127.0.0.1:1234", "right").unwrap(),
+            Some("test".into())
+        );
+        for request in [
+            valid.replace("127.0.0.1:1234", "evil.example"),
+            valid.replace("code=test", "code=test&code=other"),
+            valid.replace("state=right", "state=wrong&state=right"),
+            valid.replace("\r\n\r\n", "\r\nHost: evil.example\r\n\r\n"),
+            valid.replace("GET /", "POST /"),
+            valid.replace("GET /", "GET https://evil.example/"),
+            valid.trim_end().to_string(),
+        ] {
+            assert!(callback_request(&request, "127.0.0.1:1234", "right")
+                .unwrap()
+                .is_none());
+        }
+    }
+
+    #[test]
+    fn callback_reads_fragmented_tcp_headers() {
+        let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let worker = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(1)))
+                .unwrap();
+            callback_request(
+                &read_callback(&mut stream, || true),
+                &address.to_string(),
+                "right",
+            )
+            .unwrap()
+        });
+        let mut client = std::net::TcpStream::connect(address).unwrap();
+        client
+            .write_all(b"GET /oauth2/callback?state=right&code=test HTTP/1.1\r\n")
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(20));
+        write!(client, "Host: {address}\r\n\r\n").unwrap();
+        assert_eq!(worker.join().unwrap(), Some("test".into()));
     }
 }

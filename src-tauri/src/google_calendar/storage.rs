@@ -9,7 +9,7 @@ pub fn migrate(conn: &Connection) -> Result<()> {
         singleton INTEGER PRIMARY KEY CHECK(singleton=1), subject TEXT NOT NULL,
         calendar_id TEXT NOT NULL DEFAULT '', time_zone TEXT NOT NULL,
         enabled INTEGER NOT NULL DEFAULT 0, setup_state TEXT NOT NULL DEFAULT 'creating',
-        sync_token TEXT, last_success TEXT, pause_reason TEXT, connection_epoch TEXT NOT NULL DEFAULT '');
+        sync_token TEXT, last_success TEXT, pause_reason TEXT);
         CREATE TABLE IF NOT EXISTS sync_control (singleton INTEGER PRIMARY KEY CHECK(singleton=1), importing INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0);
         INSERT OR IGNORE INTO sync_control(singleton) VALUES(1);
         CREATE TABLE IF NOT EXISTS sync_events (local_id TEXT PRIMARY KEY, remote_id TEXT NOT NULL UNIQUE, etag TEXT, base_json TEXT, raw_json TEXT, html_link TEXT);
@@ -25,6 +25,18 @@ pub fn migrate_hierarchy(conn: &Connection) -> Result<()> {
         DROP TRIGGER sync_local_insert; DROP TRIGGER sync_local_update; DROP TRIGGER sync_local_delete;")
         .map_err(GoogleError::storage)?;
     install_triggers(conn, true)
+}
+
+pub fn migrate_connection_epoch(conn: &Connection) -> Result<()> {
+    let exists: bool = conn.query_row("SELECT EXISTS(SELECT 1 FROM pragma_table_info('sync_binding') WHERE name='connection_epoch')", [], |row| row.get(0))
+        .map_err(GoogleError::storage)?;
+    if !exists {
+        conn.execute_batch(
+            "ALTER TABLE sync_binding ADD COLUMN connection_epoch TEXT NOT NULL DEFAULT '';",
+        )
+        .map_err(GoogleError::storage)?;
+    }
+    Ok(())
 }
 
 fn install_triggers(conn: &Connection, hierarchy: bool) -> Result<()> {
@@ -336,7 +348,7 @@ pub fn conflict(
 }
 
 pub fn clear_binding(conn: &Connection) -> Result<()> {
-    conn.execute_batch("DELETE FROM sync_binding; DELETE FROM sync_events; DELETE FROM sync_outbox; DELETE FROM sync_conflicts; DELETE FROM sync_remote_cache; DELETE FROM sync_retired;").map_err(GoogleError::storage)
+    conn.execute_batch("DELETE FROM sync_binding; DELETE FROM sync_events; DELETE FROM sync_outbox; DELETE FROM sync_conflicts; DELETE FROM sync_remote_cache; DELETE FROM sync_retired; DELETE FROM sync_runs;").map_err(GoogleError::storage)
 }
 
 #[cfg(test)]

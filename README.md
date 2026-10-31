@@ -8,7 +8,7 @@
 
 ## Overview
 
-**TODOer** is a desktop-native task manager for power users. It stores your tasks locally in human-readable JSON files, ensuring full data ownership, privacy, and easy syncing.
+**TODOer** is a desktop-native task manager for power users. It stores your tasks locally in human-readable JSON files. TODOer+ stores calendar events in a matching SQLite sidecar and offers optional Google Calendar sync.
 
 ### Pro Version 🌟
 Upgrade to **TODOer Pro** for advanced planning features, including a powerful **Timeblock Calendar** to visually schedule your day and maximize productivity.
@@ -29,7 +29,8 @@ Download the latest release from the [GitHub Releases](../../releases) page.
 
 - **Multi-Column Tree Grid:** Infinite sub-tasks with folding and recursive indenting.
 - **Advanced Filtering:** Filter by priority, category, completion, and due dates.
-- **Privacy-First Storage:** Local atomic JSON file writes. No cloud, no telemetry.
+- **Local-First Storage:** Atomic task JSON writes; Google Calendar sync in TODOer+ is opt-in.
+- **Google Calendar in TODOer+:** Sync a dedicated calendar with your phone, with offline queues and conflict review. [Setup and limitations](docs/google-calendar.md).
 - **Rich Task Metadata:** Title, dates, priority, % complete, time estimates, categories, and notes.
 - **Data Export:** Archive completed tasks, export to CSV, or print.
 

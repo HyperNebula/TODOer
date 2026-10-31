@@ -1,6 +1,7 @@
 pub mod api;
 pub mod auth;
 pub mod commands;
+pub mod diagnostics;
 pub mod engine;
 pub mod incoming;
 pub mod mapping;

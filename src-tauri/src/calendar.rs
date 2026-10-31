@@ -58,7 +58,7 @@ pub fn migrate(conn: &mut Connection) -> Result<(), String> {
     let version: u32 = conn
         .pragma_query_value(None, "user_version", |r| r.get(0))
         .map_err(|e| e.to_string())?;
-    if version > 4 {
+    if version > 5 {
         return Err("This calendar was created by a newer TODOer version".into());
     }
     if version < 1 {
@@ -127,6 +127,14 @@ pub fn migrate(conn: &mut Connection) -> Result<(), String> {
         let tx = conn.transaction().map_err(|e| e.to_string())?;
         crate::google_calendar::storage::migrate_hierarchy(&tx).map_err(|e| e.message)?;
         tx.pragma_update(None, "user_version", 4)
+            .map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+    }
+    if version < 5 {
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        crate::google_calendar::storage::migrate_connection_epoch(&tx).map_err(|e| e.message)?;
+        crate::google_calendar::diagnostics::migrate(&tx).map_err(|e| e.message)?;
+        tx.pragma_update(None, "user_version", 5)
             .map_err(|e| e.to_string())?;
         tx.commit().map_err(|e| e.to_string())?;
     }
@@ -371,6 +379,30 @@ mod storage_tests {
             display_time_zone_on(&conn, "Asia/Tokyo").unwrap(),
             "America/Denver"
         );
+    }
+
+    #[test]
+    fn upgrades_early_sync_databases_without_erasing_pending_work() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrate(&mut conn).unwrap();
+        conn.execute_batch("ALTER TABLE sync_binding DROP COLUMN connection_epoch; DROP TABLE sync_runs; PRAGMA user_version=4;
+            INSERT INTO sync_binding(singleton,subject,calendar_id,time_zone,enabled,setup_state) VALUES(1,'user','calendar','UTC',1,'ready');
+            INSERT INTO timeblocks(id,title,start_time,end_time) VALUES('one','Keep','2026-01-01T09:00:00','2026-01-01T10:00:00');").unwrap();
+        migrate(&mut conn).unwrap();
+        let binding = crate::google_calendar::storage::binding(&conn)
+            .unwrap()
+            .unwrap();
+        assert_eq!(binding.calendar_id, "calendar");
+        assert_eq!(binding.connection_epoch, "");
+        assert_eq!(
+            crate::google_calendar::storage::pending(&conn)
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(crate::google_calendar::diagnostics::recent(&conn)
+            .unwrap()
+            .is_empty());
     }
 
     #[test]

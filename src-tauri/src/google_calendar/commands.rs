@@ -42,6 +42,7 @@ pub struct SyncStatus {
     pub event_count: i64,
     pub running: bool,
     pub error: Option<GoogleError>,
+    pub recent_runs: Vec<super::diagnostics::Run>,
 }
 
 pub fn connection(app: &tauri::AppHandle, id: &str) -> Result<Connection> {
@@ -107,6 +108,7 @@ pub fn status(app: &tauri::AppHandle, id: &str) -> Result<SyncStatus> {
         event_count: count("timeblocks")?,
         running: state.running.load(Ordering::SeqCst),
         error,
+        recent_runs: super::diagnostics::recent(&conn)?,
     })
 }
 
@@ -151,6 +153,8 @@ fn work(
         operation(&conn, &mut api)
     })();
     state.running.store(false, Ordering::SeqCst);
+    // Diagnostics must never replace the actual sync result if disk writes fail.
+    let _ = super::diagnostics::record(&conn, &result);
     *state.last_error.lock().map_err(GoogleError::storage)? = result
         .as_ref()
         .err()

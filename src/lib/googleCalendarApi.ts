@@ -33,6 +33,7 @@ export interface GoogleSyncStatus {
   event_count: number;
   running: boolean;
   error: GoogleError | null;
+  recent_runs?: { at: string; result: string; pending_count: number; conflict_count: number }[];
 }
 export const googleSyncStatus = (databaseId: string) => invoke<GoogleSyncStatus>("google_sync_status", { databaseId });
 export const googleEnableSync = (databaseId: string, listName: string, timeZone: string, recoveryCalendarId?: string, replaceExisting = false) =>
