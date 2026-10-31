@@ -386,6 +386,9 @@ pub fn run() {
                 app.manage(calendar::CalendarDb::new());
                 app.manage(google_calendar::auth::GoogleAuth::new());
                 app.manage(google_calendar::commands::SyncState::new());
+                google_calendar::scheduler::initialize(app.handle())
+                    .map_err(|e| std::io::Error::other(e.message))?;
+                google_calendar::scheduler::start(app.handle().clone());
             }
 
             Ok(())
@@ -446,10 +449,23 @@ pub fn run() {
         google_calendar::commands::google_pause_sync,
         google_calendar::commands::google_conflicts,
         google_calendar::commands::google_resolve_conflict,
+        google_calendar::scheduler::google_schedule_sync,
         google_calendar::commands::google_open_event
     ]);
 
-    builder
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    let app = builder
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+    app.run(|app, event| {
+        #[cfg(feature = "calendar")]
+        if let tauri::RunEvent::Exit = event {
+            let state = app.state::<google_calendar::commands::SyncState>();
+            state
+                .shutdown
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            state.wake.notify_all();
+        }
+        #[cfg(not(feature = "calendar"))]
+        let _ = (app, event);
+    });
 }

@@ -153,6 +153,12 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
                         continue;
                     }
                 }
+                if !active() {
+                    return Err(GoogleError::new(
+                        "cancelled",
+                        "Sync was paused or the active list changed.",
+                    ));
+                }
                 match api.delete(
                     &binding.calendar_id,
                     &entry.remote_id,
@@ -218,10 +224,22 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
             if row.as_ref().unwrap().recurrence_id.is_some() {
                 patch.as_object_mut().unwrap().remove("recurrence");
             }
+            if !active() {
+                return Err(GoogleError::new(
+                    "cancelled",
+                    "Sync was paused or the active list changed.",
+                ));
+            }
             api.patch(&binding.calendar_id, &entry.remote_id, &patch, etag)
         } else {
             payload["id"] = json!(entry.remote_id);
             payload["extendedProperties"] = json!({"private":{"todoerLocalId":pending.local_id,"todoerCalendarId":storage::identity(conn)?}});
+            if !active() {
+                return Err(GoogleError::new(
+                    "cancelled",
+                    "Sync was paused or the active list changed.",
+                ));
+            }
             match api.insert(&binding.calendar_id, &payload) {
                 Err(error) if error.code == "already_exists" => {
                     let remote = api.get(&binding.calendar_id, &entry.remote_id)?;

@@ -1,3 +1,4 @@
+import { GoogleSyncBadge } from "./GoogleSyncBadge";
 
 
 interface CalendarToolbarProps {
@@ -51,6 +52,7 @@ export function CalendarToolbar({
         Pomodoro
       </button>
       <span style={{ marginLeft: "auto" }} />
+      <GoogleSyncBadge onSettings={onOpenSettings} />
       <div style={{ display: "flex", alignItems: "center", gap: "8px", borderLeft: "1px solid var(--border)", paddingLeft: "12px", marginLeft: "4px" }}>
         <button
           type="button"

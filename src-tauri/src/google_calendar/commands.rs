@@ -1,29 +1,39 @@
-use super::{api::HttpApi, auth::GoogleAuth, engine, incoming, storage, GoogleError, Result};
+use super::{
+    api::HttpApi, auth::GoogleAuth, engine, incoming, scheduler, storage, GoogleError, Result,
+};
 use crate::calendar::CalendarDb;
 use rusqlite::Connection;
 use serde::Serialize;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Mutex,
+    Condvar, Mutex,
 };
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub struct SyncState {
     pub gate: Mutex<()>,
     pub running: AtomicBool,
+    pub plan: Mutex<scheduler::Planner>,
+    pub wake: Condvar,
+    pub shutdown: AtomicBool,
+    pub epoch: Mutex<String>,
     pub last_error: Mutex<Option<(String, GoogleError)>>,
 }
 impl SyncState {
     pub fn new() -> Self {
         Self {
             gate: Mutex::new(()),
+            plan: Mutex::new(scheduler::Planner::new()),
+            wake: Condvar::new(),
+            shutdown: AtomicBool::new(false),
+            epoch: Mutex::new(String::new()),
             running: AtomicBool::new(false),
             last_error: Mutex::new(None),
         }
     }
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct SyncStatus {
     pub database_id: String,
     pub binding: Option<storage::Binding>,
@@ -50,16 +60,32 @@ pub fn connection(app: &tauri::AppHandle, id: &str) -> Result<Connection> {
 }
 
 pub fn active(app: &tauri::AppHandle, id: &str) -> bool {
-    app.state::<CalendarDb>()
-        .conn
+    let state = app.state::<CalendarDb>();
+    let Ok(current) = state.conn.lock() else {
+        return false;
+    };
+    let Some(db) = current.as_ref().filter(|db| db.session_id == id) else {
+        return false;
+    };
+    let epoch = app
+        .state::<SyncState>()
+        .epoch
         .lock()
+        .map(|value| value.clone())
+        .unwrap_or_default();
+    storage::binding(db)
         .ok()
-        .is_some_and(|state| state.as_ref().is_some_and(|db| db.session_id == id))
+        .flatten()
+        .is_some_and(|binding| binding.enabled && binding.connection_epoch == epoch)
 }
 
 pub fn status(app: &tauri::AppHandle, id: &str) -> Result<SyncStatus> {
     let conn = connection(app, id)?;
     let state = app.state::<SyncState>();
+    let epoch = state.epoch.lock().map_err(GoogleError::storage)?.clone();
+    if storage::binding(&conn)?.is_some_and(|binding| binding.connection_epoch != epoch) {
+        conn.execute("UPDATE sync_binding SET enabled=0,pause_reason='Account disconnected; resume this list after reconnecting' WHERE singleton=1",[]).map_err(GoogleError::storage)?;
+    }
     let count = |table: &str| {
         conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| {
             row.get::<_, i64>(0)
@@ -106,7 +132,20 @@ fn work(
     {
         return Err(GoogleError::new("account_mismatch","Reconnect the Google account linked to this list, or explicitly create a replacement calendar."));
     }
+    if !allow_account_change {
+        let epoch = state.epoch.lock().map_err(GoogleError::storage)?.clone();
+        if storage::binding(&conn)?.is_some_and(|binding| binding.connection_epoch != epoch) {
+            return Err(GoogleError::new(
+                "paused",
+                "Resume this list after reconnecting your Google account.",
+            ));
+        }
+    }
     state.running.store(true, Ordering::SeqCst);
+    let started_revision = state.plan.lock().map_err(GoogleError::storage)?.revision;
+    if let Ok(status) = status(app, id) {
+        let _ = app.emit("google-sync-status", status);
+    }
     let result = (|| {
         let mut api = HttpApi::new(auth.inner(), &subject)?;
         operation(&conn, &mut api)
@@ -115,9 +154,37 @@ fn work(
     *state.last_error.lock().map_err(GoogleError::storage)? = result
         .as_ref()
         .err()
+        .filter(|error| error.code != "cancelled")
         .map(|error| (id.into(), error.clone()));
+    if let Err(error) = &result {
+        if matches!(
+            error.code.as_str(),
+            "calendar_unavailable" | "permission" | "account_mismatch"
+        ) {
+            conn.execute(
+                "UPDATE sync_binding SET enabled=0,pause_reason=?1 WHERE singleton=1",
+                [&error.message],
+            )
+            .map_err(GoogleError::storage)?;
+        }
+    } else {
+        let _ = app.emit("calendar-changed", serde_json::json!({"database_id":id}));
+        if let Ok(mut plan) = state.plan.lock() {
+            plan.finish(started_revision, None);
+        }
+    }
+    if let Ok(status) = status(app, id) {
+        let _ = app.emit("google-sync-status", status);
+    }
     result?;
     status(app, id)
+}
+
+pub fn run_sync(app: &tauri::AppHandle, id: &str) -> Result<SyncStatus> {
+    work(app, id, false, |conn, api| {
+        incoming::pull(conn,api,||active(app,id)).map_err(|error|if error.code=="not_found"{GoogleError::new("calendar_unavailable","The dedicated Google calendar is unavailable. Recover it or explicitly create a replacement in Settings.")}else{error})?;
+        engine::push(conn, api, || active(app, id))
+    })
 }
 
 #[tauri::command]
@@ -136,6 +203,12 @@ pub async fn google_enable_sync(
 ) -> Result<SyncStatus> {
     tauri::async_runtime::spawn_blocking(move || {
         work(&app, &database_id, true, |conn, api| {
+            let epoch_before = app
+                .state::<SyncState>()
+                .epoch
+                .lock()
+                .map_err(GoogleError::storage)?
+                .clone();
             let subject = app
                 .state::<GoogleAuth>()
                 .status()?
@@ -149,7 +222,28 @@ pub async fn google_enable_sync(
                 &time_zone,
                 recovery_calendar_id.as_deref(),
                 replace_existing.unwrap_or(false),
+            )?;
+            let epoch = app
+                .state::<SyncState>()
+                .epoch
+                .lock()
+                .map_err(GoogleError::storage)?
+                .clone();
+            conn.execute(
+                "UPDATE sync_binding SET connection_epoch=?1 WHERE singleton=1",
+                [&epoch_before],
             )
+            .map_err(GoogleError::storage)?;
+            if epoch != epoch_before {
+                conn.execute("UPDATE sync_binding SET enabled=0 WHERE singleton=1", [])
+                    .map_err(GoogleError::storage)?;
+                return Err(GoogleError::new(
+                    "cancelled",
+                    "Sync setup was paused because the account disconnected.",
+                ));
+            }
+            scheduler::wake(&app, false);
+            Ok(())
         })
     })
     .await
@@ -158,14 +252,9 @@ pub async fn google_enable_sync(
 
 #[tauri::command]
 pub async fn google_sync_now(app: tauri::AppHandle, database_id: String) -> Result<SyncStatus> {
-    tauri::async_runtime::spawn_blocking(move || {
-        work(&app, &database_id, false, |conn, api| {
-            incoming::pull(conn, api, || active(&app, &database_id))?;
-            engine::push(conn, api, || active(&app, &database_id))
-        })
-    })
-    .await
-    .map_err(|_| GoogleError::new("worker", "The sync worker stopped unexpectedly."))?
+    tauri::async_runtime::spawn_blocking(move || run_sync(&app, &database_id))
+        .await
+        .map_err(|_| GoogleError::new("worker", "The sync worker stopped unexpectedly."))?
 }
 
 #[tauri::command]
@@ -175,12 +264,37 @@ pub fn google_pause_sync(
     paused: bool,
 ) -> Result<SyncStatus> {
     let conn = connection(&app, &database_id)?;
+    if !paused {
+        let binding = storage::binding(&conn)?
+            .ok_or_else(|| GoogleError::new("not_enabled", "Enable sync for this list first."))?;
+        let account = app.state::<GoogleAuth>().status()?;
+        if account.subject.as_deref() != Some(&binding.subject) {
+            return Err(GoogleError::new(
+                "account_mismatch",
+                "Connect the Google account linked to this calendar before resuming.",
+            ));
+        }
+        let epoch = app
+            .state::<SyncState>()
+            .epoch
+            .lock()
+            .map_err(GoogleError::storage)?
+            .clone();
+        conn.execute(
+            "UPDATE sync_binding SET connection_epoch=?1 WHERE singleton=1",
+            [epoch],
+        )
+        .map_err(GoogleError::storage)?;
+    }
     conn.execute(
         "UPDATE sync_binding SET enabled=?1,pause_reason=?2 WHERE singleton=1",
         rusqlite::params![!paused, if paused { Some("Paused by you") } else { None }],
     )
     .map_err(GoogleError::storage)?;
-    status(&app, &database_id)
+    scheduler::wake(&app, false);
+    let status = status(&app, &database_id)?;
+    let _ = app.emit("google-sync-status", &status);
+    Ok(status)
 }
 
 #[tauri::command]
@@ -201,7 +315,9 @@ pub async fn google_resolve_conflict(
 ) -> Result<SyncStatus> {
     tauri::async_runtime::spawn_blocking(move || {
         work(&app, &database_id, false, |conn, api| {
-            incoming::resolve(conn, api, &local_id, &choice, revision)
+            incoming::resolve(conn, api, &local_id, &choice, revision)?;
+            scheduler::wake(&app, false);
+            Ok(())
         })
     })
     .await

@@ -294,12 +294,18 @@ pub fn apply_batch_on(conn: &Connection, operations: Vec<CalendarMutation>) -> R
 
 #[tauri::command]
 pub fn calendar_apply_batch(
+    app: tauri::AppHandle,
     state: tauri::State<'_, CalendarDb>,
     database_id: String,
     operations: Vec<CalendarMutation>,
 ) -> Result<(), String> {
     let active = state.conn.lock().map_err(|e| e.to_string())?;
-    apply_batch_on(checked(&active, &database_id)?, operations)
+    let result = apply_batch_on(checked(&active, &database_id)?, operations);
+    drop(active);
+    if result.is_ok() {
+        crate::google_calendar::scheduler::local_change(&app, &database_id);
+    }
+    result
 }
 
 #[cfg(test)]
@@ -821,6 +827,7 @@ pub fn validate_schedule(
 
 #[tauri::command]
 pub fn add_timeblock(
+    app: tauri::AppHandle,
     state: tauri::State<'_, CalendarDb>,
     database_id: String,
     id: String,
@@ -839,7 +846,7 @@ pub fn add_timeblock(
 ) -> Result<(), String> {
     let lock = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = checked(&lock, &database_id)?;
-    add_timeblock_on(
+    let result = add_timeblock_on(
         conn,
         id,
         title,
@@ -854,7 +861,12 @@ pub fn add_timeblock(
         is_deleted,
         all_day,
         time_zone,
-    )
+    );
+    drop(lock);
+    if result.is_ok() {
+        crate::google_calendar::scheduler::local_change(&app, &database_id);
+    }
+    result
 }
 
 pub fn add_timeblock_on(
@@ -891,6 +903,7 @@ pub fn add_timeblock_on(
 
 #[tauri::command]
 pub fn update_timeblock(
+    app: tauri::AppHandle,
     state: tauri::State<'_, CalendarDb>,
     database_id: String,
     id: String,
@@ -898,7 +911,12 @@ pub fn update_timeblock(
 ) -> Result<(), String> {
     let lock = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = checked(&lock, &database_id)?;
-    update_timeblock_on(conn, id, updates_json)
+    let result = update_timeblock_on(conn, id, updates_json);
+    drop(lock);
+    if result.is_ok() {
+        crate::google_calendar::scheduler::local_change(&app, &database_id);
+    }
+    result
 }
 
 pub fn update_timeblock_on(
@@ -1061,13 +1079,19 @@ pub fn update_timeblock_on(
 
 #[tauri::command]
 pub fn delete_timeblock(
+    app: tauri::AppHandle,
     state: tauri::State<'_, CalendarDb>,
     database_id: String,
     id: String,
 ) -> Result<(), String> {
     let lock = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = checked(&lock, &database_id)?;
-    delete_timeblock_on(conn, id)
+    let result = delete_timeblock_on(conn, id);
+    drop(lock);
+    if result.is_ok() {
+        crate::google_calendar::scheduler::local_change(&app, &database_id);
+    }
+    result
 }
 
 pub fn delete_timeblock_on(conn: &Connection, id: String) -> Result<(), String> {
@@ -1078,6 +1102,7 @@ pub fn delete_timeblock_on(conn: &Connection, id: String) -> Result<(), String> 
 
 #[tauri::command]
 pub fn assign_task_to_timeblock(
+    app: tauri::AppHandle,
     state: tauri::State<'_, CalendarDb>,
     database_id: String,
     timeblock_id: String,
@@ -1085,7 +1110,12 @@ pub fn assign_task_to_timeblock(
 ) -> Result<(), String> {
     let lock = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = checked(&lock, &database_id)?;
-    assign_task_to_timeblock_on(conn, timeblock_id, task_id)
+    let result = assign_task_to_timeblock_on(conn, timeblock_id, task_id);
+    drop(lock);
+    if result.is_ok() {
+        crate::google_calendar::scheduler::local_change(&app, &database_id);
+    }
+    result
 }
 
 pub fn assign_task_to_timeblock_on(
@@ -1103,6 +1133,7 @@ pub fn assign_task_to_timeblock_on(
 
 #[tauri::command]
 pub fn remove_task_from_timeblock(
+    app: tauri::AppHandle,
     state: tauri::State<'_, CalendarDb>,
     database_id: String,
     timeblock_id: String,
@@ -1110,7 +1141,12 @@ pub fn remove_task_from_timeblock(
 ) -> Result<(), String> {
     let lock = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = checked(&lock, &database_id)?;
-    remove_task_from_timeblock_on(conn, timeblock_id, task_id)
+    let result = remove_task_from_timeblock_on(conn, timeblock_id, task_id);
+    drop(lock);
+    if result.is_ok() {
+        crate::google_calendar::scheduler::local_change(&app, &database_id);
+    }
+    result
 }
 
 pub fn remove_task_from_timeblock_on(

@@ -5,7 +5,7 @@ import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../../sto
 import { ConfirmDialog } from "../ConfirmDialog";
 import { PromptDialog } from "../PromptDialog";
 import "../SettingsDialog.css";
-import { GoogleAccountPanel } from "./GoogleAccountPanel";
+import { GoogleSyncPanel } from "./GoogleSyncPanel";
 
 interface Props {
   onClose: () => void;
@@ -139,11 +139,11 @@ export function CalendarSettingsDialog({ onClose }: Props) {
         <div className="settings-tabs">
           <button className={`settings-tab ${activeTab === "appearance" ? "active" : ""}`} onClick={() => setActiveTab("appearance")}>Appearance</button>
           <button className={`settings-tab ${activeTab === "themes" ? "active" : ""}`} onClick={() => setActiveTab("themes")}>Themes</button>
-          {import.meta.env.DEV && <button className={`settings-tab ${activeTab === "google" ? "active" : ""}`} onClick={() => setActiveTab("google")}>Google (development)</button>}
+          <button className={`settings-tab ${activeTab === "google" ? "active" : ""}`} onClick={() => setActiveTab("google")}>Google Calendar</button>
           <button className={`settings-tab ${activeTab === "behavior" ? "active" : ""}`} onClick={() => setActiveTab("behavior")}>Behavior</button>
         </div>
         <div className="settings-content">
-          {activeTab === "google" && <GoogleAccountPanel />}
+          {activeTab === "google" && <GoogleSyncPanel />}
           {activeTab === "appearance" && (
             <>
               <div className="settings-group">

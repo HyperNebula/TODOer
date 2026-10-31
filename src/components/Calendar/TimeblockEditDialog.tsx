@@ -183,6 +183,7 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
               {[...new Set([displayZone, "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney"])].map(zone => <option key={zone} value={zone} />)}
             </datalist>
           </div>}
+          {databaseId && !scheduleReadOnly && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}
           {scheduleReadOnly && <div><p>This recurrence can be viewed here. Edit its schedule in Google Calendar.</p>{databaseId && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}</div>}
           {error && <div role="alert" className="calendar-error">{error}</div>}
 

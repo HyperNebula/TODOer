@@ -198,7 +198,7 @@ impl GoogleAuth {
         let generation = self.flow.fetch_add(1, Ordering::SeqCst) + 1;
         let result = self.connect_inner(&id, generation);
         self.connecting.store(false, Ordering::SeqCst);
-        result
+        result.and_then(|_| self.status())
     }
 
     fn connect_inner(&self, id: &str, generation: u64) -> Result<AccountStatus> {
@@ -459,7 +459,11 @@ impl GoogleAuth {
 pub async fn google_connect(app: tauri::AppHandle) -> Result<AccountStatus> {
     tauri::async_runtime::spawn_blocking(move || {
         use tauri::Manager;
-        app.state::<GoogleAuth>().connect()
+        let result = app.state::<GoogleAuth>().connect();
+        if result.is_ok() {
+            super::scheduler::wake(&app, false);
+        }
+        result
     })
     .await
     .map_err(|_| GoogleError::new("authorization", "The sign-in worker stopped unexpectedly."))?
@@ -469,13 +473,20 @@ pub fn google_cancel_connect(state: tauri::State<'_, GoogleAuth>) {
     state.cancel();
 }
 #[tauri::command]
-pub fn google_account_status(state: tauri::State<'_, GoogleAuth>) -> Result<AccountStatus> {
-    state.status()
+pub async fn google_account_status(app: tauri::AppHandle) -> Result<AccountStatus> {
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Manager;
+        app.state::<GoogleAuth>().status()
+    })
+    .await
+    .map_err(|_| GoogleError::new("credentials", "The credential worker stopped unexpectedly."))?
 }
+
 #[tauri::command]
 pub async fn google_disconnect(app: tauri::AppHandle) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
         use tauri::Manager;
+        super::scheduler::disconnect_lists(&app)?;
         app.state::<GoogleAuth>().disconnect()
     })
     .await

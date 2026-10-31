@@ -1,6 +1,10 @@
 import { useEffect } from "react";
 import { useTaskStore } from "../../store/taskStore";
 import { useCalendarStore } from "../../store/calendarStore";
+import { useGoogleCalendarSyncStore } from "../../store/googleCalendarSyncStore";
+import { googleScheduleSync, type GoogleSyncStatus } from "../../lib/googleCalendarApi";
+import { isTauri } from "../../lib/fileApi";
+import { listen } from "@tauri-apps/api/event";
 
 import { startNotificationService, stopNotificationService } from "../../lib/notificationService";
 
@@ -12,6 +16,47 @@ export default function CalendarRuntime() {
   }, []);
   const filePath = useTaskStore(state => state.filePath);
   const error = useCalendarStore(state => state.databaseError);
+  const databaseId = useCalendarStore(state => state.databaseId);
+  const syncZone = useGoogleCalendarSyncStore(state => state.status?.binding?.time_zone);
+  useEffect(() => { if (isTauri()) void useGoogleCalendarSyncStore.getState().selectDatabase(databaseId); }, [databaseId]);
+  useEffect(() => {
+    if (syncZone && databaseId) useCalendarStore.setState({ timeZone: syncZone });
+  }, [syncZone, databaseId]);
+  useEffect(() => {
+    if (!isTauri()) return;
+    let disposed = false;
+    const unlisten: Array<() => void> = [];
+    const register = <T,>(name: string, handler: (payload: T) => void) => {
+      void listen<T>(name, event => { if (!disposed) handler(event.payload); }).then(stop => { if (disposed) stop(); else unlisten.push(stop); }).catch(error => {
+        if (!disposed) useGoogleCalendarSyncStore.setState({ error: `Google sync updates are unavailable: ${String(error)}` });
+      });
+    };
+    register<GoogleSyncStatus>("google-sync-status", payload => useGoogleCalendarSyncStore.getState().accept(payload));
+    register<{ database_id: string }>("google-local-change", payload => {
+      if (payload.database_id === useGoogleCalendarSyncStore.getState().databaseId) void useGoogleCalendarSyncStore.getState().refreshStatus();
+    });
+    register<{ database_id: string }>("calendar-changed", payload => {
+      const calendar = useCalendarStore.getState();
+      if (payload.database_id !== calendar.databaseId) return;
+      useCalendarStore.setState({ recurringLoaded: false });
+      if (calendar.currentRangeStart && calendar.currentRangeEnd) void calendar.loadRange(calendar.currentRangeStart, calendar.currentRangeEnd);
+      void useGoogleCalendarSyncStore.getState().refreshStatus();
+    });
+    const wake = () => {
+      const id = useCalendarStore.getState().databaseId;
+      if (id) void googleScheduleSync(id).catch(() => {});
+      void useGoogleCalendarSyncStore.getState().refresh();
+    };
+    const visible = () => { if (document.visibilityState === "visible") wake(); };
+    window.addEventListener("focus", wake);
+    window.addEventListener("online", wake);
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      disposed = true; unlisten.forEach(stop => stop());
+      window.removeEventListener("focus", wake); window.removeEventListener("online", wake);
+      document.removeEventListener("visibilitychange", visible);
+    };
+  }, []);
   useEffect(() => {
     const calendar = useCalendarStore.getState();
     void (filePath ? calendar.openDb(filePath) : calendar.closeDb());
