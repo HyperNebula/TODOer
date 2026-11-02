@@ -17,11 +17,7 @@ export default function CalendarRuntime() {
   const filePath = useTaskStore(state => state.filePath);
   const error = useCalendarStore(state => state.databaseError);
   const databaseId = useCalendarStore(state => state.databaseId);
-  const syncZone = useGoogleCalendarSyncStore(state => state.status?.binding?.time_zone);
   useEffect(() => { if (isTauri()) void useGoogleCalendarSyncStore.getState().selectDatabase(databaseId); }, [databaseId]);
-  useEffect(() => {
-    if (syncZone && databaseId) useCalendarStore.setState({ timeZone: syncZone });
-  }, [syncZone, databaseId]);
   useEffect(() => {
     if (!isTauri()) return;
     let disposed = false;

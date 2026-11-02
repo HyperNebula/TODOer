@@ -2,9 +2,10 @@ import { create } from "zustand";
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type { Timeblock } from "../types/task";
 import { useTaskStore } from "./taskStore";
+import { useSettingsStore } from "./settingsStore";
 import { isTauri } from "../lib/fileApi";
 import { expandTimeblocks, followingRule, occurrenceEnd, truncateSeries } from "../lib/calendarRecurrence";
-import { dayStartMs, normalizeIso, normalizeSchedule, systemTimeZone, validateTimeZone, sameOccurrence, instantMs } from "../lib/calendarDate";
+import { dayStartMs, normalizeIso, normalizeSchedule, sameOccurrence, instantMs } from "../lib/calendarDate";
 export { normalizeIso, parseWallClockUtc, formatWallClockUtc } from "../lib/calendarDate";
 
 interface CalendarRow {
@@ -90,7 +91,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
   dbReady: false,
   databaseId: null,
   databaseError: null,
-  timeZone: systemTimeZone(),
+  timeZone: useSettingsStore.getState().calendarTimeZone,
   currentRangeStart: undefined,
   currentRangeEnd: undefined,
 
@@ -101,8 +102,8 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     set({ databaseId: null, dbReady: false, databaseError: null, timeblocks: [], recurringTimeblocks: [], recurringLoaded: false, currentRangeStart: undefined, currentRangeEnd: undefined });
     lifecycleQueue = lifecycleQueue.catch(() => {}).then(async () => {
       if (version !== lifecycleVersion) return;
-      const session = await tauriInvoke<{ database_id: string; time_zone: string }>("open_calendar_db", { listPath, defaultTimeZone: systemTimeZone() });
-      if (version === lifecycleVersion) set({ databaseId: session.database_id, timeZone: validateTimeZone(session.time_zone), dbReady: true });
+      const session = await tauriInvoke<{ database_id: string; time_zone: string }>("open_calendar_db", { listPath, defaultTimeZone: useSettingsStore.getState().calendarTimeZone });
+      if (version === lifecycleVersion) set({ databaseId: session.database_id, timeZone: useSettingsStore.getState().calendarTimeZone, dbReady: true });
     }).catch(error => { if (version === lifecycleVersion) set({ databaseError: String(error) }); });
     await lifecycleQueue;
   },
@@ -427,3 +428,11 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     }
   },
 }));
+
+// Keep the active calendar in step with the saved app-wide preference, including
+// settings loaded after this lazy module and resets to defaults.
+useSettingsStore.subscribe((state, previous) => {
+  if (state.calendarTimeZone === previous.calendarTimeZone) return;
+  ++rangeVersion;
+  useCalendarStore.setState({ timeZone: state.calendarTimeZone });
+});

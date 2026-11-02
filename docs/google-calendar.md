@@ -20,7 +20,9 @@ Only the active list syncs. TODOer does not run a background service after quitt
 | Supported recurring series and exceptions | App settings and credentials |
 | Event edits and deletions | Task JSON files |
 
-All-day end dates are exclusive. Timed recurring events retain their event time zone across daylight-saving transitions. Existing floating local schedules are converted using the time zone reviewed when enabling sync; invalid times must be corrected before enabling.
+Set the app-wide time zone in **Calendar Settings → Behavior → Calendar time zone**. It controls calendar display, timeblock editing, and the zone used for new events and Google calendar setup. The preference is saved on this device and applies to all lists. Changing it preserves existing event instants and the original zones used by recurring series; it does not change your phone's Google Calendar display preferences. Timeblocks do not have individual time zone controls.
+
+All-day end dates are exclusive. Timed recurring events retain their original event time zone internally across daylight-saving transitions. Existing floating local schedules are converted using the general time zone when enabling sync; invalid times must be corrected before enabling.
 
 Attendees, conference links, reminders, and other Google-only fields are preserved by partial updates but are not edited by TODOer. Imported complex recurrence rules remain intact; unsupported schedule editing is read-only and offers **Open in Google Calendar**. Splitting a series with existing future exceptions is currently blocked to preserve those edits; perform that change in Google Calendar.
 

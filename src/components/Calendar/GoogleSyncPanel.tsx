@@ -15,19 +15,18 @@ export function GoogleSyncPanel() {
   const databaseId = useCalendarStore(state => state.databaseId);
   const calendarZone = useCalendarStore(state => state.timeZone);
   const name = useTaskStore(state => state.file.name);
-  const [zone, setZone] = useState(calendarZone);
   const [recovery, setRecovery] = useState("");
   const [showConflicts, setShowConflicts] = useState(false);
   const [replace, setReplace] = useState(false);
   const [formError, setFormError] = useState("");
-  useEffect(() => { setZone(calendarZone); setShowConflicts(false); }, [databaseId, calendarZone]);
+  useEffect(() => { setShowConflicts(false); }, [databaseId]);
   const binding = sync.status?.binding;
   const mismatch = !!binding && !!sync.account?.connected && binding.subject !== sync.account.subject;
   const canSetUp = !!databaseId && !!sync.account?.connected && !sync.busy && !sync.status?.running;
   const error = formError || sync.error || sync.status?.error?.message;
   async function enable(replaceExisting = false, recoverId?: string) {
     if (!databaseId) return;
-    try { setFormError(""); const timeZone = validateTimeZone(zone); await sync.perform(() => googleEnableSync(databaseId, name, timeZone, recoverId, replaceExisting)); }
+    try { setFormError(""); const timeZone = validateTimeZone(calendarZone); await sync.perform(() => googleEnableSync(databaseId, name, timeZone, recoverId, replaceExisting)); }
     catch (error) { setFormError(error instanceof Error ? error.message : String(error)); }
   }
   return <div className="google-sync-panel">
@@ -41,8 +40,7 @@ export function GoogleSyncPanel() {
       {!binding?.calendar_id && <div className="settings-group">
         <p><strong>Destination:</strong> TODOer — {name}</p>
         <p>Enable sync to upload all {sync.status?.event_count ?? 0} existing timeblocks, including past events. Tasks, completion, colors, and local file links stay on this device.</p>
-        <label htmlFor="google-calendar-zone">Calendar time zone</label>
-        <input id="google-calendar-zone" value={zone} onChange={event => setZone(event.target.value)} placeholder="America/Denver" />
+        <p>Calendar time zone: {calendarZone}. Change it in the Behavior tab.</p>
         <button className="btn btn-primary" disabled={!canSetUp} onClick={() => void enable()}>Enable sync for this list</button>
       </div>}
       {binding?.calendar_id && <>

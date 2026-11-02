@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
+vi.mock("@tauri-apps/plugin-store", () => ({ LazyStore: class {
+  set = vi.fn().mockResolvedValue(undefined);
+  save = vi.fn().mockResolvedValue(undefined);
+} }));
 vi.mock("../lib/fileApi", () => ({ isTauri: () => true, appendToArchive: vi.fn() }));
 import { useCalendarStore } from "./calendarStore";
+import { useSettingsStore } from "./settingsStore";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -15,6 +20,7 @@ describe("calendar database lifecycle", () => {
   beforeEach(async () => {
     invoke.mockReset();
     invoke.mockResolvedValue(undefined);
+    useSettingsStore.setState({ calendarTimeZone: "America/Denver" });
     await useCalendarStore.getState().closeDb();
     invoke.mockClear();
   });
@@ -88,6 +94,15 @@ describe("calendar database lifecycle", () => {
     }));
     await useCalendarStore.getState().addTimeblock("2026-11-01", "2026-11-02", "All day", undefined, undefined, undefined, true);
     expect(invoke).toHaveBeenLastCalledWith("add_timeblock", expect.objectContaining({ startTime: "2026-11-01", endTime: "2026-11-02", allDay: true, timeZone: null }));
+  });
+
+  it("keeps the general preference when opening a calendar with a different stored zone", async () => {
+    useSettingsStore.getState().setCalendarTimeZone("Asia/Tokyo");
+    invoke.mockResolvedValueOnce({ database_id: "session", time_zone: "America/Denver" });
+    await useCalendarStore.getState().openDb("list");
+    expect(useCalendarStore.getState().timeZone).toBe("Asia/Tokyo");
+    await useCalendarStore.getState().addTimeblock("2026-11-01T09:00:00", "2026-11-01T10:00:00");
+    expect(invoke).toHaveBeenLastCalledWith("add_timeblock", expect.objectContaining({ startTime: "2026-11-01T09:00:00+09:00", timeZone: "Asia/Tokyo" }));
   });
 
   it("does not create phantom desktop events before a task list is open", async () => {

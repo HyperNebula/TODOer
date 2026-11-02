@@ -6,6 +6,7 @@ import { ConfirmDialog } from "../ConfirmDialog";
 import { PromptDialog } from "../PromptDialog";
 import "../SettingsDialog.css";
 import { GoogleSyncPanel } from "./GoogleSyncPanel";
+import { CalendarTimeZoneSetting } from "./CalendarTimeZoneSetting";
 
 interface Props {
   onClose: () => void;
@@ -250,6 +251,7 @@ export function CalendarSettingsDialog({ onClose }: Props) {
           )}
           {activeTab === "behavior" && (
             <>
+              <CalendarTimeZoneSetting />
               <div className="settings-group">
                 <label>Default Startup View</label>
                 <select value={defaultAppView} onChange={(e) => setDefaultAppView(e.target.value as any)}>

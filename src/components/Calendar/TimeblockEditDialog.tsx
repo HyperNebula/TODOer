@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { Timeblock, Task } from "../../types/task";
 import { RRule, rrulestr } from "rrule";
 import { openFileLink } from "../../lib/fileApi";
-import { addDays, hasOffset, normalizeSchedule, wallInZone, wallToTimestamp } from "../../lib/calendarDate";
+import { addDays, hasOffset, instantMs, normalizeSchedule, timestampInZone, wallInZone, wallToTimestamp } from "../../lib/calendarDate";
 import { useCalendarStore } from "../../store/calendarStore";
 import { useGoogleCalendarSyncStore } from "../../store/googleCalendarSyncStore";
 import { canEditRecurrence } from "../../lib/calendarRecurrence";
@@ -34,9 +34,9 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   const canOpenGoogleCalendar = !!databaseId && !!googleCalendar?.calendar_id && googleCalendar.setup_state === "ready";
   const displayZone = useCalendarStore(state => state.timeZone);
   const [allDay, setAllDay] = useState(!!block.allDay);
-  const [timeZone, setTimeZone] = useState(block.timeZone || displayZone);
+  const timeZone = block.timeZone || displayZone;
   const [error, setError] = useState("");
-  const initialZone = block.timeZone || displayZone;
+  const initialZone = displayZone;
   const [startValue, setStartValue] = useState(() => block.allDay ? block.startTime : wallInZone(block.startTime, initialZone).slice(0, 16));
   const [endValue, setEndValue] = useState(() => block.allDay ? addDays(block.endTime, -1) : wallInZone(block.endTime, initialZone).slice(0, 16));
   const toggleAllDay = (checked: boolean) => {
@@ -83,10 +83,11 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   const handleSave = () => {
     setError("");
     try {
-      const legacy = !block.timeZone && !hasOffset(block.startTime) && !block.allDay && !allDay && timeZone === displayZone;
+      const legacy = !block.timeZone && !hasOffset(block.startTime) && !block.allDay && !allDay;
       const timedValue = (value: string, previous: string) => {
-        if (!block.allDay && timeZone === initialZone && value === wallInZone(previous, initialZone).slice(0, 16)) return previous;
-        return legacy ? value : wallToTimestamp(value, timeZone, block.allDay ? undefined : previous);
+        if (!block.allDay && value === wallInZone(previous, initialZone).slice(0, 16)) return previous;
+        if (legacy) return value;
+        return timestampInZone(instantMs(wallToTimestamp(value, displayZone, block.allDay ? undefined : previous), displayZone), timeZone);
       };
       const schedule = normalizeSchedule({
         ...block, allDay, timeZone: allDay || legacy ? undefined : timeZone,
@@ -179,13 +180,6 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
             <label htmlFor="timeblock-end">{allDay ? "Last day (inclusive)" : "End date and time"}</label>
             <input disabled={scheduleReadOnly} id="timeblock-end" type={allDay ? "date" : "datetime-local"} value={endValue} onChange={event => setEndValue(event.target.value)} required />
           </div>
-          {!allDay && <div className="timeblock-edit-group">
-            <label htmlFor="timeblock-zone">Event time zone</label>
-            <input disabled={scheduleReadOnly} id="timeblock-zone" value={timeZone} onChange={event => setTimeZone(event.target.value)} list="timeblock-zones" placeholder="America/Denver" />
-            <datalist id="timeblock-zones">
-              {[...new Set([displayZone, "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney"])].map(zone => <option key={zone} value={zone} />)}
-            </datalist>
-          </div>}
           {canOpenGoogleCalendar && !scheduleReadOnly && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}
           {scheduleReadOnly && <div><p>This recurrence can be viewed here. Edit its schedule in Google Calendar.</p>{canOpenGoogleCalendar && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}</div>}
           {error && <div role="alert" className="calendar-error">{error}</div>}

@@ -10,6 +10,13 @@ const getTauriStore = (): LazyStore => {
   return _store!;
 };
 
+function resolveTimeZone(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  try {
+    return new Intl.DateTimeFormat("en", { timeZone: value.trim() }).resolvedOptions().timeZone;
+  } catch { return undefined; }
+}
+
 export type ThemeColors = {
   bg: string;
   surface: string;
@@ -378,6 +385,7 @@ const DEFAULT_SETTINGS = {
   projectEmoji: "⭐",
   indentSpacing: 32,
   calendarStartHour: 6,
+  calendarTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
   calendarEndHour: 22,
   calendarZoomDay: 1.5,
   calendarZoomWeek: 1.5,
@@ -415,6 +423,7 @@ export interface SettingsState {
   projectEmoji: string;
   indentSpacing: number;
   calendarStartHour: number;
+  calendarTimeZone: string;
   calendarEndHour: number;
   calendarZoomDay: number;
   calendarZoomWeek: number;
@@ -453,6 +462,7 @@ export interface SettingsState {
   setProjectEmoji: (emoji: string) => void;
   setIndentSpacing: (spacing: number) => void;
   setCalendarStartHour: (hour: number) => void;
+  setCalendarTimeZone: (zone: string) => void;
   setCalendarEndHour: (hour: number) => void;
   setCalendarZoomDay: (zoom: number) => void;
   setCalendarZoomWeek: (zoom: number) => void;
@@ -510,6 +520,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setProjectEmoji: (emoji) => set({ projectEmoji: emoji }),
   setIndentSpacing: (spacing) => set({ indentSpacing: spacing }),
   setCalendarStartHour: (hour) => set({ calendarStartHour: hour }),
+  setCalendarTimeZone: (value) => {
+    const zone = resolveTimeZone(value);
+    if (!zone) throw new Error("Enter a valid IANA time zone, such as America/Denver or Europe/London.");
+    set({ calendarTimeZone: zone });
+  },
   setCalendarEndHour: (hour) => set({ calendarEndHour: hour }),
   setCalendarZoomDay: (zoom) => set({ calendarZoomDay: zoom }),
   setCalendarZoomWeek: (zoom) => set({ calendarZoomWeek: zoom }),
@@ -562,6 +577,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         projectEmoji?: string;
         indentSpacing?: number;
         calendarStartHour?: number;
+        calendarTimeZone?: string;
         calendarEndHour?: number;
         calendarZoomDay?: number;
         calendarZoomWeek?: number;
@@ -602,6 +618,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           ...(saved.projectEmoji && { projectEmoji: saved.projectEmoji }),
           ...(saved.indentSpacing !== undefined && { indentSpacing: saved.indentSpacing }),
           ...(saved.calendarStartHour !== undefined && { calendarStartHour: saved.calendarStartHour }),
+          ...(resolveTimeZone(saved.calendarTimeZone) && { calendarTimeZone: resolveTimeZone(saved.calendarTimeZone)! }),
           ...(saved.calendarEndHour !== undefined && { calendarEndHour: saved.calendarEndHour }),
           ...((saved.calendarZoomDay !== undefined || saved.calendarZoom !== undefined) && { calendarZoomDay: saved.calendarZoomDay ?? saved.calendarZoom }),
           ...((saved.calendarZoomWeek !== undefined || saved.calendarZoom !== undefined) && { calendarZoomWeek: saved.calendarZoomWeek ?? saved.calendarZoom }),
@@ -653,6 +670,7 @@ useSettingsStore.subscribe((state) => {
     projectEmoji: state.projectEmoji,
     indentSpacing: state.indentSpacing,
     calendarStartHour: state.calendarStartHour,
+    calendarTimeZone: state.calendarTimeZone,
     calendarEndHour: state.calendarEndHour,
     calendarZoomDay: state.calendarZoomDay,
     calendarZoomWeek: state.calendarZoomWeek,

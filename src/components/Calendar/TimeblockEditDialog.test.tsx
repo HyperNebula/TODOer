@@ -39,14 +39,15 @@ describe("calendar event editing", () => {
     expect(onSave).toHaveBeenCalledWith("one", expect.objectContaining({ startTime: "2026-03-07", endTime: "2026-03-10" }));
   });
 
-  it("uses the event zone in the editor and adjusts offsets after spring-forward", () => {
+  it("uses the general zone in the editor and preserves the event's recurrence zone across DST", () => {
     useCalendarStore.setState({ timeZone: "Asia/Tokyo" });
     const { onSave } = editor();
-    expect((screen.getByLabelText("Start date and time") as HTMLInputElement).value).toBe("2026-03-07T09:00");
-    fireEvent.change(screen.getByLabelText("Start date and time"), { target: { value: "2026-03-08T09:00" } });
-    fireEvent.change(screen.getByLabelText("End date and time"), { target: { value: "2026-03-08T10:00" } });
+    expect(screen.queryByLabelText("Event time zone")).toBeNull();
+    expect((screen.getByLabelText("Start date and time") as HTMLInputElement).value).toBe("2026-03-08T01:00");
+    fireEvent.change(screen.getByLabelText("Start date and time"), { target: { value: "2026-03-09T00:00" } });
+    fireEvent.change(screen.getByLabelText("End date and time"), { target: { value: "2026-03-09T01:00" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledWith("one", expect.objectContaining({ startTime: "2026-03-08T09:00:00-06:00", endTime: "2026-03-08T10:00:00-06:00" }));
+    expect(onSave).toHaveBeenCalledWith("one", expect.objectContaining({ startTime: "2026-03-08T09:00:00-06:00", endTime: "2026-03-08T10:00:00-06:00", timeZone: "America/Denver" }));
   });
 
   it("keeps the editor open and reports nonexistent clock times", () => {
@@ -58,14 +59,11 @@ describe("calendar event editing", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("rejects reversed dates and unknown time zones", () => {
+  it("rejects reversed dates", () => {
     const { onSave } = editor();
     fireEvent.change(screen.getByLabelText("End date and time"), { target: { value: "2026-03-07T08:00" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByRole("alert").textContent).toContain("after");
-    fireEvent.change(screen.getByLabelText("Event time zone"), { target: { value: "Mars/Base" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(screen.getByRole("alert").textContent).toContain("valid IANA");
     expect(onSave).not.toHaveBeenCalled();
   });
 
@@ -76,6 +74,7 @@ describe("calendar event editing", () => {
   });
 
   it("preserves seconds and the later repeated hour when the schedule is unchanged", () => {
+    useCalendarStore.setState({ timeZone: "Asia/Tokyo" });
     const { onSave } = editor({ ...event, startTime: "2026-11-01T01:30:37.123-07:00", endTime: "2026-11-01T02:30:37.123-07:00" });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith("one", expect.objectContaining({ startTime: "2026-11-01T01:30:37.123-07:00", endTime: "2026-11-01T02:30:37.123-07:00" }));
