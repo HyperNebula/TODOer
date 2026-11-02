@@ -21,7 +21,6 @@ afterEach(cleanup);
 it("persists the general zone and restores it after settings reload", async () => {
   render(<CalendarTimeZoneSetting />);
   fireEvent.change(screen.getByLabelText("Calendar time zone"), { target: { value: "Asia/Tokyo" } });
-  fireEvent.click(screen.getByRole("button", { name: "Apply time zone" }));
   expect(useCalendarStore.getState().timeZone).toBe("Asia/Tokyo");
   await waitFor(() => expect(save).toHaveBeenCalled());
   const stored = await saved();
@@ -33,12 +32,11 @@ it("persists the general zone and restores it after settings reload", async () =
   expect(useCalendarStore.getState().timeZone).toBe("Asia/Tokyo");
 });
 
-it("rejects invalid zones without changing the saved or active preference", () => {
+it("provides timezone choices and retains a saved zone outside the standard list", () => {
+  useSettingsStore.setState({ calendarTimeZone: "Etc/GMT+5" });
   render(<CalendarTimeZoneSetting />);
-  fireEvent.change(screen.getByLabelText("Calendar time zone"), { target: { value: "Mars/Base" } });
-  fireEvent.click(screen.getByRole("button", { name: "Apply time zone" }));
-  expect(screen.getByRole("alert").textContent).toContain("valid IANA");
-  expect(useSettingsStore.getState().calendarTimeZone).toBe("America/Denver");
-  expect(useCalendarStore.getState().timeZone).toBe("America/Denver");
-  expect(save).not.toHaveBeenCalled();
+  const select = screen.getByRole("combobox", { name: "Calendar time zone" }) as HTMLSelectElement;
+  const values = Array.from(select.options, option => option.value);
+  expect(values).toEqual(expect.arrayContaining(["UTC", "America/Denver", "America/New_York", "Europe/London", "Asia/Tokyo", "Etc/GMT+5"]));
+  expect(select.value).toBe("Etc/GMT+5");
 });
