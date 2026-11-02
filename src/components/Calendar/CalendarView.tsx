@@ -192,7 +192,6 @@ export function CalendarView({
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="cal-toolbar">
         <div className="cal-toolbar-left">
-          <span className="cal-time-zone" title="Calendar display time zone">{calendarStore.timeZone}</span>
           <button
             id="cal-tasks-drawer-btn"
             className={`btn cal-tasks-btn${drawerOpen ? " active" : ""}`}

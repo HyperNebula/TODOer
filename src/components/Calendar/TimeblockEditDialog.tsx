@@ -4,6 +4,7 @@ import { RRule, rrulestr } from "rrule";
 import { openFileLink } from "../../lib/fileApi";
 import { addDays, hasOffset, normalizeSchedule, wallInZone, wallToTimestamp } from "../../lib/calendarDate";
 import { useCalendarStore } from "../../store/calendarStore";
+import { useGoogleCalendarSyncStore } from "../../store/googleCalendarSyncStore";
 import { canEditRecurrence } from "../../lib/calendarRecurrence";
 import { googleOpenEvent, googleErrorMessage } from "../../lib/googleCalendarApi";
 import "./TimeblockEditDialog.css";
@@ -29,6 +30,8 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
   
   const scheduleReadOnly = !canEditRecurrence(block.recurrenceRule);
   const databaseId=useCalendarStore(state=>state.databaseId);
+  const googleCalendar = useGoogleCalendarSyncStore(state => state.status?.database_id === databaseId ? state.status.binding : null);
+  const canOpenGoogleCalendar = !!databaseId && !!googleCalendar?.calendar_id && googleCalendar.setup_state === "ready";
   const displayZone = useCalendarStore(state => state.timeZone);
   const [allDay, setAllDay] = useState(!!block.allDay);
   const [timeZone, setTimeZone] = useState(block.timeZone || displayZone);
@@ -183,8 +186,8 @@ export function TimeblockEditDialog({ block, isNew, tasks, onSave, onClose, onRe
               {[...new Set([displayZone, "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney"])].map(zone => <option key={zone} value={zone} />)}
             </datalist>
           </div>}
-          {databaseId && !scheduleReadOnly && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}
-          {scheduleReadOnly && <div><p>This recurrence can be viewed here. Edit its schedule in Google Calendar.</p>{databaseId && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}</div>}
+          {canOpenGoogleCalendar && !scheduleReadOnly && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}
+          {scheduleReadOnly && <div><p>This recurrence can be viewed here. Edit its schedule in Google Calendar.</p>{canOpenGoogleCalendar && <button className="btn" onClick={()=>void googleOpenEvent(databaseId,block.id).catch(error=>setError(googleErrorMessage(error)))}>Open in Google Calendar</button>}</div>}
           {error && <div role="alert" className="calendar-error">{error}</div>}
 
           <div className="timeblock-edit-group" style={{ border: '1px solid var(--border)', padding: '8px', borderRadius: '4px' }}>

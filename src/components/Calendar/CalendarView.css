@@ -364,7 +364,6 @@
 .all-day-event:hover, .all-day-add:hover { border-color: var(--accent); }
 .all-day-event:focus-visible, .all-day-add:focus-visible { outline: 2px solid var(--accent); }
 .all-day-add:disabled { cursor: default; opacity: 0.5; }
-.cal-time-zone { color: var(--text-muted); font-size: 0.75rem; }
 .calendar-error { padding: 8px 12px; color: var(--danger); background: var(--surface); }
 .calendar-status { padding: 8px 12px; color: var(--text-muted); }
 
