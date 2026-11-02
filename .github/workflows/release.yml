@@ -41,8 +41,7 @@ jobs:
       - name: Verify Google production configuration
         run: node scripts/verify-google-release.mjs
         env:
-          TODOER_GOOGLE_CLIENT_ID: ${{ vars.TODOER_GOOGLE_CLIENT_ID }}
-          TODOER_GOOGLE_RELEASE_READY: ${{ vars.TODOER_GOOGLE_RELEASE_READY }}
+          TODOER_GOOGLE_CLIENT_ID: ${{ secrets.TODOER_GOOGLE_CLIENT_ID }}
 
   release:
     needs: [validate, google-release-config]
@@ -99,7 +98,7 @@ jobs:
       - name: Build TODOer+
         run: npm run tauri:build:plus
         env:
-          TODOER_GOOGLE_CLIENT_ID: ${{ vars.TODOER_GOOGLE_CLIENT_ID }}
+          TODOER_GOOGLE_CLIENT_ID: ${{ secrets.TODOER_GOOGLE_CLIENT_ID }}
           TODOER_GOOGLE_CLIENT_SECRET: ${{ secrets.TODOER_GOOGLE_CLIENT_SECRET }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
