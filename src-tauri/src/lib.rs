@@ -446,6 +446,8 @@ pub fn run() {
         google_calendar::commands::google_sync_status,
         google_calendar::commands::google_enable_sync,
         google_calendar::commands::google_sync_now,
+        google_calendar::closing::google_sync_before_close,
+        google_calendar::closing::google_cancel_close,
         google_calendar::commands::google_pause_sync,
         google_calendar::commands::google_conflicts,
         google_calendar::commands::google_resolve_conflict,
@@ -457,6 +459,26 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
     app.run(|app, event| {
+        #[cfg(feature = "calendar")]
+        if let tauri::RunEvent::ExitRequested { api, code, .. } = &event {
+            let state = app.state::<google_calendar::commands::SyncState>();
+            // Route File > Quit / Cmd+Q through the same save-and-sync flow as
+            // the window close button. Updater restart requests retain their exit code.
+            if matches!(code, None | Some(0))
+                && !state.close_ready.load(std::sync::atomic::Ordering::SeqCst)
+            {
+                api.prevent_exit();
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.close();
+                } else if !state.closing.load(std::sync::atomic::Ordering::SeqCst) {
+                    let closing_app = app.clone();
+                    std::thread::spawn(move || {
+                        let _ = google_calendar::closing::sync_before_close(&closing_app);
+                        closing_app.exit(0);
+                    });
+                }
+            }
+        }
         #[cfg(feature = "calendar")]
         if let tauri::RunEvent::Exit = event {
             let state = app.state::<google_calendar::commands::SyncState>();

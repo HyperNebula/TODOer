@@ -36,7 +36,7 @@ export function GoogleSyncPanel() {
     {binding?.pause_reason && <p>{binding.pause_reason}</p>}
     {mismatch && <p>This list belongs to a different Google account. Reconnect that account or explicitly create a replacement calendar.</p>}
     {databaseId && <>
-      <p>Sync runs while TODOer is open, for the task list you are using. Phone changes arrive when you next open this list.</p>
+      <p>Local edits sync after about two seconds. Google changes are checked every 15 minutes, when you reopen this list, and when you return to the app (at most once a minute). TODOer also attempts a final sync when closing.</p>
       {!binding?.calendar_id && <div className="settings-group">
         <p><strong>Destination:</strong> TODOer — {name}</p>
         <p>Enable sync to upload all {sync.status?.event_count ?? 0} existing timeblocks, including past events. Tasks, completion, colors, and local file links stay on this device.</p>

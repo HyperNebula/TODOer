@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 export function assertStandardBundle(files) {
   if (!files.some(file => file.name.endsWith(".js"))) throw new Error("No built JavaScript found; run npm run build first.");
   for (const file of files) {
-    if (/calendar|temporal|rrule/i.test(file.name) || /calendar_open_db|google_account_status|google_connect|google_sync_now|google_enable_sync|sync_runs/.test(file.content)) {
+    if (/calendar|temporal|rrule/i.test(file.name) || /calendar_open_db|google_account_status|google_connect|google_sync_now|google_sync_before_close|google_cancel_close|google_enable_sync|sync_runs/.test(file.content)) {
       throw new Error(`Standard build contains calendar code: ${file.name}`);
     }
   }

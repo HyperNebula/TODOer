@@ -16,6 +16,8 @@ pub struct SyncState {
     pub plan: Mutex<scheduler::Planner>,
     pub wake: Condvar,
     pub shutdown: AtomicBool,
+    pub closing: AtomicBool,
+    pub close_ready: AtomicBool,
     pub epoch: Mutex<String>,
     pub last_error: Mutex<Option<(String, GoogleError)>>,
 }
@@ -26,6 +28,8 @@ impl SyncState {
             plan: Mutex::new(scheduler::Planner::new()),
             wake: Condvar::new(),
             shutdown: AtomicBool::new(false),
+            closing: AtomicBool::new(false),
+            close_ready: AtomicBool::new(false),
             epoch: Mutex::new(String::new()),
             running: AtomicBool::new(false),
             last_error: Mutex::new(None),
@@ -144,7 +148,11 @@ fn work(
         }
     }
     state.running.store(true, Ordering::SeqCst);
-    let started_revision = state.plan.lock().map_err(GoogleError::storage)?.revision;
+    let started_revision = {
+        let mut plan = state.plan.lock().map_err(GoogleError::storage)?;
+        plan.started();
+        plan.revision
+    };
     if let Ok(status) = status(app, id) {
         let _ = app.emit("google-sync-status", status);
     }
@@ -185,9 +193,30 @@ fn work(
 }
 
 pub fn run_sync(app: &tauri::AppHandle, id: &str) -> Result<SyncStatus> {
+    run_sync_until(app, id, None)
+}
+
+pub fn run_sync_until(
+    app: &tauri::AppHandle,
+    id: &str,
+    deadline: Option<std::time::Instant>,
+) -> Result<SyncStatus> {
     work(app, id, false, |conn, api| {
-        incoming::pull(conn,api,||active(app,id)).map_err(|error|if error.code=="not_found"{GoogleError::new("calendar_unavailable","The dedicated Google calendar is unavailable. Recover it or explicitly create a replacement in Settings.")}else{error})?;
-        engine::push(conn, api, || active(app, id))
+        let is_active = || {
+            deadline.is_none_or(|deadline| std::time::Instant::now() < deadline) && active(app, id)
+        };
+        incoming::pull(conn, api, is_active).map_err(|error| {
+            if error.code == "not_found" {
+                GoogleError::new("calendar_unavailable", "The dedicated Google calendar is unavailable. Recover it or explicitly create a replacement in Settings.")
+            } else { error }
+        })?;
+        if !is_active() {
+            return Err(GoogleError::new(
+                "cancelled",
+                "Sync stopped; remaining changes are saved.",
+            ));
+        }
+        engine::push(conn, api, is_active)
     })
 }
 

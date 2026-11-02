@@ -7,11 +7,15 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
 
+const IDLE_SYNC_INTERVAL: Duration = Duration::from_secs(15 * 60);
+const FOCUS_SYNC_INTERVAL: Duration = Duration::from_secs(60);
+
 pub struct Planner {
     pub session: Option<String>,
     pub due: Option<Instant>,
     pub revision: u64,
     failures: u32,
+    last_attempt: Option<Instant>,
 }
 impl Planner {
     pub fn new() -> Self {
@@ -20,12 +24,14 @@ impl Planner {
             due: None,
             revision: 0,
             failures: 0,
+            last_attempt: None,
         }
     }
     pub fn session(&mut self, id: Option<String>) {
         if self.session != id {
             self.session = id;
             self.failures = 0;
+            self.last_attempt = None;
             self.revision += 1;
             self.due = Some(Instant::now());
         }
@@ -35,6 +41,19 @@ impl Planner {
         if self.failures == 0 || self.due.is_none() {
             self.due = Some(Instant::now() + Duration::from_secs(if edit { 2 } else { 0 }));
         }
+    }
+    pub fn started(&mut self) {
+        self.last_attempt = Some(Instant::now());
+    }
+    pub fn refresh(&mut self, force: bool) {
+        if !force
+            && self
+                .last_attempt
+                .is_some_and(|last| last.elapsed() < FOCUS_SYNC_INTERVAL)
+        {
+            return;
+        }
+        self.wake(false);
     }
     pub fn finish(&mut self, revision: u64, error: Option<&GoogleError>) {
         if let Some(error) = error {
@@ -56,7 +75,7 @@ impl Planner {
         } else {
             self.failures = 0;
             if self.revision == revision || self.due.is_none() {
-                self.due = Some(Instant::now() + Duration::from_secs(60));
+                self.due = Some(Instant::now() + IDLE_SYNC_INTERVAL);
             }
         }
     }
@@ -132,7 +151,7 @@ pub fn start(app: tauri::AppHandle) {
         };
         plan.session(session.clone());
         let ready = plan.due.is_some_and(|due| due <= Instant::now());
-        if !ready || session.is_none() {
+        if !ready || session.is_none() || state.closing.load(Ordering::SeqCst) {
             let _ = state.wake.wait_timeout(plan, Duration::from_millis(250));
             continue;
         }
@@ -157,15 +176,51 @@ pub fn start(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub fn google_schedule_sync(app: tauri::AppHandle, database_id: String) -> Result<()> {
+pub fn google_schedule_sync(
+    app: tauri::AppHandle,
+    database_id: String,
+    force: Option<bool>,
+) -> Result<()> {
     let _ = commands::connection(&app, &database_id)?;
-    wake(&app, false);
+    let state = app.state::<SyncState>();
+    state
+        .plan
+        .lock()
+        .map_err(GoogleError::storage)?
+        .refresh(force.unwrap_or(false));
+    state.wake.notify_all();
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn idle_runs_wait_fifteen_minutes_and_focus_checks_are_throttled() {
+        let mut plan = Planner::new();
+        plan.session(Some("one".into()));
+        plan.started();
+        let revision = plan.revision;
+        plan.finish(revision, None);
+        let due = plan.due;
+        assert!(due.unwrap().duration_since(Instant::now()) > Duration::from_secs(14 * 60));
+        plan.refresh(false);
+        assert_eq!(plan.due, due);
+        assert_eq!(plan.revision, revision);
+        plan.last_attempt = Some(Instant::now() - FOCUS_SYNC_INTERVAL);
+        plan.refresh(false);
+        assert!(plan.due.unwrap() <= Instant::now());
+    }
+    #[test]
+    fn reconnect_and_edits_can_sync_immediately_after_a_recent_check() {
+        let mut plan = Planner::new();
+        plan.started();
+        plan.refresh(true);
+        assert!(plan.due.unwrap() <= Instant::now());
+        plan.wake(true);
+        let wait = plan.due.unwrap().duration_since(Instant::now());
+        assert!(wait > Duration::from_secs(1) && wait <= Duration::from_secs(2));
+    }
     #[test]
     fn edits_during_a_successful_run_remain_scheduled() {
         let mut plan = Planner::new();

@@ -38,18 +38,20 @@ export default function CalendarRuntime() {
       if (calendar.currentRangeStart && calendar.currentRangeEnd) void calendar.loadRange(calendar.currentRangeStart, calendar.currentRangeEnd);
       void useGoogleCalendarSyncStore.getState().refreshStatus();
     });
-    const wake = () => {
+    const wake = (force = false) => {
       const id = useCalendarStore.getState().databaseId;
-      if (id) void googleScheduleSync(id).catch(() => {});
+      if (id) void googleScheduleSync(id, force).catch(() => {});
       void useGoogleCalendarSyncStore.getState().refresh();
     };
     const visible = () => { if (document.visibilityState === "visible") wake(); };
-    window.addEventListener("focus", wake);
-    window.addEventListener("online", wake);
+    const focus = () => wake();
+    const online = () => wake(true);
+    window.addEventListener("focus", focus);
+    window.addEventListener("online", online);
     document.addEventListener("visibilitychange", visible);
     return () => {
       disposed = true; unlisten.forEach(stop => stop());
-      window.removeEventListener("focus", wake); window.removeEventListener("online", wake);
+      window.removeEventListener("focus", focus); window.removeEventListener("online", online);
       document.removeEventListener("visibilitychange", visible);
     };
   }, []);

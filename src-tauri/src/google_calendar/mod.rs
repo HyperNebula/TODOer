@@ -1,5 +1,6 @@
 pub mod api;
 pub mod auth;
+pub mod closing;
 pub mod commands;
 pub mod diagnostics;
 pub mod engine;

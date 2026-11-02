@@ -7,9 +7,11 @@ TODOer+ can sync each saved task list to its own `TODOer — <list name>` Google
 1. Open a saved task list in TODOer+. Open Calendar Settings → Google Calendar and connect your Google account in the system browser.
 2. Review the destination, existing event count, and calendar time zone. Enabling sync uploads **all existing timeblocks**, including past events, to a dedicated calendar. It does not connect your primary Google calendar.
 3. On your phone, open Google Calendar with the same account and select the new TODOer calendar. When creating an event on your phone, select that calendar as its destination.
-4. Keep TODOer open with the desired task list active. Local edits sync after about two seconds; Google changes are checked about once a minute and when the app regains focus. Network failures back off automatically. Changes made on the phone while TODOer is closed arrive when you reopen the list.
+4. Keep TODOer open with the desired task list active. Local edits sync after about two seconds; Google changes are checked every 15 minutes. Returning to the app also checks for changes, limited to once a minute, and reconnecting to the internet requests a check. Network failures back off automatically. Changes made on the phone while TODOer is closed arrive when you reopen the list. **Sync now** remains available.
 
 Only the active list syncs. TODOer does not run a background service after quitting. The web demo and standard task-only build cannot connect to Google.
+
+On a normal close or File → Quit, TODOer follows the save/discard/cancel flow for task changes, then attempts a final sync of the active list before closing its windows. Closing waits at most ten seconds for sync, including waiting for an existing sync to finish. Offline errors, conflicts, or the time limit leave remaining changes in the durable queue for the next launch. Paused/disconnected lists are not resumed. Force-quitting the process or shutting down the operating system may skip this final attempt.
 
 ## What is shared
 
@@ -89,6 +91,7 @@ These manual checks are **not covered by automated tests**. They have not been r
 - [ ] Edit both devices offline, restart TODOer, reconnect, and review edit/edit and edit/delete conflicts. Confirm no lost changes or duplicate uploads. Switch lists during sync and use Save As; verify independent bindings.
 - [ ] Remove the dedicated calendar, deny permissions, and interrupt initial creation. Confirm pause/recovery/replacement preserve local data and require explicit replacement.
 - [ ] Exercise a signed production package on both operating systems, including an upgrade of an existing calendar sidecar and task links. Keep a backup before this check.
+- [ ] Close with the window button and File → Quit, including save/discard/cancel and a cancelled Save As dialog. Check the final sync while online, offline, and with a sync already running; confirm the ten-second limit and that unfinished uploads retry on reopening.
 
 For GitHub releases, set repository variables `TODOER_GOOGLE_CLIENT_ID` and, **after the checklist passes**, `TODOER_GOOGLE_RELEASE_READY=true`. If required by the Desktop configuration, set repository secret `TODOER_GOOGLE_CLIENT_SECRET`. The release workflow injects the client configuration only into the Plus build and refuses packaging/publishing until these settings are present. Local development and tests do not require that acknowledgement. Changing the client or sync behavior requires repeating the relevant manual checks; the acknowledgement is a maintainer assertion, not an automated Google verification.
 

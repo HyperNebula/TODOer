@@ -62,6 +62,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [calendarSettingsTab, setCalendarSettingsTab] = useState<"appearance" | "google" | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const [newlyCreatedTaskId, setNewlyCreatedTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<AppView>("tasks");
   const [confirmState, setConfirmState] = useState<{
@@ -408,6 +409,7 @@ function App() {
   // without needing to re-register the listener on every change.
   const dirtyRef = useRef(store.dirty);
   const handleSaveRef = useRef(handleSave);
+  const closingRef = useRef(false);
   useEffect(() => { dirtyRef.current = store.dirty; }, [store.dirty]);
   useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
 
@@ -425,27 +427,48 @@ function App() {
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
+    let disposed = false;
     const setupClose = async () => {
       try {
         const win = getCurrentWindow();
-        unlisten = await win.onCloseRequested(async (event) => {
+        const stop = await win.onCloseRequested(async (event) => {
+          if (disposed) return;
           // Always take manual control — registering this listener means
           // Tauri will no longer close the window automatically.
           event.preventDefault();
+          if (closingRef.current) return;
 
           const closeApp = async () => {
-            if (__CALENDAR_ENABLED__) {
-              try {
-                const { getAllWindows } = await import("@tauri-apps/api/window");
-                const windows = await getAllWindows();
-                for (const w of windows) {
-                  if (w.label !== win.label) {
-                    await w.destroy();
+            if (closingRef.current) return;
+            closingRef.current = true;
+            setIsClosing(true);
+            try {
+              if (__CALENDAR_ENABLED__) {
+                // Keep calendar imports out of the standard build. The native
+                // command bounds shutdown sync and preserves any unfinished queue.
+                try {
+                  const { googleSyncBeforeClose } = await import("./lib/googleCalendarApi");
+                  await googleSyncBeforeClose();
+                } catch { /* Offline, paused, or timed out: queued changes remain durable. */ }
+                try {
+                  const { getAllWindows } = await import("@tauri-apps/api/window");
+                  const windows = await getAllWindows();
+                  for (const w of windows) {
+                    if (w.label !== win.label) {
+                      await w.destroy();
+                    }
                   }
-                }
-              } catch (e) {}
+                } catch { /* Continue closing the main window if an auxiliary window is unavailable. */ }
+              }
+              await win.destroy();
+            } catch (error) {
+              if (__CALENDAR_ENABLED__) {
+                try { await (await import("./lib/googleCalendarApi")).googleCancelClose(); } catch { /* Retry remains available. */ }
+              }
+              closingRef.current = false;
+              setIsClosing(false);
+              console.error("Could not close the app", error);
             }
-            await win.destroy();
           };
 
           if (dirtyRef.current) {
@@ -462,6 +485,7 @@ function App() {
               onConfirm: async () => {
                 setConfirmState(null);
                 await handleSaveRef.current();
+                if (useTaskStore.getState().dirty) return;
                 await closeApp();
               },
               onThird: async () => {
@@ -473,16 +497,18 @@ function App() {
             await closeApp();
           }
         });
+        if (disposed) stop(); else unlisten = stop;
       } catch {
         // not in Tauri context
       }
     };
     setupClose();
-    return () => { unlisten?.(); };
+    return () => { disposed = true; unlisten?.(); };
   }, []); // runs once — refs keep the handler up to date
 
   useEffect(() => {
     const unlisten = listen<string>("menu-action", (event) => {
+      if (closingRef.current) return;
       switch (event.payload) {
         case "new_list":
           handleNewList();
@@ -723,6 +749,9 @@ function App() {
         {isQuickAddOpen && (
           <QuickAddDialog onClose={() => setIsQuickAddOpen(false)} />
         )}
+        {isClosing && <div className="confirm-overlay" role="dialog" aria-modal="true" aria-label="Closing TODOer" tabIndex={-1} ref={element => { element?.focus(); }} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); }}>
+          <div className="confirm-dialog" role="status">{__CALENDAR_ENABLED__ ? "Syncing calendar before closing…" : "Closing…"}</div>
+        </div>}
       </div>
     </>
   );

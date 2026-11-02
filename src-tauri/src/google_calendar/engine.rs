@@ -283,6 +283,27 @@ mod tests {
     use super::*;
     use crate::google_calendar::testing::{db, local, FakeApi};
     #[test]
+    fn closing_cutoff_preserves_unfinished_uploads_for_the_next_launch() {
+        let db = db();
+        local(&db, "one");
+        local(&db, "two");
+        let active = std::cell::Cell::new(true);
+        let mut api = FakeApi {
+            on_write: Some(Box::new(|| active.set(false))),
+            ..Default::default()
+        };
+        assert_eq!(
+            push(&db, &mut api, || active.get()).unwrap_err().code,
+            "cancelled"
+        );
+        assert_eq!(api.events.len(), 1);
+        assert_eq!(storage::pending(&db).unwrap().len(), 1);
+        api.on_write = None;
+        push(&db, &mut api, || true).unwrap();
+        assert_eq!(api.events.len(), 2);
+        assert!(storage::pending(&db).unwrap().is_empty());
+    }
+    #[test]
     fn lost_response_then_process_restart_keeps_the_mapping_and_outbox() {
         let path = std::env::temp_dir().join(format!(
             "todoer-restart-{}-{}.db",

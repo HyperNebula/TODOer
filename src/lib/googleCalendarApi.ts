@@ -58,4 +58,6 @@ export const googleConflicts = (databaseId: string) => invoke<GoogleConflict[]>(
 export const googleResolveConflict = (databaseId: string, localId: string, choice: "local" | "google", revision: number) =>
   invoke<GoogleSyncStatus>("google_resolve_conflict", { databaseId, localId, choice, revision });
 export const googleOpenEvent = (databaseId: string, localId: string) => invoke<void>("google_open_event", { databaseId, localId });
-export const googleScheduleSync = (databaseId: string) => invoke<void>("google_schedule_sync", { databaseId });
+export const googleScheduleSync = (databaseId: string, force = false) => invoke<void>("google_schedule_sync", { databaseId, force });
+export const googleSyncBeforeClose = () => invoke<void>("google_sync_before_close");
+export const googleCancelClose = () => invoke<void>("google_cancel_close");
