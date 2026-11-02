@@ -9,7 +9,7 @@ interface CalendarToolbarProps {
   onOpen: () => void;
   onNewList: () => void;
   dirty: boolean;
-  onOpenSettings: () => void;
+  onOpenSettings: (tab?: "google") => void;
   onOpenPomodoro?: () => void;
 }
 
@@ -52,12 +52,12 @@ export function CalendarToolbar({
         Pomodoro
       </button>
       <span style={{ marginLeft: "auto" }} />
-      <GoogleSyncBadge onSettings={onOpenSettings} />
+      <GoogleSyncBadge onSettings={() => onOpenSettings("google")} />
       <div style={{ display: "flex", alignItems: "center", gap: "8px", borderLeft: "1px solid var(--border)", paddingLeft: "12px", marginLeft: "4px" }}>
         <button
           type="button"
           className="btn"
-          onClick={onOpenSettings}
+          onClick={() => onOpenSettings()}
           title="Open Calendar Settings"
         >
           Settings

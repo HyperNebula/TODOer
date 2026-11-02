@@ -61,7 +61,7 @@ function App() {
   const [notesTask, setNotesTask] = useState<Task | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const [isCalendarSettingsOpen, setIsCalendarSettingsOpen] = useState(false);
+  const [calendarSettingsTab, setCalendarSettingsTab] = useState<"appearance" | "google" | null>(null);
   const [newlyCreatedTaskId, setNewlyCreatedTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<AppView>("tasks");
   const [confirmState, setConfirmState] = useState<{
@@ -659,7 +659,7 @@ function App() {
                 onOpen={handleOpen}
                 onNewList={handleNewList}
                 dirty={store.dirty}
-                onOpenSettings={() => setIsCalendarSettingsOpen(true)}
+                onOpenSettings={tab => setCalendarSettingsTab(tab ?? "appearance")}
                 onOpenPomodoro={handleOpenPomodoro}
               />
             </React.Suspense>
@@ -681,9 +681,9 @@ function App() {
           onClose={() => setNotesTask(null)}
         />
         {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
-        {isCalendarSettingsOpen && CalendarSettingsDialog && (
+        {calendarSettingsTab && CalendarSettingsDialog && (
           <React.Suspense fallback={null}>
-            <CalendarSettingsDialog onClose={() => setIsCalendarSettingsOpen(false)} />
+            <CalendarSettingsDialog initialTab={calendarSettingsTab} onClose={() => setCalendarSettingsTab(null)} />
           </React.Suspense>
         )}
         {confirmState && (

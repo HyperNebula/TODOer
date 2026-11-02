@@ -47,7 +47,7 @@ interface CalendarViewProps {
   onOpen: () => void;
   onNewList: () => void;
   dirty: boolean;
-  onOpenSettings: () => void;
+  onOpenSettings: (tab?: "google") => void;
   onOpenPomodoro?: () => void;
 }
 

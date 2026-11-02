@@ -10,6 +10,7 @@ import { CalendarTimeZoneSetting } from "./CalendarTimeZoneSetting";
 
 interface Props {
   onClose: () => void;
+  initialTab?: "appearance" | "google";
 }
 
 const COLOR_LABELS: Record<keyof ThemeColors, string> = {
@@ -28,8 +29,8 @@ const COLOR_LABELS: Record<keyof ThemeColors, string> = {
   danger: "Danger Color",
 };
 
-export function CalendarSettingsDialog({ onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "themes" | "behavior" | "google">("appearance");
+export function CalendarSettingsDialog({ onClose, initialTab = "appearance" }: Props) {
+  const [activeTab, setActiveTab] = useState<"appearance" | "themes" | "behavior" | "google">(initialTab);
   const [appVersion, setAppVersion] = useState<string>("");
   
   useEffect(() => {
