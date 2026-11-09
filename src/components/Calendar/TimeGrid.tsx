@@ -94,8 +94,19 @@ function calculateLayout(blocks: Timeblock[], timeZone: string, date: string, gr
     const numColumns = columns.length;
     for (let i = 0; i < numColumns; i++) {
       for (const block of columns[i]) {
+        const segment = segments.get(block.id)!;
+        let columnsSpanned = 1;
+        // Keep the card rectangular: every spanned column must be free for its entire duration.
+        for (let j = i + 1; j < numColumns; j++) {
+          const overlaps = columns[j].some(other => {
+            const otherSegment = segments.get(other.id)!;
+            return segment.startMin < otherSegment.endMin && otherSegment.startMin < segment.endMin;
+          });
+          if (overlaps) break;
+          columnsSpanned++;
+        }
         layouts.set(block.id, {
-          width: 100 / numColumns,
+          width: (100 * columnsSpanned) / numColumns,
           left: (i * 100) / numColumns
         });
       }
