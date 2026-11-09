@@ -22,6 +22,12 @@ beforeEach(() => useCalendarStore.setState({ timeZone: "America/Denver" }));
 afterEach(cleanup);
 
 describe("calendar event editing", () => {
+  it("preserves non-weekly BYDAY rules when only the title changes", () => {
+    const recurrenceRule = "RRULE:FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR";
+    const { onSave } = editor({ ...event, recurrenceRule });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith("one", expect.objectContaining({ recurrenceRule }));
+  });
   it("saves inclusive all-day form dates as an exclusive stored end", () => {
     const { onSave } = editor();
     fireEvent.click(screen.getByRole("checkbox", { name: "All day" }));

@@ -483,7 +483,14 @@ fn resolve_series(
                 conn.execute("DELETE FROM sync_outbox WHERE local_id=?1", [id])
                     .map_err(GoogleError::storage)?;
             } else {
-                if recreated || remote.is_null() || remote["status"] == "cancelled" {
+                if !recreated && id != series && remote["status"] == "cancelled" {
+                    // A cancelled occurrence keeps its Google identity. Replacing
+                    // it with a new ID only rediscovers the same cancelled
+                    // instance and repeats the conflict on every upload.
+                    if let Some(entry) = entry {
+                        record(conn, id, &entry.remote_id, remote, &binding.time_zone)?;
+                    }
+                } else if recreated || remote.is_null() || remote["status"] == "cancelled" {
                     if entry.is_some() {
                         fresh_mapping(conn, id)?;
                     }

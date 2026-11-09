@@ -125,7 +125,7 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
     for pending in operations {
         if !storage::pending(conn)?
             .iter()
-            .any(|entry| entry.local_id == pending.local_id)
+            .any(|entry| entry.local_id == pending.local_id && entry.revision == pending.revision)
         {
             continue;
         }
@@ -202,6 +202,11 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
             } else {
                 mapping::canonical(&remote, &binding.time_zone)?
             };
+            // A null base records an accepted Google deletion. A live local
+            // exception after that decision explicitly restores that occurrence.
+            let restore_instance = row.as_ref().unwrap().recurrence_id.is_some()
+                && entry.base.as_ref().is_some_and(Value::is_null)
+                && remote["status"] == "cancelled";
             if current == desired {
                 if entry
                     .raw
@@ -215,7 +220,7 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
             }
             if Some(&current) != entry.base.as_ref()
                 || remote.is_null()
-                || remote["status"] == "cancelled"
+                || (remote["status"] == "cancelled" && !restore_instance)
             {
                 storage::conflict(conn, &pending.local_id, &remote, "changed", None)?;
                 continue;
@@ -227,6 +232,19 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
                 )
             })?;
             let mut patch = payload.clone();
+            if restore_instance {
+                patch["status"] = json!("confirmed");
+            }
+            // PATCH merges nested objects. Clear the old representation when
+            // converting between a date-only event and a timed event.
+            for field in ["start", "end"] {
+                if row.as_ref().unwrap().all_day {
+                    patch[field]["dateTime"] = Value::Null;
+                    patch[field]["timeZone"] = Value::Null;
+                } else {
+                    patch[field]["date"] = Value::Null;
+                }
+            }
             patch.as_object_mut().unwrap().remove("recurringEventId");
             patch.as_object_mut().unwrap().remove("originalStartTime");
             if row.as_ref().unwrap().recurrence_id.is_some() {
@@ -282,6 +300,60 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
 mod tests {
     use super::*;
     use crate::google_calendar::testing::{db, local, FakeApi};
+    #[test]
+    fn converting_between_timed_and_all_day_clears_the_old_schedule_fields() {
+        let db = db();
+        local(&db, "one");
+        let mut api = FakeApi::default();
+        push(&db, &mut api, || true).unwrap();
+        let id = storage::mappings(&db).unwrap()[0].remote_id.clone();
+        db.execute("UPDATE timeblocks SET all_day=1,time_zone=NULL,start_time='2026-01-01',end_time='2026-01-02'", []).unwrap();
+        push(&db, &mut api, || true).unwrap();
+        assert_eq!(api.events[&id]["start"], json!({"date":"2026-01-01"}));
+        assert_eq!(api.events[&id]["end"], json!({"date":"2026-01-02"}));
+        db.execute("UPDATE timeblocks SET all_day=0,time_zone='UTC',start_time='2026-01-01T09:00:00Z',end_time='2026-01-01T10:00:00Z'", []).unwrap();
+        push(&db, &mut api, || true).unwrap();
+        assert!(api.events[&id]["start"].get("date").is_none());
+        assert!(api.events[&id]["end"].get("date").is_none());
+        assert_eq!(
+            api.events[&id]["start"]["dateTime"],
+            "2026-01-01T09:00:00+00:00"
+        );
+    }
+
+    #[test]
+    fn a_queued_delete_replaced_during_an_earlier_upload_is_not_sent() {
+        let db = db();
+        local(&db, "one");
+        local(&db, "two");
+        let mut api = FakeApi::default();
+        push(&db, &mut api, || true).unwrap();
+        let id = storage::mappings(&db)
+            .unwrap()
+            .into_iter()
+            .find(|entry| entry.local_id == "two")
+            .unwrap()
+            .remote_id;
+        db.execute("UPDATE timeblocks SET title='Changed' WHERE id='one'", [])
+            .unwrap();
+        db.execute("DELETE FROM timeblocks WHERE id='two'", [])
+            .unwrap();
+        let mut recreated = false;
+        let db_ref = &db;
+        api.on_write = Some(Box::new(move || {
+            if !recreated {
+                local(db_ref, "two");
+                recreated = true;
+            }
+        }));
+        push(&db, &mut api, || true).unwrap();
+        assert_ne!(api.events[&id]["status"], "cancelled");
+        api.on_write = None;
+        push(&db, &mut api, || true).unwrap();
+        assert!(storage::pending(&db).unwrap().is_empty());
+        assert!(super::super::incoming::conflicts(&db).unwrap().is_empty());
+    }
+
     #[test]
     fn closing_cutoff_preserves_unfinished_uploads_for_the_next_launch() {
         let db = db();

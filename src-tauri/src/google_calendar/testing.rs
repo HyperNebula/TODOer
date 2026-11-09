@@ -76,9 +76,24 @@ impl CalendarApi for FakeApi<'_> {
         if event["etag"].as_str() != Some(etag) {
             return Err(GoogleError::new("precondition", "Changed"));
         }
-        for (key, value) in value.as_object().unwrap() {
-            event[key] = value.clone();
+        // Google merges nested objects and removes fields explicitly set to null.
+        fn merge(target: &mut Value, patch: &Value) {
+            if let Some(fields) = patch.as_object() {
+                if !target.is_object() {
+                    *target = json!({});
+                }
+                for (key, value) in fields {
+                    if value.is_null() {
+                        target.as_object_mut().unwrap().remove(key);
+                    } else {
+                        merge(&mut target[key], value);
+                    }
+                }
+            } else {
+                *target = patch.clone();
+            }
         }
+        merge(event, value);
         event["etag"] = json!(format!("v{}", self.writes + 1));
         let result = event.clone();
         self.wrote()?;

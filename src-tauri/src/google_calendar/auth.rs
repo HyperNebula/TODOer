@@ -105,6 +105,10 @@ fn save_account(account: &SavedAccount) -> Result<()> {
 }
 
 pub fn http_client() -> Result<Client> {
+    // reqwest's rustls-no-provider feature requires an installed provider.
+    // Google requests can run before the updater initializes its own client.
+    // A concurrent installation simply means another caller already did this.
+    let _ = rustls::crypto::ring::default_provider().install_default();
     Client::builder()
         .https_only(true)
         .redirect(reqwest::redirect::Policy::none())
@@ -555,6 +559,27 @@ pub async fn google_disconnect(app: tauri::AppHandle) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn google_http_client_initializes_tls_without_an_updater_request() {
+        // Run in a fresh process: the other HTTP tests install a global provider
+        // and would hide this startup failure in the normal shared test process.
+        const CHILD: &str = "TODOER_TEST_GOOGLE_HTTP_CLIENT";
+        if std::env::var_os(CHILD).is_some() {
+            assert!(http_client().is_ok());
+            return;
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "google_calendar::auth::tests::google_http_client_initializes_tls_without_an_updater_request", "--nocapture"])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
     #[test]
     fn pkce_matches_rfc7636_vector() {
         assert_eq!(

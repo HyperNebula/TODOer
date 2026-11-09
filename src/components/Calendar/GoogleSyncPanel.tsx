@@ -19,7 +19,12 @@ export function GoogleSyncPanel() {
   const [showConflicts, setShowConflicts] = useState(false);
   const [replace, setReplace] = useState(false);
   const [formError, setFormError] = useState("");
-  useEffect(() => { setShowConflicts(false); }, [databaseId]);
+  useEffect(() => {
+    setShowConflicts(false);
+    setReplace(false);
+    setRecovery("");
+    setFormError("");
+  }, [databaseId]);
   const binding = sync.status?.binding;
   const mismatch = !!binding && !!sync.account?.connected && binding.subject !== sync.account.subject;
   const canSetUp = !!databaseId && !!sync.account?.connected && !sync.busy && !sync.status?.running;

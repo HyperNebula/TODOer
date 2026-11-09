@@ -21,9 +21,11 @@ export function canEditRecurrence(value?: string | null): boolean {
   if (!value) return true;
   const lines=value.split(/\r?\n/).filter(line=>!line.startsWith("DTSTART"));
   if(lines.length!==1 || !lines[0].startsWith("RRULE:")) return false;
+  const frequency = lines[0].match(/(?:^RRULE:|;)FREQ=([^;]+)/)?.[1];
+  if (!frequency || !["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(frequency)) return false;
   return lines[0].slice(6).split(";").every(part=>{
     const [key,content]=part.split("=");
-    return ["FREQ","INTERVAL","COUNT","UNTIL","WKST"].includes(key) || (key==="BYDAY" && !/[0-9+-]/.test(content));
+    return ["FREQ","INTERVAL","COUNT","UNTIL","WKST"].includes(key) || (key==="BYDAY" && frequency === "WEEKLY" && /^(MO|TU|WE|TH|FR|SA|SU)(,(MO|TU|WE|TH|FR|SA|SU))*$/.test(content));
   });
 }
 

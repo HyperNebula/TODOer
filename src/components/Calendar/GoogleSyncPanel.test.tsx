@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 const { enable, pause, status } = vi.hoisted(() => ({ enable: vi.fn(), pause: vi.fn(), status: vi.fn() }));
 vi.mock("../../lib/googleCalendarApi", () => ({ googleEnableSync: enable, googlePauseSync: pause, googleSyncNow: vi.fn(), googleSyncStatus: status, googleAccountStatus: vi.fn(), googleErrorMessage: (error: { message: string }) => error.message }));
 vi.mock("../../lib/fileApi", () => ({ isTauri: () => true, appendToArchive: vi.fn() }));
@@ -17,6 +17,16 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe("Google sync settings", () => {
+  it("cancels a replacement confirmation when the active list changes", () => {
+    render(<GoogleSyncPanel />);
+    fireEvent.change(screen.getByLabelText("Existing TODOer calendar ID"), { target: { value: "old-calendar" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create replacement calendar" }));
+    expect(screen.getByRole("button", { name: "Create replacement" })).toBeTruthy();
+    act(() => useCalendarStore.setState({ databaseId: "other-session" }));
+    expect(screen.queryByRole("button", { name: "Create replacement" })).toBeNull();
+    expect((screen.getByLabelText("Existing TODOer calendar ID") as HTMLInputElement).value).toBe("");
+    expect(enable).not.toHaveBeenCalled();
+  });
   it("previews all existing timeblocks before enabling", async () => {
     enable.mockResolvedValue({ ...initial, binding });render(<GoogleSyncPanel />);
     expect(screen.getByText(/all 7 existing timeblocks/)).toBeTruthy();

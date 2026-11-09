@@ -96,7 +96,27 @@ pub fn event_payload(row: &TimeblockRow, zone: &str) -> Result<Value> {
         .filter(|line| {
             line.starts_with("RRULE:") || line.starts_with("EXDATE") || line.starts_with("RDATE")
         })
-        .map(str::to_string)
+        .map(|line| {
+            // UNTIL must have the same value type as DTSTART. rrule.js emits
+            // date-time UNTIL values even when splitting an all-day series.
+            if row.all_day && line.starts_with("RRULE:") {
+                line.split(';')
+                    .map(|part| {
+                        if let Some(until) = part.strip_prefix("UNTIL=") {
+                            if let Ok(value) =
+                                NaiveDateTime::parse_from_str(until, "%Y%m%dT%H%M%SZ")
+                            {
+                                return format!("UNTIL={}", value.format("%Y%m%d"));
+                            }
+                        }
+                        part.to_string()
+                    })
+                    .collect::<Vec<_>>()
+                    .join(";")
+            } else {
+                line.to_string()
+            }
+        })
         .collect();
     Ok(
         json!({ "summary": row.title, "description": row.notes, "start": time(&row.start_time)?, "end": time(&row.end_time)?, "recurrence": recurrence }),
@@ -181,6 +201,21 @@ pub fn local_row(id: &str, event: &Value, zone: &str) -> Result<TimeblockRow> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn all_day_recurrence_until_uses_a_date_value() {
+        let mut row = local_row(
+            "one",
+            &json!({"start":{"date":"2026-01-01"},"end":{"date":"2026-01-02"}}),
+            "UTC",
+        )
+        .unwrap();
+        // rrule.js serializes UNTIL as a timestamp, including for all-day series.
+        row.recurrence_rule = Some("RRULE:FREQ=DAILY;UNTIL=20260103T235959Z".into());
+        assert_eq!(
+            event_payload(&row, "UTC").unwrap()["recurrence"],
+            json!(["RRULE:FREQ=DAILY;UNTIL=20260103"])
+        );
+    }
     #[test]
     fn equivalent_offsets_compare_equal_and_extra_google_fields_are_ignored() {
         let a = json!({"summary":"Test","start":{"dateTime":"2026-11-01T09:00:00-07:00","timeZone":"America/Denver"},"end":{"dateTime":"2026-11-01T10:00:00-07:00","timeZone":"America/Denver"}});

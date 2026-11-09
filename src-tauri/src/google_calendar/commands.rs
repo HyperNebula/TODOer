@@ -180,11 +180,13 @@ fn work(
             .map_err(GoogleError::storage)?;
         }
     } else {
-        let _ = app.emit("calendar-changed", serde_json::json!({"database_id":id}));
         if let Ok(mut plan) = state.plan.lock() {
             plan.finish(started_revision, None);
         }
     }
+    // A pull or an earlier upload may have committed before a later request
+    // failed. Refresh the displayed schedule on partial progress as well.
+    let _ = app.emit("calendar-changed", serde_json::json!({"database_id":id}));
     if let Ok(status) = status(app, id) {
         let _ = app.emit("google-sync-status", status);
     }

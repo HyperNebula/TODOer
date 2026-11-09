@@ -213,6 +213,29 @@ mod tests {
         json!({"id":"instance","etag":"instance-v1","summary":"Local","description":"","recurringEventId":parent,"originalStartTime":{"dateTime":"2026-01-02T09:00:00Z"},"start":{"dateTime":"2026-01-02T09:00:00Z","timeZone":"UTC"},"end":{"dateTime":"2026-01-02T10:00:00Z","timeZone":"UTC"}})
     }
     #[test]
+    fn keeping_a_locally_edited_cancelled_instance_restores_it_without_a_conflict_loop() {
+        let db = db();
+        series(&db);
+        let mut api = FakeApi::default();
+        engine::push(&db, &mut api, || true).unwrap();
+        let parent = storage::mappings(&db).unwrap()[0].remote_id.clone();
+        let mut cancelled = instance(&parent);
+        cancelled["status"] = json!("cancelled");
+        api.instance_events.push(cancelled);
+        db.execute("INSERT INTO timeblocks(id,title,start_time,end_time,time_zone,recurrence_id,original_start) VALUES('exception','Keep desktop','2026-01-02T11:00:00Z','2026-01-02T12:00:00Z','UTC','series','2026-01-02T09:00:00Z')", []).unwrap();
+        engine::push(&db, &mut api, || true).unwrap();
+        let conflict = incoming::conflicts(&db).unwrap().remove(0);
+        incoming::resolve(&db, &mut api, "exception", "local", conflict.revision).unwrap();
+        api.pages.push_back(Ok(json!({"items":[api.events[&parent],api.events["instance"]],"nextSyncToken":"after-resolution"})));
+        incoming::pull(&db, &mut api, || true).unwrap();
+        engine::push(&db, &mut api, || true).unwrap();
+        assert!(incoming::conflicts(&db).unwrap().is_empty());
+        assert!(storage::pending(&db).unwrap().is_empty());
+        assert_eq!(api.events["instance"]["status"], "confirmed");
+        assert_eq!(api.events["instance"]["summary"], "Keep desktop");
+        assert_eq!(api.events.len(), 2);
+    }
+    #[test]
     fn uploads_master_once_and_patches_an_instance_instead_of_inserting_it() {
         let db = db();
         series(&db);
