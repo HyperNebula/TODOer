@@ -204,7 +204,7 @@ export function TimeblockBlock({
         ...(block.color ? { backgroundColor: block.color } : {}),
         ...(block.completed ? { opacity: 0.6, filter: 'grayscale(0.8)' } : {})
       }}
-      title={error || `${startTimeDisplay} ? ${endTimeDisplay} (${timeZone})${segment.continuesBefore ? " ? continues from earlier" : ""}${segment.continuesAfter ? " ? continues later" : ""}`}
+      title={error || `${startTimeDisplay} – ${endTimeDisplay} (${timeZone})${segment.continuesBefore ? "; continues from earlier" : ""}${segment.continuesAfter ? "; continues later" : ""}`}
       onMouseDown={onBlockMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -230,7 +230,7 @@ export function TimeblockBlock({
           </button>
         )}
 
-        {block.title && <div className="tb-title">{segment.continuesBefore ? "? " : ""}{block.title}{segment.continuesAfter ? " ?" : ""}</div>}
+        {block.title && <div className="tb-title">{block.title}</div>}
 
         {timeblockEditMode === "button" && (
           <button

@@ -278,7 +278,7 @@ export function TimeGrid({
                   <button key={block.id} type="button" className="all-day-event" style={block.color ? { backgroundColor: block.color } : undefined}
                     title={`${block.title || "Untitled"}: ${block.startTime} through ${addDays(block.endTime, -1)}`}
                     onClick={() => onEditTimeblock(block.id)}>
-                    {block.startTime < isoDate ? "? " : ""}{block.title || "Untitled"}{block.endTime > addDays(isoDate, 1) ? " ?" : ""}
+                    {block.title || "Untitled"}
                   </button>
                 ))}
                 <button type="button" className="all-day-add" disabled={!canCreate} aria-label={`New all-day event on ${isoDate}`} onClick={() => void runAction(async () => {
