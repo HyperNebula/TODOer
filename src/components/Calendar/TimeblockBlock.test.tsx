@@ -92,6 +92,23 @@ describe.each(schedules)("timeblock dragging: $name", ({ timeZone, suffix, nextS
       endTime: `2026-10-31T${String(hour + 1).padStart(2, "0")}:00:00${suffix}`,
     });
   });
+
+  it.each([
+    { direction: "earlier time on the next day", column: 2, minutes: -60, date: "2026-11-01", top: "180px", localHour: 8, utcHour: 15 },
+    { direction: "later time on the previous day", column: 0, minutes: 60, date: "2026-10-30", top: "360px", localHour: 10, utcHour: 16 },
+  ])("previews and saves: $direction", ({ column, minutes, date, top, localHour, utcHour }) => {
+    const { card, onUpdate, move, release } = draggable(block);
+    move(column, 0);
+    move(column, minutes);
+    expect(card.style.top).toBe(top);
+    release();
+    const hour = timeZone === "UTC" ? utcHour : localHour;
+    const offset = column === 2 ? nextSuffix : suffix;
+    expect(onUpdate).toHaveBeenCalledExactlyOnceWith("task", {
+      startTime: `${date}T${String(hour).padStart(2, "0")}:00:00${offset}`,
+      endTime: `${date}T${String(hour + 1).padStart(2, "0")}:00:00${offset}`,
+    });
+  });
 });
 
 it("keeps an overnight continuation clipped to the destination day during a drag", () => {

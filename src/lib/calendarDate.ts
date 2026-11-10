@@ -172,7 +172,9 @@ export function moveTimedBlock(block: Timeblock, minutes: number, days: number, 
   }
   const eventZone = block.timeZone || displayZone;
   const duration = instantMs(block.endTime, eventZone) - instantMs(block.startTime, eventZone);
-  const startWall = Temporal.PlainDateTime.from(wallInZone(block.startTime, displayZone)).add({ minutes, days });
+  // Temporal duration fields must share a sign; day and time drags can oppose.
+  const startWall = Temporal.PlainDateTime.from(wallInZone(block.startTime, displayZone))
+    .add({ days }).add({ minutes });
   const start = instantMs(wallToTimestamp(startWall.toString(), displayZone), displayZone);
   return {
     startTime: timestampInZone(start, eventZone),
