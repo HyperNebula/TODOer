@@ -10,6 +10,7 @@ pub struct FakeApi<'a> {
     pub writes: usize,
     pub fail_after_write: bool,
     pub on_write: Option<Box<dyn FnMut() + 'a>>,
+    pub on_get: Option<Box<dyn FnMut() -> Result<()> + 'a>>,
     pub missing_calendar: bool,
     pub instance_events: Vec<Value>,
 }
@@ -51,6 +52,9 @@ impl CalendarApi for FakeApi<'_> {
             .unwrap_or_else(|| Ok(json!({"items":[],"nextSyncToken":"next"})))
     }
     fn get(&mut self, _: &str, id: &str) -> Result<Value> {
+        if let Some(callback) = &mut self.on_get {
+            callback()?;
+        }
         self.events
             .get(id)
             .cloned()

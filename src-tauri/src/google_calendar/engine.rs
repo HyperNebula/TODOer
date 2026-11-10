@@ -141,8 +141,15 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
         let row = storage::row(conn, &pending.local_id)?;
         let entry = if let Some(row) = row.as_ref().filter(|row| row.recurrence_id.is_some()) {
             match recurrence::ensure_instance(conn, api, row, &binding)? {
-                Some(entry) => entry,
-                None => continue,
+                recurrence::InstanceLookup::Ready(entry) => entry,
+                recurrence::InstanceLookup::Deferred => continue,
+                recurrence::InstanceLookup::ParentAbsent => {
+                    // A newer edit or a restored parent must retain its queue
+                    // entry even if it happened during the Google lookup.
+                    conn.execute("DELETE FROM sync_outbox WHERE local_id=?1 AND revision=?2 AND NOT EXISTS(SELECT 1 FROM timeblocks WHERE id=?3)",
+                        rusqlite::params![pending.local_id,pending.revision,row.recurrence_id]).map_err(GoogleError::storage)?;
+                    continue;
+                }
             }
         } else {
             storage::ensure_mapping(conn, &pending.local_id)?
@@ -300,6 +307,114 @@ pub fn push(conn: &Connection, api: &mut dyn CalendarApi, active: impl Fn() -> b
 mod tests {
     use super::*;
     use crate::google_calendar::testing::{db, local, FakeApi};
+
+    fn orphaned_deletion(conn: &Connection, id: &str, parent: &str) {
+        local(conn, id);
+        conn.execute("UPDATE timeblocks SET recurrence_id=?2,original_start=start_time,is_deleted=1 WHERE id=?1", [id,parent]).unwrap();
+        storage::ensure_mapping(conn, parent).unwrap();
+    }
+
+    #[test]
+    fn three_deleted_occurrences_without_parent_series_do_not_remain_pending() {
+        let db = db();
+        for index in 0..3 {
+            orphaned_deletion(
+                &db,
+                &format!("deleted-{index}"),
+                &format!("missing-parent-{index}"),
+            );
+        }
+        storage::queue_all(&db).unwrap();
+        assert_eq!(storage::pending(&db).unwrap().len(), 3);
+        let mut api = FakeApi::default();
+        push(&db, &mut api, || true).unwrap();
+        assert!(storage::pending(&db).unwrap().is_empty());
+        assert_eq!(storage::rows(&db).unwrap().len(), 3);
+        assert!(api.events.is_empty());
+        assert_eq!(api.writes, 0);
+        assert!(super::super::incoming::conflicts(&db).unwrap().is_empty());
+    }
+
+    #[test]
+    fn orphaned_deletions_keep_remote_series_for_conflict_review() {
+        let db = db();
+        orphaned_deletion(&db, "deleted", "missing-parent");
+        let id = storage::ensure_mapping(&db, "missing-parent")
+            .unwrap()
+            .remote_id;
+        let remote = json!({"id":id,"summary":"Keep on Google","recurrence":["RRULE:FREQ=DAILY"],"start":{"dateTime":"2026-01-01T09:00:00Z"},"end":{"dateTime":"2026-01-01T10:00:00Z"}});
+        let mut api = FakeApi::default();
+        api.events.insert(id.clone(), remote.clone());
+        push(&db, &mut api, || true).unwrap();
+        assert_eq!(api.events[&id], remote);
+        assert_eq!(api.writes, 0);
+        let conflicts = super::super::incoming::conflicts(&db).unwrap();
+        assert_eq!(conflicts.len(), 1);
+        assert_eq!(conflicts[0].local_id, "missing-parent");
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM sync_outbox", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn orphaned_deletions_stay_queued_when_google_cannot_be_checked() {
+        let db = db();
+        orphaned_deletion(&db, "deleted", "missing-parent");
+        let mut api = FakeApi {
+            on_get: Some(Box::new(|| Err(GoogleError::new("network", "Offline")))),
+            ..Default::default()
+        };
+        assert_eq!(push(&db, &mut api, || true).unwrap_err().code, "network");
+        assert_eq!(storage::pending(&db).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn restoring_a_parent_during_the_lookup_keeps_its_occurrence_deletion() {
+        let db = db();
+        orphaned_deletion(&db, "deleted", "missing-parent");
+        let mut api = FakeApi {
+            on_get: Some(Box::new(|| {
+                local(&db, "missing-parent");
+                Ok(())
+            })),
+            ..Default::default()
+        };
+        push(&db, &mut api, || true).unwrap();
+        assert!(storage::pending(&db)
+            .unwrap()
+            .iter()
+            .any(|entry| entry.local_id == "deleted"));
+    }
+
+    #[test]
+    fn deletion_waits_for_a_parent_that_still_exists_locally() {
+        let db = db();
+        local(&db, "parent");
+        db.execute(
+            "UPDATE timeblocks SET recurrence_rule='RRULE:FREQ=DAILY' WHERE id='parent'",
+            [],
+        )
+        .unwrap();
+        orphaned_deletion(&db, "deleted", "parent");
+        let mut api = FakeApi::default();
+        // Checking the exception alone must leave it queued until the parent uploads.
+        let row = storage::row(&db, "deleted").unwrap().unwrap();
+        assert!(matches!(
+            recurrence::ensure_instance(
+                &db,
+                &mut api,
+                &row,
+                &storage::binding(&db).unwrap().unwrap()
+            )
+            .unwrap(),
+            recurrence::InstanceLookup::Deferred
+        ));
+        assert_eq!(storage::pending(&db).unwrap().len(), 2);
+    }
+
     #[test]
     fn converting_between_timed_and_all_day_clears_the_old_schedule_fields() {
         let db = db();

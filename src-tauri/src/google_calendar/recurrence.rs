@@ -74,12 +74,18 @@ pub fn inherited(parent: &TimeblockRow, original: &str, zone: &str) -> Result<Ti
     Ok(row)
 }
 
+pub enum InstanceLookup {
+    Ready(storage::EventMapping),
+    Deferred,
+    ParentAbsent,
+}
+
 pub fn ensure_instance(
     conn: &Connection,
     api: &mut dyn CalendarApi,
     row: &TimeblockRow,
     binding: &storage::Binding,
-) -> Result<Option<storage::EventMapping>> {
+) -> Result<InstanceLookup> {
     let parent_id = row.recurrence_id.as_deref().unwrap();
     let existing = storage::mappings(conn)?
         .into_iter()
@@ -88,13 +94,33 @@ pub fn ensure_instance(
         entry.base.is_some()
             && (entry.etag.is_some() || entry.base.as_ref().is_some_and(Value::is_null))
     }) {
-        return Ok(existing);
+        return Ok(InstanceLookup::Ready(existing.unwrap()));
     }
     let parent_map = storage::ensure_mapping(conn, parent_id)?;
-    if parent_map.base.is_none() {
-        return Ok(None);
+    let parent = storage::row(conn, parent_id)?;
+    if row.is_deleted && parent.is_none() && existing.is_none() {
+        // Legacy calendars can retain deletion markers after their series was
+        // removed. There is no instance identity to upload, and waiting for the
+        // absent parent leaves this queue entry stuck forever. Confirm Google
+        // has no live parent before considering the deletion finished.
+        match api.get(&binding.calendar_id, &parent_map.remote_id) {
+            Ok(remote) if remote["status"] == "cancelled" => {
+                return Ok(InstanceLookup::ParentAbsent);
+            }
+            Err(error) if matches!(error.code.as_str(), "not_found" | "gone") => {
+                return Ok(InstanceLookup::ParentAbsent);
+            }
+            Err(error) => return Err(error),
+            Ok(remote) => {
+                storage::conflict(conn, parent_id, &remote, "edit_delete", Some(parent_id))?;
+                return Ok(InstanceLookup::Deferred);
+            }
+        }
     }
-    let parent = storage::row(conn, parent_id)?
+    if parent_map.base.is_none() {
+        return Ok(InstanceLookup::Deferred);
+    }
+    let parent = parent
         .ok_or_else(|| GoogleError::new("recurrence", "The recurring parent is unavailable."))?;
     let zone = parent.time_zone.as_deref().unwrap_or(&binding.time_zone);
     let original = row.original_start.as_deref().ok_or_else(|| {
@@ -153,7 +179,7 @@ pub fn ensure_instance(
             conn.execute("INSERT INTO sync_events(local_id,remote_id) VALUES(?1,?2) ON CONFLICT(local_id) DO UPDATE SET remote_id=excluded.remote_id",[&row.id,remote_id]).map_err(GoogleError::storage)?;
             if current != expected && current != desired {
                 storage::conflict(conn, &row.id, item, "changed", Some(parent_id))?;
-                return Ok(None);
+                return Ok(InstanceLookup::Deferred);
             }
             if current == expected {
                 remote["_todoerDefaultInstance"] = json!(true);
@@ -161,7 +187,9 @@ pub fn ensure_instance(
             incoming::record(conn, &row.id, remote_id, &remote, &binding.time_zone)?;
             return Ok(storage::mappings(conn)?
                 .into_iter()
-                .find(|entry| entry.local_id == row.id));
+                .find(|entry| entry.local_id == row.id)
+                .map(InstanceLookup::Ready)
+                .unwrap_or(InstanceLookup::Deferred));
         }
         match response["nextPageToken"].as_str() {
             Some(next) if page.as_deref() != Some(next) => page = Some(next.to_string()),
@@ -175,7 +203,7 @@ pub fn ensure_instance(
         "missing_instance",
         Some(parent_id),
     )?;
-    Ok(None)
+    Ok(InstanceLookup::Deferred)
 }
 
 pub fn parent_local_id(conn: &Connection, event: &Value) -> Result<Option<String>> {
