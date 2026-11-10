@@ -48,13 +48,15 @@ export function TimeblockBlock({
   const { compactTimeblockDisplay, timeblockEditMode, showTimeblockTimes } = useSettingsStore();
 
   // ── Drag & Resize Local State ───────────────────────────────────────────────
-  const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number } | null>(null);
+  const dragStateRef = useRef<{ startStr?: string; endStr?: string; deltaX?: number; previewDate?: string } | null>(null);
   const [, setDragTick] = useState(0);
 
   const effectiveStart = dragStateRef.current?.startStr ?? block.startTime;
   const effectiveEnd = dragStateRef.current?.endStr ?? block.endTime;
 
-  const segment = segmentForDate({ ...block, startTime: effectiveStart, endTime: effectiveEnd }, viewDate, timeZone, gridStartMin, gridEndMin)
+  // The card stays mounted in its original column while dragging across days.
+  const previewDate = dragStateRef.current?.previewDate ?? viewDate;
+  const segment = segmentForDate({ ...block, startTime: effectiveStart, endTime: effectiveEnd }, previewDate, timeZone, gridStartMin, gridEndMin)
     || segmentForDate(block, viewDate, timeZone, gridStartMin, gridEndMin)!;
   const startMin = segment.startMin - gridStartMin;
   const durationMin = segment.endMin - segment.startMin;
@@ -149,7 +151,7 @@ export function TimeblockBlock({
       }
       try {
         const schedule = moveTimedBlock(block, deltaMin, deltaDays, timeZone);
-        dragStateRef.current = { startStr: schedule.startTime, endStr: schedule.endTime, deltaX };
+        dragStateRef.current = { startStr: schedule.startTime, endStr: schedule.endTime, deltaX, previewDate: colEl?.dataset.date ?? viewDate };
         setError("");
       } catch (error) {
         dragStateRef.current = null;
