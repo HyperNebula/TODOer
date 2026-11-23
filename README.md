@@ -28,7 +28,7 @@ Download the latest release from the [GitHub Releases](../../releases) page.
 ## Features
 
 - **Multi-Column Tree Grid:** Infinite sub-tasks with folding and recursive indenting.
-- **Advanced Filtering:** Filter by priority, category, completion, and due dates.
+- **Advanced Filtering:** Filter by title/notes, priority, category, completion, and due dates. Matching projects include their subtasks at every level, subject to the other active filters and existing folding behavior.
 - **Local-First Storage:** Atomic task JSON writes; Google Calendar sync in TODOer+ is opt-in.
 - **Google Calendar in TODOer+:** Sync a dedicated calendar with your phone, with offline queues and conflict review. [Setup and limitations](docs/google-calendar.md).
 - **Rich Task Metadata:** Title, dates, priority, % complete, time estimates, categories, and notes.

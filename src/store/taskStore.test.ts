@@ -119,3 +119,90 @@ describe("taskStore - selection", () => {
     expect(state.selectedTaskId).toBe(newTaskId);
   });
 });
+
+describe("taskStore - project search results", () => {
+  beforeEach(() => {
+    const file = createEmptyTaskList("Search test");
+    file.tasks = [
+      createTask({ id: "project", title: "Website launch", isProject: true }),
+      createTask({ id: "child", title: "Write copy", parentId: "project", order: 0 }),
+      createTask({ id: "grandchild", title: "Proofread", parentId: "child" }),
+      createTask({ id: "sibling", title: "Create logo", parentId: "project", order: 1 }),
+      createTask({ id: "outside", title: "Website redesign", isProject: true, order: 1 }),
+      createTask({ id: "outside-child", title: "Review layout", parentId: "outside" }),
+      createTask({ id: "unrelated", title: "Buy groceries", order: 2 }),
+    ];
+    useTaskStore.setState({
+      file, filter: { ...DEFAULT_FILTER, titleContains: "website" },
+      sort: null, focusTaskId: null, selectedTaskId: null, multiSelectedIds: new Set(), dirty: false,
+    });
+  });
+
+  it("shows descendants in tree order with their original indentation", () => {
+    const rows = useTaskStore.getState().getFlatRows();
+
+    expect(rows.map((row) => [row.task.id, row.depth])).toEqual([
+      ["project", 0], ["child", 1], ["grandchild", 2], ["sibling", 1],
+      ["outside", 0], ["outside-child", 1],
+    ]);
+  });
+
+  it("retains sibling sorting in tree view", () => {
+    useTaskStore.setState({ sort: { column: "title", direction: "asc" } });
+
+    expect(useTaskStore.getState().getFlatRows().map((row) => row.task.id)).toEqual([
+      "project", "sibling", "child", "grandchild", "outside", "outside-child",
+    ]);
+  });
+
+  it("includes descendants as sorted peers in flat view even if the project is collapsed", () => {
+    const store = useTaskStore.getState();
+    useTaskStore.setState({
+      file: { ...store.file, tasks: store.file.tasks.map((task) => ({ ...task, collapsed: true })) },
+      filter: { ...store.filter, flatView: true },
+      sort: { column: "title", direction: "asc" },
+    });
+    const rows = useTaskStore.getState().getFlatRows();
+
+    expect(rows.map((row) => row.task.id)).toEqual([
+      "sibling", "grandchild", "outside-child", "project", "outside", "child",
+    ]);
+    expect(rows.every((row) => row.depth === 0 && !row.hasChildren)).toBe(true);
+  });
+
+  it("limits inherited matches to the focused subtree", () => {
+    useTaskStore.getState().setFocusTask("project");
+
+    expect(useTaskStore.getState().getFlatRows().map((row) => row.task.id)).toEqual([
+      "project", "child", "grandchild", "sibling",
+    ]);
+
+    // A matching project outside the focused subtree cannot supply a text match.
+    useTaskStore.getState().setFocusTask("child");
+    expect(useTaskStore.getState().getFlatRows()).toEqual([]);
+  });
+
+  it("keeps collapsed projects expandable and shows their retained children on expansion", () => {
+    useTaskStore.getState().toggleCollapsed("project");
+    let rows = useTaskStore.getState().getFlatRows();
+    expect(rows.map((row) => row.task.id)).toEqual(["project", "outside", "outside-child"]);
+    expect(rows[0].hasChildren).toBe(true);
+
+    useTaskStore.getState().toggleCollapsed("project");
+    rows = useTaskStore.getState().getFlatRows();
+    expect(rows.map((row) => row.task.id)).toContain("grandchild");
+  });
+
+  it("restores unfiltered results when search is cleared without modifying stored tasks", () => {
+    const tasks = structuredClone(useTaskStore.getState().file.tasks);
+    useTaskStore.getState().getFlatRows();
+    expect(useTaskStore.getState().file.tasks).toEqual(tasks);
+    expect(useTaskStore.getState().dirty).toBe(false);
+
+    useTaskStore.getState().setFilter({ titleContains: "" });
+    expect(useTaskStore.getState().getFlatRows().map((row) => row.task.id)).toEqual(
+      tasks.map((task) => task.id),
+    );
+    expect(useTaskStore.getState().file.tasks).toEqual(tasks);
+  });
+});

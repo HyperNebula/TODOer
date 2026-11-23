@@ -105,7 +105,12 @@ export function sortTasksFlat(
   );
 }
 
-function taskMatchesFilter(task: Task, filter: FilterState): boolean {
+function taskMatchesText(task: Task, term: string): boolean {
+  return !term || task.title.toLowerCase().includes(term) ||
+    (task.notes?.toLowerCase().includes(term) ?? false);
+}
+
+function taskMatchesNonTextFilters(task: Task, filter: FilterState): boolean {
   if (!filter.showArchived && task.archived) return false;
 
   if (filter.priorityMin !== null && (task.priority === null || task.priority < filter.priorityMin)) {
@@ -122,14 +127,6 @@ function taskMatchesFilter(task: Task, filter: FilterState): boolean {
   }
   if (filter.done === "done" && !task.done) return false;
   if (filter.done === "not_done" && task.done) return false;
-  if (filter.titleContains) {
-    const term = filter.titleContains.toLowerCase();
-    const titleMatch = task.title.toLowerCase().includes(term);
-    const notesMatch = task.notes?.toLowerCase().includes(term);
-    if (!titleMatch && !notesMatch) {
-      return false;
-    }
-  }
   if ((filter.dueBefore || filter.dueAfter) && !task.dueDate) {
     return false;
   }
@@ -175,13 +172,20 @@ export function filterTasksTreeAware(
 
   const tree = buildTree(tasks);
   const visibleIds = new Set<string>();
+  const searchTerm = filter.titleContains.toLowerCase();
 
-  function nodeMatches(node: TreeNode): boolean {
-    const selfMatch = taskMatchesFilter(node.task, filter);
+  function nodeMatches(node: TreeNode, matchingProjectAncestor = false): boolean {
+    const textMatch = taskMatchesText(node.task, searchTerm);
+    const selfMatch = (textMatch || matchingProjectAncestor) &&
+      taskMatchesNonTextFilters(node.task, filter);
+    // Only a project's own text match includes its subtree. Being retained as
+    // context for a matching child must not pull in unrelated siblings.
+    const descendantsMatchText = matchingProjectAncestor ||
+      (searchTerm !== "" && !!node.task.isProject && textMatch);
     
     let childMatch = false;
     for (const child of node.children) {
-      if (nodeMatches(child)) {
+      if (nodeMatches(child, descendantsMatchText)) {
         childMatch = true;
       }
     }
