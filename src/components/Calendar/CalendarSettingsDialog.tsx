@@ -4,6 +4,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useSettingsStore, BUILT_IN_THEMES, Theme, ThemeColors } from "../../store/settingsStore";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { PromptDialog } from "../PromptDialog";
+import { useUpdater } from "../Updater";
 import "../SettingsDialog.css";
 import { GoogleSyncPanel } from "./GoogleSyncPanel";
 import { CalendarTimeZoneSetting } from "./CalendarTimeZoneSetting";
@@ -32,6 +33,7 @@ const COLOR_LABELS: Record<keyof ThemeColors, string> = {
 export function CalendarSettingsDialog({ onClose, initialTab = "appearance" }: Props) {
   const [activeTab, setActiveTab] = useState<"appearance" | "themes" | "behavior" | "google">(initialTab);
   const [appVersion, setAppVersion] = useState<string>("");
+  const { checkForUpdates, isChecking } = useUpdater();
   
   useEffect(() => {
     getVersion()
@@ -329,6 +331,15 @@ export function CalendarSettingsDialog({ onClose, initialTab = "appearance" }: P
           <span style={{ alignSelf: "center", color: "var(--text-muted)", fontSize: "0.9em" }}>
             v{appVersion || "..."}
           </span>
+          <button
+            className="btn"
+            onClick={() => checkForUpdates(false)}
+            disabled={isChecking}
+            style={{ marginLeft: "10px" }}
+          >
+            {isChecking ? "Checking..." : "Check for Updates"}
+          </button>
+          <div style={{ flex: 1 }}></div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button 
               className="btn btn-danger" 
